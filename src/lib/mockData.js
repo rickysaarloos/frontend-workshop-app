@@ -1,0 +1,61 @@
+/**
+ * Nep data voor workshops.
+ * Later vervangen met echte API calls naar de backend.
+ */
+export const workshops = [
+  {
+    id: 1,
+    titel: "Ontwerp voor impact",
+    locatie: "Zaal A",
+    dag: "maandag",
+    tijd: "10:00 - 11:30",
+    capaciteit: 20,
+    ingeschreven: 12,
+    beschrijving: "Hoe ontwerp je producten die echt verschil maken?",
+    watNodigIs: "Laptop, notitieboekje",
+  },
+  {
+    id: 2,
+    titel: "Agile in de praktijk",
+    locatie: "Zaal B",
+    dag: "maandag",
+    tijd: "13:00 - 14:30",
+    capaciteit: 15,
+    ingeschreven: 15,
+    beschrijving: "Werken met scrum en agile methodes.",
+    watNodigIs: "Geen",
+  },
+  {
+    id: 3,
+    titel: "Data storytelling",
+    locatie: "Zaal C",
+    dag: "dinsdag",
+    tijd: "10:00 - 11:30",
+    capaciteit: 15,
+    ingeschreven: 3,
+    beschrijving: "Vertel een verhaal met data en visualisaties.",
+    watNodigIs: "Laptop",
+  },
+  {
+    id: 4,
+    titel: "AI in het onderwijs",
+    locatie: "Zaal A",
+    dag: "dinsdag",
+    tijd: "13:00 - 14:30",
+    capaciteit: 20,
+    ingeschreven: 8,
+    beschrijving: "Hoe gebruik je AI tools in je lessen?",
+    watNodigIs: "Laptop",
+  },
+  {
+    id: 5,
+    titel: "Feedback geven en ontvangen",
+    locatie: "Zaal B",
+    dag: "woensdag",
+    tijd: "09:00 - 10:30",
+    capaciteit: 12,
+    ingeschreven: 12,
+    beschrijving: "Effectieve feedbacktechnieken voor docenten.",
+    watNodigIs: "Notitieboekje",
+  },
+]

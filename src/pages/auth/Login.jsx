@@ -1,12 +1,14 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'motion/react'
+import { Mail, Lock, LogIn } from 'lucide-react'
+import { toast, Toaster } from 'sonner'
 
 /**
  * Login pagina voor de Workshop app van TCR.
  * Bevat een formulier met e-mailadres en wachtwoord.
  * Na succesvolle login wordt de gebruiker doorgestuurd naar de homepagina.
- * 
+ *
  * @returns {JSX.Element} De login pagina
  */
 function Login() {
@@ -33,16 +35,27 @@ function Login() {
    * Verwerkt het inlogformulier als de gebruiker op "Inloggen" klikt.
    * Voorkomt dat de pagina herlaadt met e.preventDefault().
    * Later wordt dit vervangen met een echte API call naar de backend.
-   * 
+   *
    * @param {React.FormEvent} e - Het submit event van het formulier
    */
   function handleSubmit(e) {
     e.preventDefault()
+
+    if (!email || !wachtwoord) {
+      toast.error('Vul alle velden in')
+      return
+    }
+
+    // later vervangen met echte API call
+    toast.success('Succesvol ingelogd!')
     console.log('inloggen met:', email, wachtwoord)
   }
 
-  return ( 
+  return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
+
+      {/* Sonner toast container — toont meldingen rechtsboven */}
+      <Toaster position="top-right" richColors />
 
       {/* Header met TCR logo tekst */}
       <header className="bg-white border-b border-gray-200 px-6 py-4 flex items-center gap-3">
@@ -74,28 +87,34 @@ function Login() {
           {/* Formulier — roept handleSubmit aan bij verzenden */}
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
 
-            {/* E-mailadres veld */}
+            {/* E-mailadres veld met icoon */}
             <div className="flex flex-col gap-1">
               <label className="text-xs font-medium text-gray-600">E-mailadres</label>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="naam@tcrmbo.nl"
-                className="border border-gray-200 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-[#1a3d2b] focus:ring-2 focus:ring-[#1a3d2b]/10 transition-all"
-              />
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="naam@tcrmbo.nl"
+                  className="w-full border border-gray-200 rounded-lg pl-9 pr-3 py-2.5 text-sm outline-none focus:border-[#1a3d2b] focus:ring-2 focus:ring-[#1a3d2b]/10 transition-all"
+                />
+              </div>
             </div>
 
-            {/* Wachtwoord veld */}
+            {/* Wachtwoord veld met icoon */}
             <div className="flex flex-col gap-1">
               <label className="text-xs font-medium text-gray-600">Wachtwoord</label>
-              <input
-                type="password"
-                value={wachtwoord}
-                onChange={(e) => setWachtwoord(e.target.value)}
-                placeholder="••••••••"
-                className="border border-gray-200 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-[#1a3d2b] focus:ring-2 focus:ring-[#1a3d2b]/10 transition-all"
-              />
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <input
+                  type="password"
+                  value={wachtwoord}
+                  onChange={(e) => setWachtwoord(e.target.value)}
+                  placeholder="••••••••"
+                  className="w-full border border-gray-200 rounded-lg pl-9 pr-3 py-2.5 text-sm outline-none focus:border-[#1a3d2b] focus:ring-2 focus:ring-[#1a3d2b]/10 transition-all"
+                />
+              </div>
             </div>
 
             {/*
@@ -109,7 +128,8 @@ function Login() {
               type="submit"
               className="bg-[#d4e84a] text-[#1a3d2b] rounded-lg py-2.5 text-sm font-semibold hover:bg-[#c8dc3e] transition-colors mt-2 flex items-center justify-center gap-2"
             >
-              Inloggen →
+              <LogIn className="w-4 h-4" />
+              Inloggen
             </motion.button>
 
             {/* Link naar de registreerpagina */}
