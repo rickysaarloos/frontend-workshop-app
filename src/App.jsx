@@ -5,6 +5,7 @@ import EventOverzicht from '@/pages/events/EventOverzicht'
 import WorkshopOverzicht from '@/pages/workshops/WorkshopOverzicht'
 import WorkshopDetail from '@/pages/workshops/WorkshopDetail'
 import Profiel from '@/pages/profiel/Profiel'
+import Home from '@/pages/home/Home'
 
 function App() {
   return (
@@ -17,6 +18,7 @@ function App() {
         <Route path="/workshops" element={<WorkshopOverzicht />} />
         <Route path="/workshops/:id" element={<WorkshopDetail />} />
         <Route path="/profiel" element={<Profiel />} />
+        <Route path="/dashboard" element={<Home />} />
       </Routes>
     </BrowserRouter>
   )
