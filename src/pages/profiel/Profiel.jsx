@@ -11,7 +11,7 @@ const dieetOpties = [
   'Halal', 'Kosher', 'Notenallergie', 'Geen restricties',
 ]
 
-function Profiel() {
+function Profiel() {  
   const navigate = useNavigate()
   const opgeslagenUser = JSON.parse(localStorage.getItem('user') || 'null') || mockUser
 
