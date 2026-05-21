@@ -114,7 +114,7 @@ function Register() {
       toast.success('Account aangemaakt! Welkom bij TCR.')
 
       // Korte delay zodat de toast zichtbaar is voor navigatie
-      setTimeout(() => navigate('/dashboard'), 800)
+setTimeout(() => navigate('/home'), 800)
 
     } catch (err) {
       toast.error(err.message || 'Registreren mislukt, probeer opnieuw.')

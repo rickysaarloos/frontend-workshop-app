@@ -18,7 +18,7 @@ function App() {
         <Route path="/workshops" element={<WorkshopOverzicht />} />
         <Route path="/workshops/:id" element={<WorkshopDetail />} />
         <Route path="/profiel" element={<Profiel />} />
-        <Route path="/dashboard" element={<Home />} />
+        <Route path="/home" element={<Home />} />
       </Routes>
     </BrowserRouter>
   )

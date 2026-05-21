@@ -108,7 +108,8 @@ function Login() {
       toast.success(`Welkom terug, ${data.user.name}!`)
 
       // Korte delay zodat de toast zichtbaar is voor navigatie
-      setTimeout(() => navigate('/dashboard'), 800)
+     setTimeout(() => navigate('/home'), 800)
+
 
     } catch (err) {
       toast.error(err.message || 'Inloggen mislukt, probeer opnieuw.')
