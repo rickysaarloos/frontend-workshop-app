@@ -1,121 +1,37 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { motion } from 'motion/react'
-import { Mail, Lock, User, UserPlus } from 'lucide-react'
+import { motion, AnimatePresence } from 'motion/react'
+import { Mail, Lock, User, UserPlus, ArrowRight } from 'lucide-react'
 import { toast, Toaster } from 'sonner'
 
-// ============================================================
-// MOCK FUNCTIE — later vervangen met echte API call
-// Verwijder deze functie en gebruik api.js wanneer backend klaar is
-// ============================================================
 async function mockRegister(naam, email, wachtwoord) {
-  // Simuleert een netwerk delay van 1000ms
   await new Promise((resolve) => setTimeout(resolve, 1000))
-
-  // Simuleer dat dit e-mailadres al bestaat
   const bestaandeEmails = ['bezet@tcrmbo.nl']
-  if (bestaandeEmails.includes(email)) {
-    throw { message: 'Dit e-mailadres is al in gebruik.' }
-  }
-
-  // Simuleert een succesvolle registratie response
-  return {
-    token: 'mock-token-nieuw-67890',
-    user: {
-      id: 99,
-      name: naam,
-      email: email,
-      role: 'student',
-    },
-  }
+  if (bestaandeEmails.includes(email)) throw { message: 'Dit e-mailadres is al in gebruik.' }
+  return { token: 'mock-token-nieuw-67890', user: { id: 99, name: naam, email, role: 'student' } }
 }
-// ============================================================
-// EINDE MOCK — Echte implementatie:
-//
-// import { register } from '../api'   ← jouw api.js bestand
-//
-// async function handleSubmit(e) {
-//   e.preventDefault()
-//   setIsLoading(true)
-//   try {
-//     const data = await register(naam, email, wachtwoord)
-//     localStorage.setItem('token', data.token)
-//     localStorage.setItem('user', JSON.stringify(data.user))
-//     toast.success('Account aangemaakt!')
-//     navigate('/dashboard')
-//   } catch (err) {
-//     toast.error(err.message || 'Registreren mislukt')
-//   } finally {
-//     setIsLoading(false)
-//   }
-// }
-// ============================================================
 
-/**
- * Registreer pagina voor de Workshop app van TCR.
- * Bevat een formulier met naam, e-mailadres en wachtwoord.
- * Na succesvolle registratie wordt de gebruiker doorgestuurd naar het dashboard.
- *
- * @returns {JSX.Element} De registreer pagina
- */
 function Register() {
-
-  /** @type {string} */
   const [naam, setNaam] = useState('')
-
-  /** @type {string} */
   const [email, setEmail] = useState('')
-
-  /** @type {string} */
   const [wachtwoord, setWachtwoord] = useState('')
-
-  /** @type {string} */
   const [wachtwoordHerhaal, setWachtwoordHerhaal] = useState('')
-
-  /** @type {boolean} Voorkomt dubbel klikken tijdens laden */
   const [isLoading, setIsLoading] = useState(false)
-
+  const [focusedField, setFocusedField] = useState(null)
   const navigate = useNavigate()
 
-  /**
-   * Verwerkt het registratieformulier.
-   * Gebruikt nu mock data — later vervangen met echte API call.
-   *
-   * @param {React.FormEvent} e - Het submit event van het formulier
-   */
   async function handleSubmit(e) {
     e.preventDefault()
-
-    if (!naam || !email || !wachtwoord || !wachtwoordHerhaal) {
-      toast.error('Vul alle velden in')
-      return
-    }
-
-    if (wachtwoord !== wachtwoordHerhaal) {
-      toast.error('Wachtwoorden komen niet overeen')
-      return
-    }
-
-    if (wachtwoord.length < 8) {
-      toast.error('Wachtwoord moet minimaal 8 tekens zijn')
-      return
-    }
-
+    if (!naam || !email || !wachtwoord || !wachtwoordHerhaal) { toast.error('Vul alle velden in'); return }
+    if (wachtwoord !== wachtwoordHerhaal) { toast.error('Wachtwoorden komen niet overeen'); return }
+    if (wachtwoord.length < 8) { toast.error('Wachtwoord moet minimaal 8 tekens zijn'); return }
     setIsLoading(true)
-
     try {
-      // 🔧 MOCK — vervang 'mockRegister' later met de echte 'register' functie uit api.js
       const data = await mockRegister(naam, email, wachtwoord)
-
-      // Sla de gebruiker op in localStorage (zelfde patroon werkt met echte API)
       localStorage.setItem('token', data.token)
       localStorage.setItem('user', JSON.stringify(data.user))
-
       toast.success('Account aangemaakt! Welkom bij TCR.')
-
-      // Korte delay zodat de toast zichtbaar is voor navigatie
-setTimeout(() => navigate('/home'), 800)
-
+      setTimeout(() => navigate('/home'), 800)
     } catch (err) {
       toast.error(err.message || 'Registreren mislukt, probeer opnieuw.')
     } finally {
@@ -123,142 +39,136 @@ setTimeout(() => navigate('/home'), 800)
     }
   }
 
+  const fields = [
+    { key: 'naam', label: 'Naam', type: 'text', value: naam, onChange: setNaam, placeholder: 'Jouw volledige naam', Icon: User },
+    { key: 'email', label: 'E-mailadres', type: 'email', value: email, onChange: setEmail, placeholder: 'naam@tcrmbo.nl', Icon: Mail },
+    { key: 'wachtwoord', label: 'Wachtwoord', type: 'password', value: wachtwoord, onChange: setWachtwoord, placeholder: '••••••••', Icon: Lock },
+    { key: 'herhaal', label: 'Wachtwoord herhalen', type: 'password', value: wachtwoordHerhaal, onChange: setWachtwoordHerhaal, placeholder: '••••••••', Icon: Lock },
+  ]
+
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
-
-      {/* Sonner toast container */}
       <Toaster position="top-right" richColors />
 
-      {/* Header met TCR logo tekst */}
-      <header className="bg-white border-b border-gray-200 px-6 py-4 flex items-center gap-3">
-        <div className="flex flex-col leading-tight">
-          <span className="text-[#1a3d2b] font-bold text-sm">Techniek</span>
-          <span className="text-[#1a3d2b] font-bold text-sm">College</span>
-          <span className="text-[#1a3d2b] font-bold text-sm">Rotterdam</span>
-        </div>
-      </header>
-
-      <div className="flex-1 flex items-center justify-center px-4">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4 }}
-          className="w-full max-w-md bg-white rounded-2xl border border-gray-200 p-8 shadow-sm"
-        >
-          <h1 className="text-xl font-semibold text-[#1a3d2b] mb-1">Account aanmaken</h1>
-          <p className="text-sm text-gray-500 mb-6">Workshop app TCR</p>
-
-          {/* Tip voor ontwikkeling — verwijder dit blok wanneer backend klaar is */}
-          <div className="mb-5 p-3 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-700">
-            <p className="font-semibold mb-1">🔧 Mock modus actief</p>
-            <p>Vul een willekeurig e-mailadres in om te registreren.</p>
-            <p className="mt-1">Test een fout met: <span className="font-medium">bezet@tcrmbo.nl</span></p>
+      {/* Header */}
+      <motion.header
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4 }}
+        className="bg-white border-b border-gray-100 px-6 py-4 flex items-center gap-3"
+      >
+        <div className="flex items-center gap-2">
+          <div className="w-7 h-7 bg-[#1a3d2b] rounded-lg flex items-center justify-center">
+            <span className="text-[#d4e84a] font-black text-xs">T</span>
           </div>
+          <div className="flex flex-col leading-none">
+            <span className="text-[#1a3d2b] font-bold text-xs tracking-tight">Techniek College</span>
+            <span className="text-[#1a3d2b] font-bold text-xs tracking-tight">Rotterdam</span>
+          </div>
+        </div>
+      </motion.header>
 
-          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+      <div className="flex-1 flex items-center justify-center px-4 py-8">
+        <div className="w-full max-w-md">
 
-            {/* Naam veld */}
-            <div className="flex flex-col gap-1">
-              <label className="text-xs font-medium text-gray-600">Naam</label>
-              <div className="relative">
-                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                <input
-                  type="text"
-                  value={naam}
-                  onChange={(e) => setNaam(e.target.value)}
-                  placeholder="Jouw naam"
-                  disabled={isLoading}
-                  className="w-full border border-gray-200 rounded-lg pl-9 pr-3 py-2.5 text-sm outline-none focus:border-[#1a3d2b] focus:ring-2 focus:ring-[#1a3d2b]/10 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                />
-              </div>
-            </div>
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.1 }}
+            className="mb-6 px-1"
+          >
+            <h1 className="text-2xl font-bold text-[#1a3d2b] tracking-tight">Account aanmaken</h1>
+            <p className="text-sm text-gray-400 mt-1">Workshop app · Techniek College Rotterdam</p>
+          </motion.div>
 
-            {/* E-mailadres veld */}
-            <div className="flex flex-col gap-1">
-              <label className="text-xs font-medium text-gray-600">E-mailadres</label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="naam@tcrmbo.nl"
-                  disabled={isLoading}
-                  className="w-full border border-gray-200 rounded-lg pl-9 pr-3 py-2.5 text-sm outline-none focus:border-[#1a3d2b] focus:ring-2 focus:ring-[#1a3d2b]/10 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                />
-              </div>
-            </div>
-
-            {/* Wachtwoord veld */}
-            <div className="flex flex-col gap-1">
-              <label className="text-xs font-medium text-gray-600">Wachtwoord</label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                <input
-                  type="password"
-                  value={wachtwoord}
-                  onChange={(e) => setWachtwoord(e.target.value)}
-                  placeholder="••••••••"
-                  disabled={isLoading}
-                  className="w-full border border-gray-200 rounded-lg pl-9 pr-3 py-2.5 text-sm outline-none focus:border-[#1a3d2b] focus:ring-2 focus:ring-[#1a3d2b]/10 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                />
-              </div>
-              <p className="text-xs text-gray-400">Minimaal 8 tekens</p>
-            </div>
-
-            {/* Wachtwoord herhalen veld */}
-            <div className="flex flex-col gap-1">
-              <label className="text-xs font-medium text-gray-600">Wachtwoord herhalen</label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                <input
-                  type="password"
-                  value={wachtwoordHerhaal}
-                  onChange={(e) => setWachtwoordHerhaal(e.target.value)}
-                  placeholder="••••••••"
-                  disabled={isLoading}
-                  className="w-full border border-gray-200 rounded-lg pl-9 pr-3 py-2.5 text-sm outline-none focus:border-[#1a3d2b] focus:ring-2 focus:ring-[#1a3d2b]/10 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                />
-              </div>
-            </div>
-
-            <motion.button
-              whileHover={{ scale: isLoading ? 1 : 1.02 }}
-              whileTap={{ scale: isLoading ? 1 : 0.98 }}
-              type="submit"
-              disabled={isLoading}
-              className="bg-[#d4e84a] text-[#1a3d2b] rounded-lg py-2.5 text-sm font-semibold hover:bg-[#c8dc3e] transition-colors mt-2 flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.15 }}
+            className="bg-white rounded-3xl border border-gray-100 p-8 shadow-lg shadow-gray-100/80"
+          >
+            {/* Mock tip */}
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              transition={{ duration: 0.4, delay: 0.4 }}
+              className="mb-6 p-3.5 bg-amber-50 border border-amber-100 rounded-2xl text-xs text-amber-700"
             >
-              {isLoading ? (
-                <>
-                  <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
-                  </svg>
-                  Account aanmaken...
-                </>
-              ) : (
-                <>
-                  <UserPlus className="w-4 h-4" />
-                  Account aanmaken
-                </>
-              )}
-            </motion.button>
+              <p className="font-semibold mb-1">🔧 Mock modus actief</p>
+              <p className="text-amber-600">Vul een willekeurig e-mailadres in. Test fout: <span className="font-medium">bezet@tcrmbo.nl</span></p>
+            </motion.div>
 
-            <p className="text-xs text-center text-gray-500">
-              Al een account?{' '}
-              <span
-                onClick={() => navigate('/login')}
-                className="text-[#1a3d2b] font-medium cursor-pointer hover:underline"
+            <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+
+              {fields.map(({ key, label, type, value, onChange, placeholder, Icon }, index) => (
+                <motion.div
+                  key={key}
+                  initial={{ opacity: 0, x: -8 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.3, delay: 0.2 + index * 0.07 }}
+                  className="flex flex-col gap-1.5"
+                >
+                  <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">{label}</label>
+                  <motion.div
+                    animate={{ scale: focusedField === key ? 1.01 : 1 }}
+                    transition={{ duration: 0.15 }}
+                    className="relative"
+                  >
+                    <Icon className={`absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 transition-colors duration-200 ${focusedField === key ? 'text-[#1a3d2b]' : 'text-gray-300'}`} />
+                    <input
+                      type={type}
+                      value={value}
+                      onChange={(e) => onChange(e.target.value)}
+                      onFocus={() => setFocusedField(key)}
+                      onBlur={() => setFocusedField(null)}
+                      placeholder={placeholder}
+                      disabled={isLoading}
+                      className="w-full border-2 border-gray-100 rounded-2xl pl-10 pr-4 py-3 text-sm outline-none focus:border-[#1a3d2b] bg-gray-50 focus:bg-white transition-all duration-200 disabled:opacity-50"
+                    />
+                  </motion.div>
+                  {key === 'wachtwoord' && (
+                    <p className="text-xs text-gray-400 pl-1">Minimaal 8 tekens</p>
+                  )}
+                </motion.div>
+              ))}
+
+              <motion.button
+                whileHover={{ scale: isLoading ? 1 : 1.02, boxShadow: isLoading ? 'none' : '0 8px 24px rgba(212,232,74,0.4)' }}
+                whileTap={{ scale: isLoading ? 1 : 0.97 }}
+                type="submit"
+                disabled={isLoading}
+                className="bg-[#1a3d2b] text-[#d4e84a] rounded-2xl py-3.5 text-sm font-bold transition-all duration-200 mt-2 flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
               >
-                Inloggen
-              </span>
-            </p>
+                <AnimatePresence mode="wait">
+                  {isLoading ? (
+                    <motion.div key="loading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex items-center gap-2">
+                      <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                      </svg>
+                      Account aanmaken...
+                    </motion.div>
+                  ) : (
+                    <motion.div key="idle" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex items-center gap-2">
+                      <UserPlus className="w-4 h-4" />
+                      Account aanmaken
+                      <ArrowRight className="w-4 h-4" />
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </motion.button>
 
-          </form>
-        </motion.div>
+              <p className="text-xs text-center text-gray-400 pt-1">
+                Al een account?{' '}
+                <span onClick={() => navigate('/login')} className="text-[#1a3d2b] font-semibold cursor-pointer hover:underline underline-offset-2">
+                  Inloggen
+                </span>
+              </p>
+
+            </form>
+          </motion.div>
+        </div>
       </div>
-
     </div>
   )
 }

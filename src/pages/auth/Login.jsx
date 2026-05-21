@@ -1,116 +1,38 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { motion } from 'motion/react'
-import { Mail, Lock, LogIn } from 'lucide-react'
+import { motion, AnimatePresence } from 'motion/react'
+import { Mail, Lock, LogIn, ArrowRight } from 'lucide-react'
 import { toast, Toaster } from 'sonner'
 
-// ============================================================
-// MOCK FUNCTIE — later vervangen met echte API call
-// Verwijder deze functie en gebruik api.js wanneer backend klaar is
-// ============================================================
 async function mockLogin(email, wachtwoord) {
-  // Simuleert een netwerk delay van 800ms
-  await new Promise((resolve) => setTimeout(resolve, 800))
-
-  // Test accounts voor ontwikkeling
+  await new Promise((resolve) => setTimeout(resolve, 900))
   const mockUsers = [
     { email: 'student@tcrmbo.nl', password: 'wachtwoord123', name: 'Jan de Vries', role: 'student' },
     { email: 'docent@tcrmbo.nl', password: 'wachtwoord123', name: 'Mevr. Bakker', role: 'docent' },
     { email: 'admin@tcrmbo.nl', password: 'wachtwoord123', name: 'Admin TCR', role: 'admin' },
   ]
-
-  const user = mockUsers.find(
-    (u) => u.email === email && u.password === wachtwoord
-  )
-
-  if (!user) {
-    // Simuleert een fout van de server
-    throw { message: 'Deze combinatie van e-mailadres en wachtwoord klopt niet.' }
-  }
-
-  // Simuleert een succesvolle response van de server
-  return {
-    token: 'mock-token-12345',
-    user: {
-      id: 1,
-      name: user.name,
-      email: user.email,
-      role: user.role,
-    },
-  }
+  const user = mockUsers.find((u) => u.email === email && u.password === wachtwoord)
+  if (!user) throw { message: 'Deze combinatie van e-mailadres en wachtwoord klopt niet.' }
+  return { token: 'mock-token-12345', user: { id: 1, name: user.name, email: user.email, role: user.role } }
 }
-// ============================================================
-// EINDE MOCK — Echte implementatie:
-//
-// import { login } from '../api'   ← jouw api.js bestand
-//
-// async function handleSubmit(e) {
-//   e.preventDefault()
-//   setIsLoading(true)
-//   try {
-//     const data = await login(email, wachtwoord)
-//     localStorage.setItem('token', data.token)
-//     localStorage.setItem('user', JSON.stringify(data.user))
-//     toast.success('Succesvol ingelogd!')
-//     navigate('/dashboard')
-//   } catch (err) {
-//     toast.error(err.message || 'Inloggen mislukt')
-//   } finally {
-//     setIsLoading(false)
-//   }
-// }
-// ============================================================
 
-/**
- * Login pagina voor de Workshop app van TCR.
- * Bevat een formulier met e-mailadres en wachtwoord.
- * Na succesvolle login wordt de gebruiker doorgestuurd naar de homepagina.
- *
- * @returns {JSX.Element} De login pagina
- */
 function Login() {
-
-  /** @type {string} */
   const [email, setEmail] = useState('')
-
-  /** @type {string} */
   const [wachtwoord, setWachtwoord] = useState('')
-
-  /** @type {boolean} Voorkomt dubbel klikken tijdens laden */
   const [isLoading, setIsLoading] = useState(false)
-
+  const [focusedField, setFocusedField] = useState(null)
   const navigate = useNavigate()
 
-  /**
-   * Verwerkt het inlogformulier.
-   * Gebruikt nu mock data — later vervangen met echte API call.
-   *
-   * @param {React.FormEvent} e - Het submit event van het formulier
-   */
   async function handleSubmit(e) {
     e.preventDefault()
-
-    if (!email || !wachtwoord) {
-      toast.error('Vul alle velden in')
-      return
-    }
-
+    if (!email || !wachtwoord) { toast.error('Vul alle velden in'); return }
     setIsLoading(true)
-
     try {
-      // 🔧 MOCK — vervang 'mockLogin' later met de echte 'login' functie uit api.js
       const data = await mockLogin(email, wachtwoord)
-
-      // Sla de gebruiker op in localStorage (zelfde patroon werkt met echte API)
       localStorage.setItem('token', data.token)
       localStorage.setItem('user', JSON.stringify(data.user))
-
       toast.success(`Welkom terug, ${data.user.name}!`)
-
-      // Korte delay zodat de toast zichtbaar is voor navigatie
-     setTimeout(() => navigate('/home'), 800)
-
-
+      setTimeout(() => navigate('/home'), 800)
     } catch (err) {
       toast.error(err.message || 'Inloggen mislukt, probeer opnieuw.')
     } finally {
@@ -120,109 +42,159 @@ function Login() {
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
-
-      {/* Sonner toast container */}
       <Toaster position="top-right" richColors />
 
-      {/* Header met TCR logo tekst */}
-      <header className="bg-white border-b border-gray-200 px-6 py-4 flex items-center gap-3">
-        <div className="flex flex-col leading-tight">
-          <span className="text-[#1a3d2b] font-bold text-sm">Techniek</span>
-          <span className="text-[#1a3d2b] font-bold text-sm">College</span>
-          <span className="text-[#1a3d2b] font-bold text-sm">Rotterdam</span>
-        </div>
-      </header>
-
-      <div className="flex-1 flex items-center justify-center px-4">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4 }}
-          className="w-full max-w-xl bg-white rounded-2xl border border-gray-200 p-8 shadow-sm"
-        >
-          <h1 className="text-xl font-semibold text-[#1a3d2b] mb-1">Inloggen</h1>
-          <p className="text-sm text-gray-500 mb-6">Workshop app TCR</p>
-
-          {/* Tip voor ontwikkeling — verwijder dit blok wanneer backend klaar is */}
-          <div className="mb-5 p-3 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-700">
-            <p className="font-semibold mb-1">🔧 Mock modus actief</p>
-            <p>Gebruik een van deze test accounts:</p>
-            <p className="mt-1"><span className="font-medium">student@tcrmbo.nl</span> / wachtwoord123</p>
-            <p><span className="font-medium">docent@tcrmbo.nl</span> / wachtwoord123</p>
-            <p><span className="font-medium">admin@tcrmbo.nl</span> / wachtwoord123</p>
+      {/* Header */}
+      <motion.header
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4 }}
+        className="bg-white border-b border-gray-100 px-6 py-4 flex items-center gap-3"
+      >
+        <div className="flex items-center gap-2">
+          <div className="w-7 h-7 bg-[#1a3d2b] rounded-lg flex items-center justify-center">
+            <span className="text-[#d4e84a] font-black text-xs">T</span>
           </div>
+          <div className="flex flex-col leading-none">
+            <span className="text-[#1a3d2b] font-bold text-xs tracking-tight">Techniek College</span>
+            <span className="text-[#1a3d2b] font-bold text-xs tracking-tight">Rotterdam</span>
+          </div>
+        </div>
+      </motion.header>
 
-          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+      <div className="flex-1 flex items-center justify-center px-4 py-8">
+        <div className="w-full max-w-md">
 
-            {/* E-mailadres veld */}
-            <div className="flex flex-col gap-1">
-              <label className="text-xs font-medium text-gray-600">E-mailadres</label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="naam@tcrmbo.nl"
-                  disabled={isLoading}
-                  className="w-full border border-gray-200 rounded-lg pl-9 pr-3 py-2.5 text-sm outline-none focus:border-[#1a3d2b] focus:ring-2 focus:ring-[#1a3d2b]/10 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                />
-              </div>
-            </div>
+          {/* Titel boven kaart */}
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.1 }}
+            className="mb-6 px-1"
+          >
+            <h1 className="text-2xl font-bold text-[#1a3d2b] tracking-tight">Inloggen</h1>
+            <p className="text-sm text-gray-400 mt-1">Workshop app · Techniek College Rotterdam</p>
+          </motion.div>
 
-            {/* Wachtwoord veld */}
-            <div className="flex flex-col gap-1">
-              <label className="text-xs font-medium text-gray-600">Wachtwoord</label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                <input
-                  type="password"
-                  value={wachtwoord}
-                  onChange={(e) => setWachtwoord(e.target.value)}
-                  placeholder="••••••••"
-                  disabled={isLoading}
-                  className="w-full border border-gray-200 rounded-lg pl-9 pr-3 py-2.5 text-sm outline-none focus:border-[#1a3d2b] focus:ring-2 focus:ring-[#1a3d2b]/10 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                />
-              </div>
-            </div>
-
-            <motion.button
-              whileHover={{ scale: isLoading ? 1 : 1.02 }}
-              whileTap={{ scale: isLoading ? 1 : 0.98 }}
-              type="submit"
-              disabled={isLoading}
-              className="bg-[#d4e84a] text-[#1a3d2b] rounded-lg py-2.5 text-sm font-semibold hover:bg-[#c8dc3e] transition-colors mt-2 flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+          {/* Kaart */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.15 }}
+            className="bg-white rounded-3xl border border-gray-100 p-8 shadow-lg shadow-gray-100/80"
+          >
+            {/* Mock tip */}
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              transition={{ duration: 0.4, delay: 0.4 }}
+              className="mb-6 p-3.5 bg-amber-50 border border-amber-100 rounded-2xl text-xs text-amber-700"
             >
-              {isLoading ? (
-                <>
-                  <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
-                  </svg>
-                  Bezig met inloggen...
-                </>
-              ) : (
-                <>
-                  <LogIn className="w-4 h-4" />
-                  Inloggen
-                </>
-              )}
-            </motion.button>
+              <p className="font-semibold mb-1.5">🔧 Mock modus actief</p>
+              <p className="text-amber-600">student@tcrmbo.nl · docent@tcrmbo.nl · admin@tcrmbo.nl</p>
+              <p className="text-amber-600 mt-0.5">Wachtwoord: <span className="font-medium">wachtwoord123</span></p>
+            </motion.div>
 
-            <p className="text-xs text-center text-gray-500">
-              Nog geen account?{' '}
-              <span
-                onClick={() => navigate('/register')}
-                className="text-[#1a3d2b] font-medium cursor-pointer hover:underline"
+            <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+
+              {/* E-mail veld */}
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">E-mailadres</label>
+                <motion.div
+                  animate={{ scale: focusedField === 'email' ? 1.01 : 1 }}
+                  transition={{ duration: 0.15 }}
+                  className="relative"
+                >
+                  <Mail className={`absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 transition-colors duration-200 ${focusedField === 'email' ? 'text-[#1a3d2b]' : 'text-gray-300'}`} />
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    onFocus={() => setFocusedField('email')}
+                    onBlur={() => setFocusedField(null)}
+                    placeholder="naam@tcrmbo.nl"
+                    disabled={isLoading}
+                    className="w-full border-2 border-gray-100 rounded-2xl pl-10 pr-4 py-3 text-sm outline-none focus:border-[#1a3d2b] bg-gray-50 focus:bg-white transition-all duration-200 disabled:opacity-50"
+                  />
+                </motion.div>
+              </div>
+
+              {/* Wachtwoord veld */}
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Wachtwoord</label>
+                <motion.div
+                  animate={{ scale: focusedField === 'wachtwoord' ? 1.01 : 1 }}
+                  transition={{ duration: 0.15 }}
+                  className="relative"
+                >
+                  <Lock className={`absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 transition-colors duration-200 ${focusedField === 'wachtwoord' ? 'text-[#1a3d2b]' : 'text-gray-300'}`} />
+                  <input
+                    type="password"
+                    value={wachtwoord}
+                    onChange={(e) => setWachtwoord(e.target.value)}
+                    onFocus={() => setFocusedField('wachtwoord')}
+                    onBlur={() => setFocusedField(null)}
+                    placeholder="••••••••"
+                    disabled={isLoading}
+                    className="w-full border-2 border-gray-100 rounded-2xl pl-10 pr-4 py-3 text-sm outline-none focus:border-[#1a3d2b] bg-gray-50 focus:bg-white transition-all duration-200 disabled:opacity-50"
+                  />
+                </motion.div>
+              </div>
+
+              {/* Submit knop */}
+              <motion.button
+                whileHover={{ scale: isLoading ? 1 : 1.02, boxShadow: isLoading ? 'none' : '0 8px 24px rgba(212,232,74,0.4)' }}
+                whileTap={{ scale: isLoading ? 1 : 0.97 }}
+                type="submit"
+                disabled={isLoading}
+                className="bg-[#1a3d2b] text-[#d4e84a] rounded-2xl py-3.5 text-sm font-bold transition-all duration-200 mt-1 flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
               >
-                Registreren
-              </span>
-            </p>
+                <AnimatePresence mode="wait">
+                  {isLoading ? (
+                    <motion.div
+                      key="loading"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      className="flex items-center gap-2"
+                    >
+                      <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                      </svg>
+                      Bezig met inloggen...
+                    </motion.div>
+                  ) : (
+                    <motion.div
+                      key="idle"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      className="flex items-center gap-2"
+                    >
+                      <LogIn className="w-4 h-4" />
+                      Inloggen
+                      <ArrowRight className="w-4 h-4" />
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </motion.button>
 
-          </form>
-        </motion.div>
+              {/* Link naar register */}
+              <p className="text-xs text-center text-gray-400 pt-1">
+                Nog geen account?{' '}
+                <span
+                  onClick={() => navigate('/register')}
+                  className="text-[#1a3d2b] font-semibold cursor-pointer hover:underline underline-offset-2"
+                >
+                  Registreren
+                </span>
+              </p>
+
+            </form>
+          </motion.div>
+        </div>
       </div>
-
     </div>
   )
 }
