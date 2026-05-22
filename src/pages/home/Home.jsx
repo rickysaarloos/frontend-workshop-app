@@ -185,8 +185,8 @@ function Home() {
           className="bg-white rounded-3xl border border-gray-100 overflow-hidden"
         >
           {[
-            { label: 'Workshops', desc: 'Bekijk en schrijf je in', icon: CalendarDays, path: '/workshops', kleur: 'bg-[#d4e84a]', iconKleur: 'text-[#1a3d2b]' },
-            { label: 'Events', desc: 'Aankomende evenementen', icon: BookOpen, path: '/events', kleur: 'bg-[#eaf3de]', iconKleur: 'text-[#1a3d2b]' },
+            { label: 'Workshops', desc: 'Bekijk en schrijf je in', icon: BookOpen, path: '/workshops', kleur: 'bg-[#d4e84a]', iconKleur: 'text-[#1a3d2b]' },
+            { label: 'Events', desc: 'Aankomende evenementen', icon: CalendarDays, path: '/events', kleur: 'bg-[#eaf3de]', iconKleur: 'text-[#1a3d2b]' },
             { label: 'Mijn profiel', desc: 'Gegevens en dieetwensen', icon: User, path: '/profiel', kleur: 'bg-[#1a3d2b]', iconKleur: 'text-[#d4e84a]' },
           ].map(({ label, desc, icon: Icon, path, kleur, iconKleur }, index, arr) => (
             <motion.div
