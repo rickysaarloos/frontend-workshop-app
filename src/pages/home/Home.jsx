@@ -11,6 +11,12 @@ const mockAankomendEvent = {
 
 const mockAantalWorkshops = 6
 
+// 🔧 MOCK — later vervangen met API call: await getIngeschrevenWorkshops()
+const mockIngeschreven = [
+  { id: 1, titel: 'Workshop Lassen', datum: '2026-06-10', tijd: '09:00 - 12:00', locatie: 'Lokaal B203' },
+  { id: 3, titel: 'Workshop Elektrotechniek', datum: '2026-06-12', tijd: '10:00 - 13:00', locatie: 'Practicum C105' },
+]
+
 function Home() {
   const navigate = useNavigate()
   const user = JSON.parse(localStorage.getItem('user') || 'null')
@@ -19,6 +25,12 @@ function Home() {
   function formatDatum(datum) {
     return new Date(datum).toLocaleDateString('nl-NL', {
       weekday: 'long', day: 'numeric', month: 'long',
+    })
+  }
+
+  function formatKorteDatum(datum) {
+    return new Date(datum).toLocaleDateString('nl-NL', {
+      day: 'numeric', month: 'short',
     })
   }
 
@@ -63,7 +75,6 @@ function Home() {
 
       {/* Hero sectie */}
       <div className="px-6 pt-4 pb-10 relative overflow-hidden">
-        {/* Decoratieve achtergrond cirkels */}
         <div className="absolute -right-20 -top-20 w-80 h-80 bg-[#d4e84a]/5 rounded-full pointer-events-none" />
         <div className="absolute -left-10 bottom-0 w-48 h-48 bg-white/3 rounded-full pointer-events-none" />
 
@@ -83,7 +94,7 @@ function Home() {
       {/* Witte content sectie */}
       <div className="flex-1 bg-gray-50 rounded-t-[2rem] px-5 pt-7 pb-8 flex flex-col gap-4">
 
-        {/* Aankomend event — grote banner */}
+        {/* Aankomend event banner */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -95,7 +106,6 @@ function Home() {
         >
           <div className="absolute -right-6 -top-6 w-28 h-28 bg-[#d4e84a]/8 rounded-full" />
           <div className="absolute right-4 -bottom-8 w-20 h-20 bg-white/4 rounded-full" />
-
           <div className="flex items-start justify-between relative">
             <div className="flex-1">
               <p className="text-[#d4e84a] text-xs font-bold uppercase tracking-widest mb-2">Aankomend event</p>
@@ -117,14 +127,13 @@ function Home() {
           </div>
         </motion.div>
 
-        {/* 3 kaarten naast elkaar — TCR stijl */}
+        {/* 3 kaarten */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.45, delay: 0.25 }}
           className="grid grid-cols-3 gap-3"
         >
-          {/* Workshops — geel, groot */}
           <motion.div
             whileHover={{ scale: 1.04, boxShadow: '0 8px 24px rgba(212,232,74,0.3)' }}
             whileTap={{ scale: 0.96 }}
@@ -138,7 +147,6 @@ function Home() {
             </div>
           </motion.div>
 
-          {/* Events */}
           <motion.div
             whileHover={{ scale: 1.04, boxShadow: '0 8px 24px rgba(26,61,43,0.1)' }}
             whileTap={{ scale: 0.96 }}
@@ -152,7 +160,6 @@ function Home() {
             </div>
           </motion.div>
 
-          {/* Profiel */}
           <motion.div
             whileHover={{ scale: 1.04, boxShadow: '0 8px 24px rgba(26,61,43,0.1)' }}
             whileTap={{ scale: 0.96 }}
@@ -167,7 +174,7 @@ function Home() {
           </motion.div>
         </motion.div>
 
-        {/* Sectie label */}
+        {/* Snel navigeren */}
         <motion.p
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -177,7 +184,6 @@ function Home() {
           Snel navigeren
         </motion.p>
 
-        {/* Lijst menu */}
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
@@ -206,6 +212,79 @@ function Home() {
               <ArrowRight className="w-4 h-4 text-gray-300 shrink-0" />
             </motion.div>
           ))}
+        </motion.div>
+
+        {/* ── JOUW INGESCHREVEN WORKSHOPS ── */}
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.4, delay: 0.45 }}
+          className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-1"
+        >
+          Jouw workshops
+        </motion.p>
+
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.45, delay: 0.5 }}
+          className="flex flex-col gap-2"
+        >
+          {mockIngeschreven.length === 0 ? (
+            <div className="bg-white rounded-3xl border border-gray-100 p-6 text-center">
+              <p className="text-sm text-gray-400">Je bent nog niet ingeschreven voor workshops</p>
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => navigate('/workshops')}
+                className="mt-3 bg-[#1a3d2b] text-[#d4e84a] text-xs font-bold px-4 py-2 rounded-xl"
+              >
+                Bekijk workshops →
+              </motion.button>
+            </div>
+          ) : (
+            <>
+              {mockIngeschreven.map((workshop, index) => (
+                <motion.div
+                  key={workshop.id}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3, delay: 0.5 + index * 0.07 }}
+                  whileHover={{ scale: 1.01, boxShadow: '0 4px 16px rgba(26,61,43,0.08)' }}
+                  whileTap={{ scale: 0.99 }}
+                  onClick={() => navigate(`/workshops/${workshop.id}`)}
+                  className="bg-white rounded-2xl border border-gray-100 px-4 py-3.5 cursor-pointer flex items-center gap-3 transition-all duration-150"
+                >
+                  {/* Datum blokje */}
+                  <div className="bg-[#1a3d2b] rounded-xl px-2.5 py-2 text-center shrink-0 min-w-[44px]">
+                    <p className="text-[#d4e84a] text-xs font-black leading-none">
+                      {new Date(workshop.datum).getDate()}
+                    </p>
+                    <p className="text-white/50 text-[10px] font-medium mt-0.5 capitalize">
+                      {new Date(workshop.datum).toLocaleDateString('nl-NL', { month: 'short' })}
+                    </p>
+                  </div>
+
+                  <div className="flex-1">
+                    <p className="text-sm font-bold text-[#1a3d2b]">{workshop.titel}</p>
+                    <p className="text-xs text-gray-400 mt-0.5">{workshop.tijd} · {workshop.locatie}</p>
+                  </div>
+
+                  <ArrowRight className="w-4 h-4 text-gray-300 shrink-0" />
+                </motion.div>
+              ))}
+
+              {/* Alle workshops bekijken link */}
+              <motion.button
+                whileHover={{ x: 2 }}
+                onClick={() => navigate('/workshops')}
+                className="flex items-center gap-1.5 text-xs text-[#1a3d2b] font-bold px-1 pt-1 hover:underline underline-offset-2"
+              >
+                Alle workshops bekijken
+                <ArrowRight className="w-3.5 h-3.5" />
+              </motion.button>
+            </>
+          )}
         </motion.div>
 
       </div>
