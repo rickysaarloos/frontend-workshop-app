@@ -1,87 +1,135 @@
-import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useState, useEffect } from 'react'
+import { useNavigate, useParams } from 'react-router-dom'
 import { motion, AnimatePresence } from 'motion/react'
-import { ChevronLeft, ChevronRight, BookOpen } from 'lucide-react'
+import { ChevronLeft, CalendarDays, Clock, Users, CheckCircle, MapPin, BookOpen, User, Tag } from 'lucide-react'
+import { toast, Toaster } from 'sonner'
 
-const mockWorkshops = [
-  { id: 1, titel: 'Workshop Lassen', beschrijving: 'Leer de basis van het lassen met professioneel materiaal.', datum: '2026-06-10', tijd: '09:00 - 12:00', locatie: 'Lokaal B203', capaciteit: 15, ingeschreven: 11 },
-  { id: 2, titel: 'Workshop 3D Printen', beschrijving: 'Ontwerp en print je eigen 3D model.', datum: '2026-06-10', tijd: '13:00 - 16:00', locatie: 'Medialab A101', capaciteit: 10, ingeschreven: 10 },
-  { id: 3, titel: 'Workshop Elektrotechniek', beschrijving: 'Van schakelschema tot werkend circuit.', datum: '2026-06-12', tijd: '10:00 - 13:00', locatie: 'Practicum C105', capaciteit: 12, ingeschreven: 5 },
-  { id: 4, titel: 'Workshop CNC Frezen', beschrijving: 'Werken met CNC freesmachines in de praktijk.', datum: '2026-06-15', tijd: '09:00 - 12:00', locatie: 'Werkplaats D01', capaciteit: 8, ingeschreven: 3 },
-  { id: 5, titel: 'Workshop Robotica', beschrijving: 'Programmeer en bouw je eigen kleine robot.', datum: '2026-06-17', tijd: '13:00 - 17:00', locatie: 'Lab B105', capaciteit: 10, ingeschreven: 8 },
-  { id: 6, titel: 'Workshop Houtbewerking', beschrijving: 'Maak kennis met de houtbewerkingsmachines van TCR.', datum: '2026-06-20', tijd: '09:00 - 12:00', locatie: 'Werkplaats E02', capaciteit: 12, ingeschreven: 6 },
-]
-
-const MAANDEN = ['Januari', 'Februari', 'Maart', 'April', 'Mei', 'Juni', 'Juli', 'Augustus', 'September', 'Oktober', 'November', 'December']
-const DAGEN_KORT = ['Ma', 'Di', 'Wo', 'Do', 'Vr', 'Za', 'Zo']
-
-function getKalenderDagen(jaar, maand) {
-  const eerstedag = new Date(jaar, maand, 1)
-  const aantalDagen = new Date(jaar, maand + 1, 0).getDate()
-  let startOffset = eerstedag.getDay() - 1
-  if (startOffset < 0) startOffset = 6
-  const dagen = []
-  for (let i = 0; i < startOffset; i++) dagen.push(null)
-  for (let i = 1; i <= aantalDagen; i++) dagen.push(i)
-  return dagen
-}
-
-function WorkshopOverzicht() {
+function WorkshopDetail() {
+  const { id } = useParams()
   const navigate = useNavigate()
-  const vandaag = new Date()
 
-  const [jaar, setJaar] = useState(vandaag.getFullYear())
-  const [maand, setMaand] = useState(vandaag.getMonth())
-  const [geselecteerdeDag, setGeselecteerdeDag] = useState(null)
+  const [workshop, setWorkshop] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [ingeschreven, setIngeschreven] = useState(false)
+  const [registratieLoading, setRegistratieLoading] = useState(false)
+  const [geselecteerdeSessie, setGeselecteerdeSessie] = useState(null)
 
-  const kalenderDagen = getKalenderDagen(jaar, maand)
-  const workshopDatums = new Set(mockWorkshops.map((w) => w.datum))
+  useEffect(() => {
+    const token = localStorage.getItem('token')
+    if (!token) {
+      navigate('/login')
+      return
+    }
+    fetchWorkshop()
+  }, [id])
 
-  const geselecteerdeDatum = geselecteerdeDag
-    ? `${jaar}-${String(maand + 1).padStart(2, '0')}-${String(geselecteerdeDag).padStart(2, '0')}`
-    : null
-
-  const zichtbareWorkshops = geselecteerdeDatum
-    ? mockWorkshops.filter((w) => w.datum === geselecteerdeDatum)
-    : mockWorkshops
-
-  function vorigemMaand() {
-    if (maand === 0) { setMaand(11); setJaar(j => j - 1) }
-    else setMaand(m => m - 1)
-    setGeselecteerdeDag(null)
+  async function fetchWorkshop() {
+    setLoading(true)
+    try {
+      const token = localStorage.getItem('token')
+      const response = await fetch(`http://187.124.29.171:8002/api/workshops/${id}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Accept: 'application/json',
+        },
+      })
+      const data = await response.json()
+      if (!response.ok) throw new Error(data.message)
+      setWorkshop(data.data)
+      setIngeschreven(data.data.is_registered)
+    } catch (error) {
+      toast.error('Workshop ophalen mislukt')
+      console.error(error)
+    } finally {
+      setLoading(false)
+    }
   }
 
-  function volgendeMaand() {
-    if (maand === 11) { setMaand(0); setJaar(j => j + 1) }
-    else setMaand(m => m + 1)
-    setGeselecteerdeDag(null)
+  async function handleInschrijven() {
+    const isSessionMode = workshop.registration_mode === 'session'
+    if (isSessionMode && !geselecteerdeSessie) {
+      toast.error('Kies eerst een sessie')
+      return
+    }
+
+    setRegistratieLoading(true)
+    try {
+      const token = localStorage.getItem('token')
+      const body = isSessionMode ? { session_id: geselecteerdeSessie } : {}
+      const response = await fetch(`http://187.124.29.171:8002/api/workshops/${id}/register`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(body),
+      })
+      const data = await response.json()
+      if (!response.ok) throw new Error(data.message)
+      toast.success(data.message || 'Je bent ingeschreven!')
+      await fetchWorkshop()
+    } catch (error) {
+      toast.error(error.message || 'Inschrijven mislukt')
+    } finally {
+      setRegistratieLoading(false)
+    }
+  }
+
+  async function handleUitschrijven() {
+    setRegistratieLoading(true)
+    try {
+      const token = localStorage.getItem('token')
+      const response = await fetch(`http://187.124.29.171:8002/api/workshops/${id}/unregister`, {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Accept: 'application/json',
+        },
+      })
+      const data = await response.json()
+      if (!response.ok) throw new Error(data.message)
+      toast.success(data.message || 'Je bent uitgeschreven')
+      await fetchWorkshop()
+    } catch (error) {
+      toast.error(error.message || 'Uitschrijven mislukt')
+    } finally {
+      setRegistratieLoading(false)
+    }
   }
 
   function formatDatum(datum) {
-    return new Date(datum).toLocaleDateString('nl-NL', { weekday: 'short', day: 'numeric', month: 'short' })
+    return new Date(datum).toLocaleDateString('nl-NL', {
+      weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
+    })
   }
 
   return (
     <div className="min-h-screen bg-[#1a3d2b] flex flex-col">
+      <Toaster position="top-right" richColors />
 
       {/* Header */}
       <motion.header
-        initial={{ opacity: 0, y: -10 }}
+        initial={{ opacity: 0, y: -16 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4 }}
+        transition={{ type: 'spring', stiffness: 400, damping: 36 }}
         className="px-6 py-5 flex items-center gap-3"
       >
         <motion.button
           whileHover={{ scale: 1.1, x: -2 }}
-          whileTap={{ scale: 0.9 }}
-          onClick={() => navigate('/home')}
+          whileTap={{ scale: 0.85 }}
+          onClick={() => navigate('/workshops')}
           className="text-white/40 hover:text-white transition-colors p-1.5 rounded-xl hover:bg-white/10"
         >
           <ChevronLeft className="w-5 h-5" />
         </motion.button>
-        <div className="w-7 h-7 bg-[#d4e84a] rounded-lg flex items-center justify-center">
+        <motion.div
+          whileHover={{ rotate: 8, scale: 1.1 }}
+          transition={{ type: 'spring', stiffness: 400, damping: 20 }}
+          className="w-7 h-7 bg-[#d4e84a] rounded-lg flex items-center justify-center cursor-default"
+        >
           <span className="text-[#1a3d2b] font-black text-xs">T</span>
-        </div>
+        </motion.div>
         <div className="flex flex-col leading-none">
           <span className="text-white font-bold text-xs tracking-tight">Techniek College</span>
           <span className="text-white/40 text-xs">Rotterdam</span>
@@ -89,201 +137,314 @@ function WorkshopOverzicht() {
       </motion.header>
 
       {/* Hero */}
-      <div className="px-6 pt-2 pb-8 relative overflow-hidden">
-        <div className="absolute -right-16 -top-8 w-56 h-56 bg-[#d4e84a]/5 rounded-full pointer-events-none" />
+      <div className="px-6 pt-2 pb-10 relative overflow-hidden">
         <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, delay: 0.1 }}
-        >
-          <h1 className="text-3xl font-black text-white tracking-tight leading-none">Workshops</h1>
+          animate={{ scale: [1, 1.12, 1], opacity: [0.06, 0.1, 0.06] }}
+          transition={{ duration: 7, repeat: Infinity, ease: 'easeInOut' }}
+          className="absolute -right-16 -top-8 w-64 h-64 bg-[#d4e84a] rounded-full pointer-events-none"
+        />
 
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ type: 'spring', stiffness: 300, damping: 30, delay: 0.1 }}
+        >
+          <motion.p
+            initial={{ opacity: 0, x: -12 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.2 }}
+            className="text-[#d4e84a] text-xs font-bold uppercase tracking-widest mb-2"
+          >
+            Workshop
+          </motion.p>
+
+          {loading ? (
+            <div className="space-y-2">
+              <div className="h-8 w-56 bg-white/10 rounded-xl animate-pulse" />
+              <div className="h-4 w-32 bg-white/10 rounded-full animate-pulse" />
+            </div>
+          ) : workshop ? (
+            <>
+              <h1 className="text-3xl font-black text-white tracking-tight leading-tight mb-2">
+                {workshop.title}
+              </h1>
+              {workshop.teacher && (
+                <span className="inline-flex items-center gap-1.5 bg-white/10 text-white/70 text-xs font-medium px-3 py-1.5 rounded-full">
+                  <User className="w-3 h-3" />
+                  {workshop.teacher}
+                </span>
+              )}
+            </>
+          ) : null}
         </motion.div>
       </div>
 
-      {/* Witte content sectie */}
-      <div className="flex-1 bg-gray-50 rounded-t-[2rem] px-5 pt-6 pb-8">
+      {/* Content */}
+      <div className="flex-1 bg-[#e4e8e2] rounded-t-[2.5rem] px-5 pt-7 pb-10">
+        <div className="max-w-2xl mx-auto flex flex-col gap-4">
 
-        {/* Hoofd layout — kalender + lijst naast elkaar */}
-        <div className="max-w-5xl mx-auto flex gap-5 items-start">
-
-          {/* Kalender */}
-          <motion.div
-            initial={{ opacity: 0, x: -16 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.4, delay: 0.2 }}
-            className="bg-white rounded-3xl border border-gray-100 shadow-sm p-5 w-64 shrink-0"
-          >
-            {/* Maand navigatie */}
-            <div className="flex items-center justify-between mb-4">
-              <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} onClick={vorigemMaand} className="p-1.5 rounded-xl hover:bg-gray-50 text-gray-300 hover:text-[#1a3d2b] transition-colors">
-                <ChevronLeft className="w-4 h-4" />
-              </motion.button>
-              <span className="text-xs font-bold text-[#1a3d2b]">{MAANDEN[maand]} {jaar}</span>
-              <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} onClick={volgendeMaand} className="p-1.5 rounded-xl hover:bg-gray-50 text-gray-300 hover:text-[#1a3d2b] transition-colors">
-                <ChevronRight className="w-4 h-4" />
-              </motion.button>
-            </div>
-
-            {/* Dag headers */}
-            <div className="grid grid-cols-7 mb-1">
-              {DAGEN_KORT.map((d) => (
-                <div key={d} className="text-center text-[10px] font-bold text-gray-300 py-1">{d}</div>
+          {/* Loading skeleton */}
+          {loading && (
+            <div className="flex flex-col gap-4">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="bg-white rounded-3xl border border-gray-100 overflow-hidden">
+                  <div className="h-0.5 bg-gray-100 animate-pulse" />
+                  <div className="p-5 space-y-3">
+                    <div className="h-4 w-32 bg-gray-100 rounded-full animate-pulse" />
+                    <div className="h-3 w-full bg-gray-100 rounded-full animate-pulse" />
+                    <div className="h-3 w-3/4 bg-gray-100 rounded-full animate-pulse" />
+                  </div>
+                </div>
               ))}
             </div>
+          )}
 
-            {/* Kalender dagen */}
-            <div className="grid grid-cols-7 gap-y-0.5">
-              {kalenderDagen.map((dag, index) => {
-                if (!dag) return <div key={`leeg-${index}`} />
-                const datumStr = `${jaar}-${String(maand + 1).padStart(2, '0')}-${String(dag).padStart(2, '0')}`
-                const heeftWorkshop = workshopDatums.has(datumStr)
-                const isGeselecteerd = geselecteerdeDag === dag
-                const isVandaag = dag === vandaag.getDate() && maand === vandaag.getMonth() && jaar === vandaag.getFullYear()
+          {/* Niet gevonden */}
+          {!loading && !workshop && (
+            <motion.div
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-white rounded-3xl border border-gray-100 p-10 text-center"
+            >
+              <div className="w-12 h-12 bg-gray-50 rounded-2xl flex items-center justify-center mx-auto mb-3">
+                <BookOpen className="w-5 h-5 text-gray-300" />
+              </div>
+              <p className="text-sm font-semibold text-gray-400 mb-3">Workshop niet gevonden</p>
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => navigate('/workshops')}
+                className="text-xs text-[#1a3d2b] font-bold bg-[#eaf3de] px-3 py-1.5 rounded-lg hover:bg-[#d4e84a] transition-colors"
+              >
+                Terug naar overzicht
+              </motion.button>
+            </motion.div>
+          )}
 
-                return (
-                  <motion.button
-                    key={dag}
-                    whileHover={{ scale: 1.15 }}
-                    whileTap={{ scale: 0.9 }}
-                    onClick={() => setGeselecteerdeDag(isGeselecteerd ? null : dag)}
-                    className={`relative flex items-center justify-center rounded-xl text-[11px] font-medium transition-all duration-150 mx-auto w-7 h-7
-                      ${isGeselecteerd ? 'bg-[#1a3d2b] text-[#d4e84a] font-bold shadow-md'
-                        : isVandaag ? 'bg-[#d4e84a] text-[#1a3d2b] font-bold'
-                        : heeftWorkshop ? 'text-[#1a3d2b] hover:bg-[#eaf3de]'
-                        : 'text-gray-300 hover:bg-gray-50'
-                      }`}
+          {!loading && workshop && (
+            <>
+              {/* Ingeschreven badge */}
+              <AnimatePresence>
+                {ingeschreven && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -8 }}
+                    className="flex items-center gap-2 bg-[#1a3d2b] text-[#d4e84a] px-4 py-3 rounded-2xl text-sm font-bold"
                   >
-                    {dag}
-                    {heeftWorkshop && !isGeselecteerd && (
-                      <span className="absolute bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-[#1a3d2b]" />
+                    <CheckCircle className="w-4 h-4" />
+                    Je bent ingeschreven voor deze workshop
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              {/* Info kaart */}
+              <motion.div
+                initial={{ opacity: 0, y: 14 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ type: 'spring', stiffness: 350, damping: 30, delay: 0.1 }}
+                className="bg-white rounded-3xl border border-gray-100 overflow-hidden shadow-sm"
+              >
+                <div className="h-0.5 bg-gradient-to-r from-[#1a3d2b] via-[#4a8c60] to-[#d4e84a]" />
+                <div className="p-5 flex flex-col gap-4">
+
+                  <div className="flex items-center gap-3">
+                    <div className="bg-gradient-to-br from-[#eaf3de] to-[#d4e84a]/30 p-2.5 rounded-xl shrink-0">
+                      <CalendarDays className="w-4 h-4 text-[#1a3d2b]" />
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-400">Datum</p>
+                      <p className="text-sm font-semibold text-[#1a3d2b] capitalize">
+                        {formatDatum(workshop.start_date.split(' ')[0])}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-3">
+                    <div className="bg-gradient-to-br from-[#eaf3de] to-[#d4e84a]/30 p-2.5 rounded-xl shrink-0">
+                      <Clock className="w-4 h-4 text-[#1a3d2b]" />
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-400">Tijd</p>
+                      <p className="text-sm font-semibold text-[#1a3d2b]">
+                        {workshop.start_date.split(' ')[1]} – {workshop.end_date.split(' ')[1]}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-3">
+                    <div className="bg-gradient-to-br from-[#eaf3de] to-[#d4e84a]/30 p-2.5 rounded-xl shrink-0">
+                      <MapPin className="w-4 h-4 text-[#1a3d2b]" />
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-400">Locatie</p>
+                      <p className="text-sm font-semibold text-[#1a3d2b]">{workshop.location}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-3">
+                    <div className={`p-2.5 rounded-xl shrink-0 ${workshop.is_full ? 'bg-red-50' : 'bg-gradient-to-br from-[#eaf3de] to-[#d4e84a]/30'}`}>
+                      <Users className={`w-4 h-4 ${workshop.is_full ? 'text-red-400' : 'text-[#1a3d2b]'}`} />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-xs text-gray-400">Beschikbare plekken</p>
+                      <p className={`text-sm font-semibold ${workshop.is_full ? 'text-red-500' : 'text-[#1a3d2b]'}`}>
+                        {workshop.is_full
+                          ? 'Vol — geen plekken meer beschikbaar'
+                          : `${workshop.spots_left} van ${workshop.capacity} plekken vrij`}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Voortgangsbalk */}
+                  <div className="flex items-center gap-2.5">
+                    <div className="flex-1 bg-gray-100 rounded-full h-1.5 overflow-hidden">
+                      <motion.div
+                        initial={{ width: 0 }}
+                        animate={{ width: `${Math.round((workshop.registered / workshop.capacity) * 100)}%` }}
+                        transition={{ duration: 0.9, delay: 0.3, ease: [0.4, 0, 0.2, 1] }}
+                        className={`h-full rounded-full ${workshop.is_full ? 'bg-gradient-to-r from-red-300 to-red-400' : 'bg-gradient-to-r from-[#1a3d2b] to-[#4a8c60]'}`}
+                      />
+                    </div>
+                    <span className={`text-xs font-bold shrink-0 ${workshop.is_full ? 'text-red-400' : 'text-[#1a3d2b]'}`}>
+                      {workshop.registered}/{workshop.capacity}
+                    </span>
+                  </div>
+
+                </div>
+              </motion.div>
+
+              {/* Beschrijving */}
+              <motion.div
+                initial={{ opacity: 0, y: 14 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ type: 'spring', stiffness: 350, damping: 30, delay: 0.18 }}
+                className="bg-white rounded-3xl border border-gray-100 overflow-hidden shadow-sm"
+              >
+                <div className="h-0.5 bg-gradient-to-r from-[#1a3d2b] via-[#4a8c60] to-[#d4e84a]" />
+                <div className="p-5">
+                  <h2 className="text-sm font-bold text-[#1a3d2b] mb-3">Over deze workshop</h2>
+                  <p className="text-sm text-gray-500 leading-relaxed">{workshop.description}</p>
+                </div>
+              </motion.div>
+
+              {/* Sessie-selectie (alleen als registration_mode === 'session') */}
+              {workshop.registration_mode === 'session' && workshop.sessions?.length > 0 && !ingeschreven && (
+                <motion.div
+                  initial={{ opacity: 0, y: 14 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ type: 'spring', stiffness: 350, damping: 30, delay: 0.26 }}
+                  className="bg-white rounded-3xl border border-gray-100 overflow-hidden shadow-sm"
+                >
+                  <div className="h-0.5 bg-gradient-to-r from-[#1a3d2b] via-[#4a8c60] to-[#d4e84a]" />
+                  <div className="p-5">
+                    <h2 className="text-sm font-bold text-[#1a3d2b] mb-3 flex items-center gap-2">
+                      <Tag className="w-3.5 h-3.5" />
+                      Kies een sessie
+                    </h2>
+                    <div className="flex flex-col gap-2">
+                      {workshop.sessions.map((sessie) => {
+                        const isGekozen = geselecteerdeSessie === sessie.id
+                        return (
+                          <motion.button
+                            key={sessie.id}
+                            whileHover={{ scale: sessie.is_full ? 1 : 1.01 }}
+                            whileTap={{ scale: sessie.is_full ? 1 : 0.98 }}
+                            disabled={sessie.is_full}
+                            onClick={() => setGeselecteerdeSessie(isGekozen ? null : sessie.id)}
+                            className={`w-full text-left px-4 py-3 rounded-2xl border-2 transition-all duration-150
+                              ${sessie.is_full
+                                ? 'border-gray-100 bg-gray-50 opacity-50 cursor-not-allowed'
+                                : isGekozen
+                                  ? 'border-[#1a3d2b] bg-[#eaf3de]'
+                                  : 'border-gray-100 hover:border-[#1a3d2b]/30 hover:bg-gray-50'
+                              }`}
+                          >
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <p className="text-sm font-semibold text-[#1a3d2b]">
+                                  {sessie.date} &middot; {sessie.start_time} – {sessie.end_time}
+                                </p>
+                                <p className="text-xs text-gray-400 mt-0.5">{sessie.location}</p>
+                              </div>
+                              <div className="flex items-center gap-2 shrink-0">
+                                {sessie.is_full ? (
+                                  <span className="text-xs font-bold text-red-400 bg-red-50 px-2 py-0.5 rounded-full">vol</span>
+                                ) : (
+                                  <span className="text-xs text-gray-400">{sessie.spots_left} vrij</span>
+                                )}
+                                {isGekozen && <CheckCircle className="w-4 h-4 text-[#1a3d2b]" />}
+                              </div>
+                            </div>
+                          </motion.button>
+                        )
+                      })}
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+
+              {/* Actie knoppen */}
+              <motion.div
+                initial={{ opacity: 0, y: 14 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ type: 'spring', stiffness: 350, damping: 30, delay: 0.34 }}
+                className="flex flex-col gap-2"
+              >
+                {!ingeschreven ? (
+                  <motion.button
+                    whileHover={{ scale: registratieLoading || workshop.is_full ? 1 : 1.02 }}
+                    whileTap={{ scale: registratieLoading || workshop.is_full ? 1 : 0.98 }}
+                    onClick={handleInschrijven}
+                    disabled={registratieLoading || workshop.is_full}
+                    className={`w-full rounded-2xl py-4 text-sm font-bold transition-colors flex items-center justify-center gap-2
+                      ${workshop.is_full
+                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                        : 'bg-[#d4e84a] text-[#1a3d2b] hover:bg-[#c8dc3e]'
+                      } disabled:opacity-60`}
+                  >
+                    {registratieLoading ? (
+                      <>
+                        <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                        </svg>
+                        Inschrijven...
+                      </>
+                    ) : workshop.is_full ? (
+                      'Workshop is vol'
+                    ) : (
+                      'Inschrijven'
                     )}
                   </motion.button>
-                )
-              })}
-            </div>
-
-            {/* Legenda */}
-            <div className="mt-4 pt-3 border-t border-gray-50 flex flex-col gap-1.5">
-              <div className="flex items-center gap-2 text-xs text-gray-400">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#1a3d2b] shrink-0" />
-                Workshop
-              </div>
-              <div className="flex items-center gap-2 text-xs text-gray-400">
-                <span className="w-5 h-4 rounded-md bg-[#d4e84a] shrink-0" />
-                Vandaag
-              </div>
-              {geselecteerdeDag && (
-                <motion.button
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  onClick={() => setGeselecteerdeDag(null)}
-                  className="mt-1 text-xs text-[#1a3d2b] font-bold hover:underline underline-offset-2 text-left"
-                >
-                  ✕ Filter wissen
-                </motion.button>
-              )}
-            </div>
-          </motion.div>
-
-          {/* Workshop lijst */}
-          <div className="flex-1 flex flex-col gap-3">
-
-            {/* Label */}
-            <AnimatePresence mode="wait">
-              <motion.p
-                key={geselecteerdeDag || 'alle'}
-                initial={{ opacity: 0, y: -6 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 6 }}
-                transition={{ duration: 0.2 }}
-                className="text-xs font-bold text-gray-400 uppercase tracking-widest"
-              >
-                {geselecteerdeDag
-                  ? `Workshops op ${formatDatum(`${jaar}-${String(maand + 1).padStart(2, '0')}-${String(geselecteerdeDag).padStart(2, '0')}`)}`
-                  : `Alle workshops (${mockWorkshops.length})`
-                }
-              </motion.p>
-            </AnimatePresence>
-
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={geselecteerdeDag || 'alle'}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.2 }}
-                className="flex flex-col gap-3"
-              >
-                {zichtbareWorkshops.length === 0 ? (
-                  <div className="bg-white rounded-3xl border border-gray-100 p-8 text-center">
-                    <p className="text-sm text-gray-400">Geen workshops op deze dag</p>
-                    <button onClick={() => setGeselecteerdeDag(null)} className="mt-2 text-xs text-[#1a3d2b] font-bold hover:underline">
-                      Alle workshops tonen
-                    </button>
-                  </div>
                 ) : (
-                  zichtbareWorkshops.map((workshop, index) => {
-                    const isVol = workshop.ingeschreven >= workshop.capaciteit
-                    const procentVol = Math.round((workshop.ingeschreven / workshop.capaciteit) * 100)
-
-                    return (
-                      <motion.div
-                        key={workshop.id}
-                        initial={{ opacity: 0, y: 12 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.3, delay: index * 0.06 }}
-                        whileHover={{ scale: 1.01, boxShadow: '0 4px 16px rgba(26,61,43,0.08)' }}
-                        whileTap={{ scale: 0.99 }}
-                        onClick={() => navigate(`/workshops/${workshop.id}`)}
-                        className="bg-white rounded-3xl border border-gray-100 p-5 cursor-pointer transition-all duration-150"
-                      >
-                        <div className="flex items-start gap-4">
-                          {/* Icoon */}
-                          <div className={`p-2.5 rounded-2xl shrink-0 ${isVol ? 'bg-red-50' : 'bg-[#eaf3de]'}`}>
-                            <BookOpen className={`w-4 h-4 ${isVol ? 'text-red-400' : 'text-[#1a3d2b]'}`} />
-                          </div>
-
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-1">
-                              <h2 className="text-sm font-bold text-[#1a3d2b]">{workshop.titel}</h2>
-                              {isVol && (
-                                <span className="bg-red-50 text-red-400 text-xs font-bold px-2 py-0.5 rounded-lg border border-red-100">vol</span>
-                              )}
-                            </div>
-                            <p className="text-xs text-gray-400 mb-3 leading-relaxed">{workshop.beschrijving}</p>
-
-                            <div className="flex flex-wrap gap-3 text-xs text-gray-400 mb-3">
-                              <span>📅 <span className="capitalize">{formatDatum(workshop.datum)}</span></span>
-                              <span>🕐 {workshop.tijd}</span>
-                              <span>📍 {workshop.locatie}</span>
-                            </div>
-
-                            {/* Voortgangsbalk */}
-                            <div className="flex items-center gap-2">
-                              <div className="flex-1 bg-gray-100 rounded-full h-1">
-                                <div
-                                  className={`h-1 rounded-full transition-all ${isVol ? 'bg-red-300' : 'bg-[#1a3d2b]'}`}
-                                  style={{ width: `${procentVol}%` }}
-                                />
-                              </div>
-                              <span className={`text-xs font-bold shrink-0 ${isVol ? 'text-red-400' : 'text-[#1a3d2b]'}`}>
-                                {workshop.ingeschreven}/{workshop.capaciteit}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                      </motion.div>
-                    )
-                  })
+                  <motion.button
+                    whileHover={{ scale: registratieLoading ? 1 : 1.02 }}
+                    whileTap={{ scale: registratieLoading ? 1 : 0.98 }}
+                    onClick={handleUitschrijven}
+                    disabled={registratieLoading}
+                    className="w-full rounded-2xl py-4 text-sm font-bold transition-colors flex items-center justify-center gap-2 bg-gray-100 text-gray-500 hover:bg-red-50 hover:text-red-500 disabled:opacity-60"
+                  >
+                    {registratieLoading ? (
+                      <>
+                        <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                        </svg>
+                        Uitschrijven...
+                      </>
+                    ) : (
+                      'Uitschrijven'
+                    )}
+                  </motion.button>
                 )}
               </motion.div>
-            </AnimatePresence>
-          </div>
+            </>
+          )}
         </div>
       </div>
     </div>
   )
 }
 
-export default WorkshopOverzicht
+export default WorkshopDetail
