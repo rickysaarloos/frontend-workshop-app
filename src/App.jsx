@@ -6,6 +6,8 @@ import WorkshopOverzicht from '@/pages/workshops/WorkshopOverzicht'
 import WorkshopDetail from '@/pages/workshops/WorkshopDetail'
 import Profiel from '@/pages/profiel/Profiel'
 import Home from '@/pages/home/Home'
+import EventDetail from '@/pages/events/EventDetail'
+
 
 function App() {
   return (
@@ -19,6 +21,7 @@ function App() {
         <Route path="/workshops/:id" element={<WorkshopDetail />} />
         <Route path="/profiel" element={<Profiel />} />
         <Route path="/home" element={<Home />} />
+        <Route path="/events/:id" element={<EventDetail />} />
       </Routes>
     </BrowserRouter>
   )
