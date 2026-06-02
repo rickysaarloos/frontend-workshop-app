@@ -4,18 +4,6 @@ import { motion, AnimatePresence } from 'motion/react'
 import { Mail, Lock, LogIn, ArrowRight } from 'lucide-react'
 import { toast, Toaster } from 'sonner'
 
-async function mockLogin(email, wachtwoord) {
-  await new Promise((resolve) => setTimeout(resolve, 900))
-  const mockUsers = [
-    { email: 'student@tcrmbo.nl', password: 'wachtwoord123', name: 'Jan de Vries', role: 'student' },
-    { email: 'docent@tcrmbo.nl', password: 'wachtwoord123', name: 'Mevr. Bakker', role: 'docent' },
-    { email: 'admin@tcrmbo.nl', password: 'wachtwoord123', name: 'Admin TCR', role: 'admin' },
-  ]
-  const user = mockUsers.find((u) => u.email === email && u.password === wachtwoord)
-  if (!user) throw { message: 'Deze combinatie van e-mailadres en wachtwoord klopt niet.' }
-  return { token: 'mock-token-12345', user: { id: 1, name: user.name, email: user.email, role: user.role } }
-}
-
 function Login() {
   const [email, setEmail] = useState('')
   const [wachtwoord, setWachtwoord] = useState('')
@@ -25,20 +13,53 @@ function Login() {
 
   async function handleSubmit(e) {
     e.preventDefault()
-    if (!email || !wachtwoord) { toast.error('Vul alle velden in'); return }
+
+    if (!email || !wachtwoord) {
+      toast.error('Vul alle velden in')
+      return
+    }
+
     setIsLoading(true)
+
     try {
-      const data = await mockLogin(email, wachtwoord)
+      const response = await fetch(
+        'http://187.124.29.171:8002/api/login',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Accept: 'application/json',
+          },
+          body: JSON.stringify({
+            email,
+            password: wachtwoord,
+          }),
+        }
+      )
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        toast.error(data.message || 'Inloggen mislukt')
+        return
+      }
+
       localStorage.setItem('token', data.token)
       localStorage.setItem('user', JSON.stringify(data.user))
+
       toast.success(`Welkom terug, ${data.user.name}!`)
-      setTimeout(() => navigate('/home'), 800)
-    } catch (err) {
-      toast.error(err.message || 'Inloggen mislukt, probeer opnieuw.')
+
+      setTimeout(() => {
+        navigate('/home')
+      }, 1000)
+
+    } catch (error) {
+      toast.error('Kan geen verbinding maken met de server')
     } finally {
       setIsLoading(false)
     }
   }
+
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
