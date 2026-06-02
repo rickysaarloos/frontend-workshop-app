@@ -9,7 +9,7 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://187.124.29.171:8002'
 function Home() {
   const navigate = useNavigate()
   const user = JSON.parse(localStorage.getItem('user') || 'null')
-  const voornaam = user?.name?.split(' ')[0] || 'Student'
+  const voornaam = user?.name?.split(' ')[0]
 
   const [workshops, setWorkshops] = useState([])
   const [aankomendEvent, setAankomendEvent] = useState(null)
