@@ -4,6 +4,8 @@ import { motion, AnimatePresence } from 'motion/react'
 import { ChevronLeft, ChevronRight, BookOpen, MapPin, Clock, Calendar, Users } from 'lucide-react'
 import { toast, Toaster } from 'sonner'
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://187.124.29.171:8002'
+
 const MAANDEN = ['Januari', 'Februari', 'Maart', 'April', 'Mei', 'Juni', 'Juli', 'Augustus', 'September', 'Oktober', 'November', 'December']
 const DAGEN_KORT = ['Ma', 'Di', 'Wo', 'Do', 'Vr', 'Za', 'Zo']
 
@@ -128,7 +130,7 @@ function WorkshopOverzicht() {
   async function fetchWorkshops() {
     try {
       const token = localStorage.getItem('token')
-      const response = await fetch('http://187.124.29.171:8002/api/workshops', {
+      const response = await fetch(`${API_URL}/api/workshops`, {
         headers: {
           Authorization: `Bearer ${token}`,
           Accept: 'application/json',

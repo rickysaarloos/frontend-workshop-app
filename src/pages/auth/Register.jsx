@@ -4,6 +4,8 @@ import { motion, AnimatePresence } from 'motion/react'
 import { Mail, Lock, User, UserPlus, ArrowRight } from 'lucide-react'
 import { toast, Toaster } from 'sonner'
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://187.124.29.171:8002'
+
 function Register() {
   const navigate = useNavigate()
   const [naam, setNaam] = useState('')
@@ -34,7 +36,7 @@ function Register() {
     setIsLoading(true)
 
     try {
-      const response = await fetch('http://187.124.29.171:8002/api/register', {
+      const response = await fetch(`${API_URL}/api/register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

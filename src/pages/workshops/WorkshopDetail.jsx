@@ -4,6 +4,8 @@ import { motion, AnimatePresence } from 'motion/react'
 import { ChevronLeft, CalendarDays, Clock, Users, CheckCircle, MapPin, BookOpen, User, Tag } from 'lucide-react'
 import { toast, Toaster } from 'sonner'
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://187.124.29.171:8002'
+
 function WorkshopDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
@@ -27,7 +29,7 @@ function WorkshopDetail() {
     setLoading(true)
     try {
       const token = localStorage.getItem('token')
-      const response = await fetch(`http://187.124.29.171:8002/api/workshops/${id}`, {
+      const response = await fetch(`${API_URL}/api/workshops/${id}`, {
         headers: {
           Authorization: `Bearer ${token}`,
           Accept: 'application/json',
@@ -56,7 +58,7 @@ function WorkshopDetail() {
     try {
       const token = localStorage.getItem('token')
       const body = isSessionMode ? { session_id: geselecteerdeSessie } : {}
-      const response = await fetch(`http://187.124.29.171:8002/api/workshops/${id}/register`, {
+      const response = await fetch(`${API_URL}/api/workshops/${id}/register`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`,
@@ -80,7 +82,7 @@ function WorkshopDetail() {
     setRegistratieLoading(true)
     try {
       const token = localStorage.getItem('token')
-      const response = await fetch(`http://187.124.29.171:8002/api/workshops/${id}/unregister`, {
+      const response = await fetch(`${API_URL}/api/workshops/${id}/unregister`, {
         method: 'DELETE',
         headers: {
           Authorization: `Bearer ${token}`,

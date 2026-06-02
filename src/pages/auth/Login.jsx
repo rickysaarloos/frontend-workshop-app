@@ -4,6 +4,8 @@ import { motion, AnimatePresence } from 'motion/react'
 import { Mail, Lock, LogIn, ArrowRight } from 'lucide-react'
 import { toast, Toaster } from 'sonner'
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://187.124.29.171:8002'
+
 function Login() {
   const [email, setEmail] = useState('')
   const [wachtwoord, setWachtwoord] = useState('')
@@ -23,7 +25,7 @@ function Login() {
 
     try {
       const response = await fetch(
-        'http://187.124.29.171:8002/api/login',
+        `${API_URL}/api/login`,
         {
           method: 'POST',
           headers: {
