@@ -118,16 +118,7 @@ function Register() {
             transition={{ duration: 0.5, delay: 0.15 }}
             className="bg-white rounded-3xl border border-gray-100 p-8 shadow-lg shadow-gray-100/80"
           >
-            {/* Mock tip */}
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              transition={{ duration: 0.4, delay: 0.4 }}
-              className="mb-6 p-3.5 bg-amber-50 border border-amber-100 rounded-2xl text-xs text-amber-700"
-            >
-              <p className="font-semibold mb-1">🔧 Mock modus actief</p>
-              <p className="text-amber-600">Vul een willekeurig e-mailadres in. Test fout: <span className="font-medium">bezet@tcrmbo.nl</span></p>
-            </motion.div>
+
 
             <form onSubmit={handleSubmit} className="flex flex-col gap-4">
 
