@@ -1,16 +1,11 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'motion/react'
 import { ChevronLeft, ChevronRight, BookOpen } from 'lucide-react'
+import { toast } from 'sonner'
 
-const mockWorkshops = [
-  { id: 1, titel: 'Workshop Lassen', beschrijving: 'Leer de basis van het lassen met professioneel materiaal.', datum: '2026-06-10', tijd: '09:00 - 12:00', locatie: 'Lokaal B203', capaciteit: 15, ingeschreven: 11 },
-  { id: 2, titel: 'Workshop 3D Printen', beschrijving: 'Ontwerp en print je eigen 3D model.', datum: '2026-06-10', tijd: '13:00 - 16:00', locatie: 'Medialab A101', capaciteit: 10, ingeschreven: 10 },
-  { id: 3, titel: 'Workshop Elektrotechniek', beschrijving: 'Van schakelschema tot werkend circuit.', datum: '2026-06-12', tijd: '10:00 - 13:00', locatie: 'Practicum C105', capaciteit: 12, ingeschreven: 5 },
-  { id: 4, titel: 'Workshop CNC Frezen', beschrijving: 'Werken met CNC freesmachines in de praktijk.', datum: '2026-06-15', tijd: '09:00 - 12:00', locatie: 'Werkplaats D01', capaciteit: 8, ingeschreven: 3 },
-  { id: 5, titel: 'Workshop Robotica', beschrijving: 'Programmeer en bouw je eigen kleine robot.', datum: '2026-06-17', tijd: '13:00 - 17:00', locatie: 'Lab B105', capaciteit: 10, ingeschreven: 8 },
-  { id: 6, titel: 'Workshop Houtbewerking', beschrijving: 'Maak kennis met de houtbewerkingsmachines van TCR.', datum: '2026-06-20', tijd: '09:00 - 12:00', locatie: 'Werkplaats E02', capaciteit: 12, ingeschreven: 6 },
-]
+
+
 
 const MAANDEN = ['Januari', 'Februari', 'Maart', 'April', 'Mei', 'Juni', 'Juli', 'Augustus', 'September', 'Oktober', 'November', 'December']
 const DAGEN_KORT = ['Ma', 'Di', 'Wo', 'Do', 'Vr', 'Za', 'Zo']
@@ -26,7 +21,41 @@ function getKalenderDagen(jaar, maand) {
   return dagen
 }
 
-function WorkshopOverzicht() {
+function WorkshopOverzicht() { const [workshops, setWorkshops] = useState([])
+const [loading, setLoading] = useState(true)
+
+useEffect(() => {
+  async function fetchWorkshops() {
+    try {
+      const token = localStorage.getItem('token')
+
+      const response = await fetch(
+        'http://187.124.29.171:8002/api/workshops',
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            Accept: 'application/json',
+          },
+        }
+      )
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.message)
+      }
+
+      setWorkshops(data.data)
+    } catch (error) {
+      toast.error('Workshops ophalen mislukt')
+      console.error(error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  fetchWorkshops()
+}, [])
   const navigate = useNavigate()
   const vandaag = new Date()
 
@@ -35,15 +64,22 @@ function WorkshopOverzicht() {
   const [geselecteerdeDag, setGeselecteerdeDag] = useState(null)
 
   const kalenderDagen = getKalenderDagen(jaar, maand)
-  const workshopDatums = new Set(mockWorkshops.map((w) => w.datum))
+ const workshopDatums = new Set(
+  workshops.map((w) =>
+    w.start_date.split(' ')[0]
+  )
+)
 
   const geselecteerdeDatum = geselecteerdeDag
     ? `${jaar}-${String(maand + 1).padStart(2, '0')}-${String(geselecteerdeDag).padStart(2, '0')}`
     : null
 
-  const zichtbareWorkshops = geselecteerdeDatum
-    ? mockWorkshops.filter((w) => w.datum === geselecteerdeDatum)
-    : mockWorkshops
+const zichtbareWorkshops = geselecteerdeDatum
+  ? workshops.filter(
+      (w) =>
+        w.start_date.split(' ')[0] === geselecteerdeDatum
+    )
+  : workshops
 
   function vorigemMaand() {
     if (maand === 0) { setMaand(11); setJaar(j => j - 1) }
@@ -201,7 +237,7 @@ function WorkshopOverzicht() {
               >
                 {geselecteerdeDag
                   ? `Workshops op ${formatDatum(`${jaar}-${String(maand + 1).padStart(2, '0')}-${String(geselecteerdeDag).padStart(2, '0')}`)}`
-                  : `Alle workshops (${mockWorkshops.length})`
+                  : `Alle workshops (${workshops.length})`
                 }
               </motion.p>
             </AnimatePresence>
@@ -224,8 +260,17 @@ function WorkshopOverzicht() {
                   </div>
                 ) : (
                   zichtbareWorkshops.map((workshop, index) => {
-                    const isVol = workshop.ingeschreven >= workshop.capaciteit
-                    const procentVol = Math.round((workshop.ingeschreven / workshop.capaciteit) * 100)
+                    const isVol = workshop.is_full
+                    const procentVol = Math.round((workshop.registered / workshop.capacity) * 100)
+
+                    if (loading) {
+  return (
+    <div className="min-h-screen flex items-center justify-center">
+      Workshops laden...
+    </div>
+  )
+}
+
 
                     return (
                       <motion.div
@@ -246,17 +291,17 @@ function WorkshopOverzicht() {
 
                           <div className="flex-1">
                             <div className="flex items-center gap-2 mb-1">
-                              <h2 className="text-sm font-bold text-[#1a3d2b]">{workshop.titel}</h2>
+                              <h2 className="text-sm font-bold text-[#1a3d2b]">{workshop.title}</h2>
                               {isVol && (
                                 <span className="bg-red-50 text-red-400 text-xs font-bold px-2 py-0.5 rounded-lg border border-red-100">vol</span>
                               )}
                             </div>
-                            <p className="text-xs text-gray-400 mb-3 leading-relaxed">{workshop.beschrijving}</p>
+                            <p className="text-xs text-gray-400 mb-3 leading-relaxed">{workshop.description}</p>
 
                             <div className="flex flex-wrap gap-3 text-xs text-gray-400 mb-3">
-                              <span>📅 <span className="capitalize">{formatDatum(workshop.datum)}</span></span>
-                              <span>🕐 {workshop.tijd}</span>
-                              <span>📍 {workshop.locatie}</span>
+                              <span>📅 <span className="capitalize">{formatDatum(workshop.start_date.split(' ')[0])}</span></span>
+                              <span>🕐 {workshop.start_date.split(' ')[1]} -{workshop.end_date.split(' ')[1]}</span>
+                              <span>📍 {workshop.location}</span>
                             </div>
 
                             {/* Voortgangsbalk */}
@@ -268,7 +313,7 @@ function WorkshopOverzicht() {
                                 />
                               </div>
                               <span className={`text-xs font-bold shrink-0 ${isVol ? 'text-red-400' : 'text-[#1a3d2b]'}`}>
-                                {workshop.ingeschreven}/{workshop.capaciteit}
+                                {workshop.registered}/{workshop.capacity}
                               </span>
                             </div>
                           </div>
