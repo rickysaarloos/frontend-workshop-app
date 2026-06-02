@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { motion, AnimatePresence } from 'motion/react'
-import { ChevronLeft, CalendarDays, Clock, Users, CheckCircle, MapPin, BookOpen, User, Tag } from 'lucide-react'
+import { ChevronLeft, CalendarDays, Clock, Users, CheckCircle, MapPin, BookOpen, User, Tag, Moon, Sun } from 'lucide-react'
 import { toast, Toaster } from 'sonner'
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://187.124.29.171:8002'
@@ -15,6 +15,15 @@ function WorkshopDetail() {
   const [ingeschreven, setIngeschreven] = useState(false)
   const [registratieLoading, setRegistratieLoading] = useState(false)
   const [geselecteerdeSessie, setGeselecteerdeSessie] = useState(null)
+  const [dark, setDark] = useState(() => localStorage.getItem('theme') === 'dark')
+
+  function toggleDark() {
+    setDark(d => {
+      const next = !d
+      localStorage.setItem('theme', next ? 'dark' : 'light')
+      return next
+    })
+  }
 
   useEffect(() => {
     const token = localStorage.getItem('token')
@@ -106,8 +115,19 @@ function WorkshopDetail() {
     })
   }
 
+  const d = dark
+  const contentBg  = d ? 'bg-[#111111]'       : 'bg-[#e4e8e2]'
+  const cardBg     = d ? 'bg-[#1c1c1e]'       : 'bg-white'
+  const cardBorder = d ? 'border-white/[0.07]' : 'border-gray-100'
+  const skelBg     = d ? 'bg-white/[0.07]'    : 'bg-gray-100'
+  const titleClr   = d ? 'text-white'          : 'text-[#1a3d2b]'
+  const subClr     = d ? 'text-white/45'       : 'text-gray-400'
+  const iconBg     = d ? 'bg-[#d4e84a]/12'     : 'bg-gradient-to-br from-[#eaf3de] to-[#d4e84a]/30'
+  const iconClr    = d ? 'text-[#d4e84a]'      : 'text-[#1a3d2b]'
+  const barBg      = d ? 'bg-white/10'         : 'bg-gray-100'
+
   return (
-    <div className="min-h-screen bg-[#1a3d2b] flex flex-col">
+    <div className="min-h-[100dvh] bg-[#1a3d2b] flex flex-col">
       <Toaster position="top-right" richColors />
 
       {/* Header */}
@@ -115,27 +135,61 @@ function WorkshopDetail() {
         initial={{ opacity: 0, y: -16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ type: 'spring', stiffness: 400, damping: 36 }}
-        className="px-6 py-5 flex items-center gap-3"
+        className="px-6 py-5 flex items-center justify-between"
       >
-        <motion.button
-          whileHover={{ scale: 1.1, x: -2 }}
-          whileTap={{ scale: 0.85 }}
-          onClick={() => navigate('/workshops')}
-          className="text-white/40 hover:text-white transition-colors p-1.5 rounded-xl hover:bg-white/10"
-        >
-          <ChevronLeft className="w-5 h-5" />
-        </motion.button>
-        <motion.div
-          whileHover={{ rotate: 8, scale: 1.1 }}
-          transition={{ type: 'spring', stiffness: 400, damping: 20 }}
-          className="w-7 h-7 bg-[#d4e84a] rounded-lg flex items-center justify-center cursor-default"
-        >
-          <span className="text-[#1a3d2b] font-black text-xs">T</span>
-        </motion.div>
-        <div className="flex flex-col leading-none">
-          <span className="text-white font-bold text-xs tracking-tight">Techniek College</span>
-          <span className="text-white/40 text-xs">Rotterdam</span>
+        <div className="flex items-center gap-3">
+          <motion.button
+            whileHover={{ scale: 1.1, x: -2 }}
+            whileTap={{ scale: 0.85 }}
+            onClick={() => navigate('/workshops')}
+            className="text-white/40 hover:text-white transition-colors p-1.5 rounded-xl hover:bg-white/10"
+          >
+            <ChevronLeft className="w-5 h-5" />
+          </motion.button>
+          <motion.div
+            whileHover={{ rotate: 8, scale: 1.1 }}
+            transition={{ type: 'spring', stiffness: 400, damping: 20 }}
+            className="w-7 h-7 bg-[#d4e84a] rounded-lg flex items-center justify-center cursor-default"
+          >
+            <span className="text-[#1a3d2b] font-black text-xs">T</span>
+          </motion.div>
+          <div className="flex flex-col leading-none">
+            <span className="text-white font-bold text-xs tracking-tight">Techniek College</span>
+            <span className="text-white/40 text-xs">Rotterdam</span>
+          </div>
         </div>
+
+        <motion.button
+          whileHover={{ scale: 1.08 }}
+          whileTap={{ scale: 0.88 }}
+          onClick={toggleDark}
+          className="w-8 h-8 flex items-center justify-center rounded-xl hover:bg-white/10 transition-colors text-white/40 hover:text-white/70"
+          aria-label="Wissel kleurmodus"
+        >
+          <AnimatePresence mode="wait">
+            {dark ? (
+              <motion.div
+                key="sun"
+                initial={{ opacity: 0, rotate: -40, scale: 0.6 }}
+                animate={{ opacity: 1, rotate: 0, scale: 1 }}
+                exit={{ opacity: 0, rotate: 40, scale: 0.6 }}
+                transition={{ duration: 0.18 }}
+              >
+                <Sun className="w-4 h-4" />
+              </motion.div>
+            ) : (
+              <motion.div
+                key="moon"
+                initial={{ opacity: 0, rotate: 40, scale: 0.6 }}
+                animate={{ opacity: 1, rotate: 0, scale: 1 }}
+                exit={{ opacity: 0, rotate: -40, scale: 0.6 }}
+                transition={{ duration: 0.18 }}
+              >
+                <Moon className="w-4 h-4" />
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </motion.button>
       </motion.header>
 
       {/* Hero */}
@@ -182,19 +236,19 @@ function WorkshopDetail() {
       </div>
 
       {/* Content */}
-      <div className="flex-1 bg-[#e4e8e2] rounded-t-[2.5rem] px-5 pt-7 pb-10">
+      <div className={`flex-1 ${contentBg} rounded-t-[2.5rem] px-5 pt-7 pb-10`}>
         <div className="max-w-2xl mx-auto flex flex-col gap-4">
 
           {/* Loading skeleton */}
           {loading && (
             <div className="flex flex-col gap-4">
               {[1, 2, 3].map((i) => (
-                <div key={i} className="bg-white rounded-3xl border border-gray-100 overflow-hidden">
-                  <div className="h-0.5 bg-gray-100 animate-pulse" />
+                <div key={i} className={`${cardBg} rounded-3xl border ${cardBorder} overflow-hidden`}>
+                  <div className={`h-0.5 ${skelBg} animate-pulse`} />
                   <div className="p-5 space-y-3">
-                    <div className="h-4 w-32 bg-gray-100 rounded-full animate-pulse" />
-                    <div className="h-3 w-full bg-gray-100 rounded-full animate-pulse" />
-                    <div className="h-3 w-3/4 bg-gray-100 rounded-full animate-pulse" />
+                    <div className={`h-4 w-32 ${skelBg} rounded-full animate-pulse`} />
+                    <div className={`h-3 w-full ${skelBg} rounded-full animate-pulse`} />
+                    <div className={`h-3 w-3/4 ${skelBg} rounded-full animate-pulse`} />
                   </div>
                 </div>
               ))}
@@ -206,17 +260,19 @@ function WorkshopDetail() {
             <motion.div
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
-              className="bg-white rounded-3xl border border-gray-100 p-10 text-center"
+              className={`${cardBg} rounded-3xl border ${cardBorder} p-10 text-center`}
             >
-              <div className="w-12 h-12 bg-gray-50 rounded-2xl flex items-center justify-center mx-auto mb-3">
-                <BookOpen className="w-5 h-5 text-gray-300" />
+              <div className={`w-12 h-12 ${d ? 'bg-white/[0.05]' : 'bg-gray-50'} rounded-2xl flex items-center justify-center mx-auto mb-3`}>
+                <BookOpen className={`w-5 h-5 ${d ? 'text-white/20' : 'text-gray-300'}`} />
               </div>
-              <p className="text-sm font-semibold text-gray-400 mb-3">Workshop niet gevonden</p>
+              <p className={`text-sm font-semibold mb-3 ${subClr}`}>Workshop niet gevonden</p>
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => navigate('/workshops')}
-                className="text-xs text-[#1a3d2b] font-bold bg-[#eaf3de] px-3 py-1.5 rounded-lg hover:bg-[#d4e84a] transition-colors"
+                className={`text-xs font-bold px-3 py-1.5 rounded-lg transition-colors ${
+                  d ? 'text-[#d4e84a] bg-[#d4e84a]/10 hover:bg-[#d4e84a]/20' : 'text-[#1a3d2b] bg-[#eaf3de] hover:bg-[#d4e84a]'
+                }`}
               >
                 Terug naar overzicht
               </motion.button>
@@ -245,52 +301,52 @@ function WorkshopDetail() {
                 initial={{ opacity: 0, y: 14 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ type: 'spring', stiffness: 350, damping: 30, delay: 0.1 }}
-                className="bg-white rounded-3xl border border-gray-100 overflow-hidden shadow-sm"
+                className={`${cardBg} rounded-3xl border ${cardBorder} overflow-hidden shadow-sm`}
               >
                 <div className="h-0.5 bg-gradient-to-r from-[#1a3d2b] via-[#4a8c60] to-[#d4e84a]" />
                 <div className="p-5 flex flex-col gap-4">
 
                   <div className="flex items-center gap-3">
-                    <div className="bg-gradient-to-br from-[#eaf3de] to-[#d4e84a]/30 p-2.5 rounded-xl shrink-0">
-                      <CalendarDays className="w-4 h-4 text-[#1a3d2b]" />
+                    <div className={`${iconBg} p-2.5 rounded-xl shrink-0`}>
+                      <CalendarDays className={`w-4 h-4 ${iconClr}`} />
                     </div>
                     <div>
-                      <p className="text-xs text-gray-400">Datum</p>
-                      <p className="text-sm font-semibold text-[#1a3d2b] capitalize">
+                      <p className={`text-xs ${subClr}`}>Datum</p>
+                      <p className={`text-sm font-semibold capitalize ${titleClr}`}>
                         {formatDatum(workshop.start_date.split(' ')[0])}
                       </p>
                     </div>
                   </div>
 
                   <div className="flex items-center gap-3">
-                    <div className="bg-gradient-to-br from-[#eaf3de] to-[#d4e84a]/30 p-2.5 rounded-xl shrink-0">
-                      <Clock className="w-4 h-4 text-[#1a3d2b]" />
+                    <div className={`${iconBg} p-2.5 rounded-xl shrink-0`}>
+                      <Clock className={`w-4 h-4 ${iconClr}`} />
                     </div>
                     <div>
-                      <p className="text-xs text-gray-400">Tijd</p>
-                      <p className="text-sm font-semibold text-[#1a3d2b]">
+                      <p className={`text-xs ${subClr}`}>Tijd</p>
+                      <p className={`text-sm font-semibold ${titleClr}`}>
                         {workshop.start_date.split(' ')[1]} – {workshop.end_date.split(' ')[1]}
                       </p>
                     </div>
                   </div>
 
                   <div className="flex items-center gap-3">
-                    <div className="bg-gradient-to-br from-[#eaf3de] to-[#d4e84a]/30 p-2.5 rounded-xl shrink-0">
-                      <MapPin className="w-4 h-4 text-[#1a3d2b]" />
+                    <div className={`${iconBg} p-2.5 rounded-xl shrink-0`}>
+                      <MapPin className={`w-4 h-4 ${iconClr}`} />
                     </div>
                     <div>
-                      <p className="text-xs text-gray-400">Locatie</p>
-                      <p className="text-sm font-semibold text-[#1a3d2b]">{workshop.location}</p>
+                      <p className={`text-xs ${subClr}`}>Locatie</p>
+                      <p className={`text-sm font-semibold ${titleClr}`}>{workshop.location}</p>
                     </div>
                   </div>
 
                   <div className="flex items-center gap-3">
-                    <div className={`p-2.5 rounded-xl shrink-0 ${workshop.is_full ? 'bg-red-50' : 'bg-gradient-to-br from-[#eaf3de] to-[#d4e84a]/30'}`}>
-                      <Users className={`w-4 h-4 ${workshop.is_full ? 'text-red-400' : 'text-[#1a3d2b]'}`} />
+                    <div className={`p-2.5 rounded-xl shrink-0 ${workshop.is_full ? 'bg-red-50' : iconBg}`}>
+                      <Users className={`w-4 h-4 ${workshop.is_full ? 'text-red-400' : iconClr}`} />
                     </div>
                     <div className="flex-1">
-                      <p className="text-xs text-gray-400">Beschikbare plekken</p>
-                      <p className={`text-sm font-semibold ${workshop.is_full ? 'text-red-500' : 'text-[#1a3d2b]'}`}>
+                      <p className={`text-xs ${subClr}`}>Beschikbare plekken</p>
+                      <p className={`text-sm font-semibold ${workshop.is_full ? 'text-red-500' : titleClr}`}>
                         {workshop.is_full
                           ? 'Vol — geen plekken meer beschikbaar'
                           : `${workshop.spots_left} van ${workshop.capacity} plekken vrij`}
@@ -300,7 +356,7 @@ function WorkshopDetail() {
 
                   {/* Voortgangsbalk */}
                   <div className="flex items-center gap-2.5">
-                    <div className="flex-1 bg-gray-100 rounded-full h-1.5 overflow-hidden">
+                    <div className={`flex-1 ${barBg} rounded-full h-1.5 overflow-hidden`}>
                       <motion.div
                         initial={{ width: 0 }}
                         animate={{ width: `${Math.round((workshop.registered / workshop.capacity) * 100)}%` }}
@@ -308,7 +364,7 @@ function WorkshopDetail() {
                         className={`h-full rounded-full ${workshop.is_full ? 'bg-gradient-to-r from-red-300 to-red-400' : 'bg-gradient-to-r from-[#1a3d2b] to-[#4a8c60]'}`}
                       />
                     </div>
-                    <span className={`text-xs font-bold shrink-0 ${workshop.is_full ? 'text-red-400' : 'text-[#1a3d2b]'}`}>
+                    <span className={`text-xs font-bold shrink-0 ${workshop.is_full ? 'text-red-400' : titleClr}`}>
                       {workshop.registered}/{workshop.capacity}
                     </span>
                   </div>
@@ -321,26 +377,26 @@ function WorkshopDetail() {
                 initial={{ opacity: 0, y: 14 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ type: 'spring', stiffness: 350, damping: 30, delay: 0.18 }}
-                className="bg-white rounded-3xl border border-gray-100 overflow-hidden shadow-sm"
+                className={`${cardBg} rounded-3xl border ${cardBorder} overflow-hidden shadow-sm`}
               >
                 <div className="h-0.5 bg-gradient-to-r from-[#1a3d2b] via-[#4a8c60] to-[#d4e84a]" />
                 <div className="p-5">
-                  <h2 className="text-sm font-bold text-[#1a3d2b] mb-3">Over deze workshop</h2>
-                  <p className="text-sm text-gray-500 leading-relaxed">{workshop.description}</p>
+                  <h2 className={`text-sm font-bold mb-3 ${titleClr}`}>Over deze workshop</h2>
+                  <p className={`text-sm leading-relaxed ${subClr}`}>{workshop.description}</p>
                 </div>
               </motion.div>
 
-              {/* Sessie-selectie (alleen als registration_mode === 'session') */}
+              {/* Sessie-selectie */}
               {workshop.registration_mode === 'session' && workshop.sessions?.length > 0 && !ingeschreven && (
                 <motion.div
                   initial={{ opacity: 0, y: 14 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ type: 'spring', stiffness: 350, damping: 30, delay: 0.26 }}
-                  className="bg-white rounded-3xl border border-gray-100 overflow-hidden shadow-sm"
+                  className={`${cardBg} rounded-3xl border ${cardBorder} overflow-hidden shadow-sm`}
                 >
                   <div className="h-0.5 bg-gradient-to-r from-[#1a3d2b] via-[#4a8c60] to-[#d4e84a]" />
                   <div className="p-5">
-                    <h2 className="text-sm font-bold text-[#1a3d2b] mb-3 flex items-center gap-2">
+                    <h2 className={`text-sm font-bold mb-3 flex items-center gap-2 ${titleClr}`}>
                       <Tag className="w-3.5 h-3.5" />
                       Kies een sessie
                     </h2>
@@ -356,26 +412,26 @@ function WorkshopDetail() {
                             onClick={() => setGeselecteerdeSessie(isGekozen ? null : sessie.id)}
                             className={`w-full text-left px-4 py-3 rounded-2xl border-2 transition-all duration-150
                               ${sessie.is_full
-                                ? 'border-gray-100 bg-gray-50 opacity-50 cursor-not-allowed'
+                                ? d ? 'border-white/[0.05] bg-white/[0.03] opacity-50 cursor-not-allowed' : 'border-gray-100 bg-gray-50 opacity-50 cursor-not-allowed'
                                 : isGekozen
-                                  ? 'border-[#1a3d2b] bg-[#eaf3de]'
-                                  : 'border-gray-100 hover:border-[#1a3d2b]/30 hover:bg-gray-50'
+                                  ? d ? 'border-[#d4e84a]/50 bg-[#d4e84a]/10' : 'border-[#1a3d2b] bg-[#eaf3de]'
+                                  : d ? 'border-white/[0.07] hover:border-white/20 hover:bg-white/[0.06]' : 'border-gray-100 hover:border-[#1a3d2b]/30 hover:bg-gray-50'
                               }`}
                           >
                             <div className="flex items-center justify-between">
                               <div>
-                                <p className="text-sm font-semibold text-[#1a3d2b]">
+                                <p className={`text-sm font-semibold ${titleClr}`}>
                                   {sessie.date} &middot; {sessie.start_time} – {sessie.end_time}
                                 </p>
-                                <p className="text-xs text-gray-400 mt-0.5">{sessie.location}</p>
+                                <p className={`text-xs mt-0.5 ${subClr}`}>{sessie.location}</p>
                               </div>
                               <div className="flex items-center gap-2 shrink-0">
                                 {sessie.is_full ? (
                                   <span className="text-xs font-bold text-red-400 bg-red-50 px-2 py-0.5 rounded-full">vol</span>
                                 ) : (
-                                  <span className="text-xs text-gray-400">{sessie.spots_left} vrij</span>
+                                  <span className={`text-xs ${subClr}`}>{sessie.spots_left} vrij</span>
                                 )}
-                                {isGekozen && <CheckCircle className="w-4 h-4 text-[#1a3d2b]" />}
+                                {isGekozen && <CheckCircle className={`w-4 h-4 ${d ? 'text-[#d4e84a]' : 'text-[#1a3d2b]'}`} />}
                               </div>
                             </div>
                           </motion.button>
@@ -401,7 +457,7 @@ function WorkshopDetail() {
                     disabled={registratieLoading || workshop.is_full}
                     className={`w-full rounded-2xl py-4 text-sm font-bold transition-colors flex items-center justify-center gap-2
                       ${workshop.is_full
-                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                        ? d ? 'bg-white/[0.05] text-white/25 cursor-not-allowed' : 'bg-gray-100 text-gray-400 cursor-not-allowed'
                         : 'bg-[#d4e84a] text-[#1a3d2b] hover:bg-[#c8dc3e]'
                       } disabled:opacity-60`}
                   >
@@ -425,7 +481,8 @@ function WorkshopDetail() {
                     whileTap={{ scale: registratieLoading ? 1 : 0.98 }}
                     onClick={handleUitschrijven}
                     disabled={registratieLoading}
-                    className="w-full rounded-2xl py-4 text-sm font-bold transition-colors flex items-center justify-center gap-2 bg-gray-100 text-gray-500 hover:bg-red-50 hover:text-red-500 disabled:opacity-60"
+                    className={`w-full rounded-2xl py-4 text-sm font-bold transition-colors flex items-center justify-center gap-2 disabled:opacity-60
+                      ${d ? 'bg-white/[0.07] text-white/40 hover:bg-red-900/30 hover:text-red-400' : 'bg-gray-100 text-gray-500 hover:bg-red-50 hover:text-red-500'}`}
                   >
                     {registratieLoading ? (
                       <>

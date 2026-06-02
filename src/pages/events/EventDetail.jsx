@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { motion, AnimatePresence } from 'motion/react'
-import { ChevronLeft, CalendarDays, Clock, MapPin, Users, CheckCircle, Calendar } from 'lucide-react'
+import { ChevronLeft, CalendarDays, Clock, MapPin, Users, CheckCircle, Calendar, Moon, Sun } from 'lucide-react'
 import { toast, Toaster } from 'sonner'
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://187.124.29.171:8002'
@@ -37,8 +37,8 @@ function formatDatumKort(datum) {
 
 function formatTijd(days) {
   if (!days?.length) return ''
-  const d = days[0]
-  return `${d.start_time} - ${d.end_time}`
+  const day = days[0]
+  return `${day.start_time} - ${day.end_time}`
 }
 
 export default function EventDetail() {
@@ -49,6 +49,15 @@ export default function EventDetail() {
   const [loading, setLoading] = useState(true)
   const [ingeschreven, setIngeschreven] = useState(false)
   const [registreerLoading, setRegistreerLoading] = useState(false)
+  const [dark, setDark] = useState(() => localStorage.getItem('theme') === 'dark')
+
+  function toggleDark() {
+    setDark(d => {
+      const next = !d
+      localStorage.setItem('theme', next ? 'dark' : 'light')
+      return next
+    })
+  }
 
   useEffect(() => {
     const token = localStorage.getItem('token')
@@ -118,8 +127,20 @@ export default function EventDetail() {
   const isFull = event?.is_full ?? false
   const spotsPct = capacity ? Math.round((registered / capacity) * 100) : null
 
+  const d = dark
+  const contentBg  = d ? 'bg-[#111111]'       : 'bg-[#e4e8e2]'
+  const cardBg     = d ? 'bg-[#1c1c1e]'       : 'bg-white'
+  const cardBorder = d ? 'border-white/[0.07]' : 'border-gray-100'
+  const skelBg     = d ? 'bg-white/[0.07]'    : 'bg-gray-100'
+  const titleClr   = d ? 'text-white'          : 'text-[#1a3d2b]'
+  const subClr     = d ? 'text-white/45'       : 'text-gray-400'
+  const iconBg     = d ? 'bg-[#d4e84a]/12'     : 'bg-gradient-to-br from-[#eaf3de] to-[#d4e84a]/30'
+  const iconClr    = d ? 'text-[#d4e84a]'      : 'text-[#1a3d2b]'
+  const barBg      = d ? 'bg-white/10'         : 'bg-gray-100'
+  const rowBorder  = d ? 'border-white/[0.05]' : 'border-gray-50'
+
   return (
-    <div className="min-h-screen bg-[#1a3d2b] flex flex-col">
+    <div className="min-h-[100dvh] bg-[#1a3d2b] flex flex-col">
       <Toaster position="top-right" richColors />
 
       {/* Header */}
@@ -127,27 +148,61 @@ export default function EventDetail() {
         initial={{ opacity: 0, y: -16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ type: 'spring', stiffness: 400, damping: 36 }}
-        className="px-6 py-5 flex items-center gap-3"
+        className="px-6 py-5 flex items-center justify-between"
       >
-        <motion.button
-          whileHover={{ scale: 1.1, x: -2 }}
-          whileTap={{ scale: 0.85 }}
-          onClick={() => navigate(-1)}
-          className="text-white/40 hover:text-white transition-colors p-1.5 rounded-xl hover:bg-white/10"
-        >
-          <ChevronLeft className="w-5 h-5" />
-        </motion.button>
-        <motion.div
-          whileHover={{ rotate: 8, scale: 1.1 }}
-          transition={{ type: 'spring', stiffness: 400, damping: 20 }}
-          className="w-7 h-7 bg-[#d4e84a] rounded-lg flex items-center justify-center cursor-default"
-        >
-          <span className="text-[#1a3d2b] font-black text-xs">T</span>
-        </motion.div>
-        <div className="flex flex-col leading-none">
-          <span className="text-white font-bold text-xs tracking-tight">Techniek College</span>
-          <span className="text-white/40 text-xs">Rotterdam</span>
+        <div className="flex items-center gap-3">
+          <motion.button
+            whileHover={{ scale: 1.1, x: -2 }}
+            whileTap={{ scale: 0.85 }}
+            onClick={() => navigate(-1)}
+            className="text-white/40 hover:text-white transition-colors p-1.5 rounded-xl hover:bg-white/10"
+          >
+            <ChevronLeft className="w-5 h-5" />
+          </motion.button>
+          <motion.div
+            whileHover={{ rotate: 8, scale: 1.1 }}
+            transition={{ type: 'spring', stiffness: 400, damping: 20 }}
+            className="w-7 h-7 bg-[#d4e84a] rounded-lg flex items-center justify-center cursor-default"
+          >
+            <span className="text-[#1a3d2b] font-black text-xs">T</span>
+          </motion.div>
+          <div className="flex flex-col leading-none">
+            <span className="text-white font-bold text-xs tracking-tight">Techniek College</span>
+            <span className="text-white/40 text-xs">Rotterdam</span>
+          </div>
         </div>
+
+        <motion.button
+          whileHover={{ scale: 1.08 }}
+          whileTap={{ scale: 0.88 }}
+          onClick={toggleDark}
+          className="w-8 h-8 flex items-center justify-center rounded-xl hover:bg-white/10 transition-colors text-white/40 hover:text-white/70"
+          aria-label="Wissel kleurmodus"
+        >
+          <AnimatePresence mode="wait">
+            {dark ? (
+              <motion.div
+                key="sun"
+                initial={{ opacity: 0, rotate: -40, scale: 0.6 }}
+                animate={{ opacity: 1, rotate: 0, scale: 1 }}
+                exit={{ opacity: 0, rotate: 40, scale: 0.6 }}
+                transition={{ duration: 0.18 }}
+              >
+                <Sun className="w-4 h-4" />
+              </motion.div>
+            ) : (
+              <motion.div
+                key="moon"
+                initial={{ opacity: 0, rotate: 40, scale: 0.6 }}
+                animate={{ opacity: 1, rotate: 0, scale: 1 }}
+                exit={{ opacity: 0, rotate: -40, scale: 0.6 }}
+                transition={{ duration: 0.18 }}
+              >
+                <Moon className="w-4 h-4" />
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </motion.button>
       </motion.header>
 
       {/* Hero */}
@@ -192,19 +247,19 @@ export default function EventDetail() {
       </div>
 
       {/* Content */}
-      <div className="flex-1 bg-[#e4e8e2] rounded-t-[2.5rem] px-5 pt-7 pb-10">
+      <div className={`flex-1 ${contentBg} rounded-t-[2.5rem] px-5 pt-7 pb-10`}>
         <div className="max-w-2xl mx-auto flex flex-col gap-4">
 
           {/* Loading skeleton */}
           {loading && (
             <div className="flex flex-col gap-4">
               {[1, 2, 3].map((i) => (
-                <div key={i} className="bg-white rounded-3xl border border-gray-100 overflow-hidden">
-                  <div className="h-0.5 bg-gray-100 animate-pulse" />
+                <div key={i} className={`${cardBg} rounded-3xl border ${cardBorder} overflow-hidden`}>
+                  <div className={`h-0.5 ${skelBg} animate-pulse`} />
                   <div className="p-5 space-y-3">
-                    <div className="h-4 w-32 bg-gray-100 rounded-full animate-pulse" />
-                    <div className="h-3 w-full bg-gray-100 rounded-full animate-pulse" />
-                    <div className="h-3 w-3/4 bg-gray-100 rounded-full animate-pulse" />
+                    <div className={`h-4 w-32 ${skelBg} rounded-full animate-pulse`} />
+                    <div className={`h-3 w-full ${skelBg} rounded-full animate-pulse`} />
+                    <div className={`h-3 w-3/4 ${skelBg} rounded-full animate-pulse`} />
                   </div>
                 </div>
               ))}
@@ -216,17 +271,19 @@ export default function EventDetail() {
             <motion.div
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
-              className="bg-white rounded-3xl border border-gray-100 p-10 text-center"
+              className={`${cardBg} rounded-3xl border ${cardBorder} p-10 text-center`}
             >
-              <div className="w-12 h-12 bg-gray-50 rounded-2xl flex items-center justify-center mx-auto mb-3">
-                <Calendar className="w-5 h-5 text-gray-300" />
+              <div className={`w-12 h-12 ${d ? 'bg-white/[0.05]' : 'bg-gray-50'} rounded-2xl flex items-center justify-center mx-auto mb-3`}>
+                <Calendar className={`w-5 h-5 ${d ? 'text-white/20' : 'text-gray-300'}`} />
               </div>
-              <p className="text-sm font-semibold text-gray-400 mb-3">Event niet gevonden</p>
+              <p className={`text-sm font-semibold mb-3 ${subClr}`}>Event niet gevonden</p>
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => navigate('/events')}
-                className="text-xs text-[#1a3d2b] font-bold bg-[#eaf3de] px-3 py-1.5 rounded-lg hover:bg-[#d4e84a] transition-colors"
+                className={`text-xs font-bold px-3 py-1.5 rounded-lg transition-colors ${
+                  d ? 'text-[#d4e84a] bg-[#d4e84a]/10 hover:bg-[#d4e84a]/20' : 'text-[#1a3d2b] bg-[#eaf3de] hover:bg-[#d4e84a]'
+                }`}
               >
                 Terug naar overzicht
               </motion.button>
@@ -255,53 +312,53 @@ export default function EventDetail() {
                 initial={{ opacity: 0, y: 14 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ type: 'spring', stiffness: 350, damping: 30, delay: 0.1 }}
-                className="bg-white rounded-3xl border border-gray-100 overflow-hidden shadow-sm"
+                className={`${cardBg} rounded-3xl border ${cardBorder} overflow-hidden shadow-sm`}
               >
                 <div className="h-0.5 bg-gradient-to-r from-[#1a3d2b] via-[#4a8c60] to-[#d4e84a]" />
                 <div className="p-5 flex flex-col gap-4">
 
                   <div className="flex items-center gap-3">
-                    <div className="bg-gradient-to-br from-[#eaf3de] to-[#d4e84a]/30 p-2.5 rounded-xl shrink-0">
-                      <CalendarDays className="w-4 h-4 text-[#1a3d2b]" />
+                    <div className={`${iconBg} p-2.5 rounded-xl shrink-0`}>
+                      <CalendarDays className={`w-4 h-4 ${iconClr}`} />
                     </div>
                     <div>
-                      <p className="text-xs text-gray-400">Datum</p>
-                      <p className="text-sm font-semibold text-[#1a3d2b] capitalize">
+                      <p className={`text-xs ${subClr}`}>Datum</p>
+                      <p className={`text-sm font-semibold capitalize ${titleClr}`}>
                         {formatDatum(datum)}
                       </p>
                     </div>
                   </div>
 
                   <div className="flex items-center gap-3">
-                    <div className="bg-gradient-to-br from-[#eaf3de] to-[#d4e84a]/30 p-2.5 rounded-xl shrink-0">
-                      <Clock className="w-4 h-4 text-[#1a3d2b]" />
+                    <div className={`${iconBg} p-2.5 rounded-xl shrink-0`}>
+                      <Clock className={`w-4 h-4 ${iconClr}`} />
                     </div>
                     <div>
-                      <p className="text-xs text-gray-400">Tijd</p>
-                      <p className="text-sm font-semibold text-[#1a3d2b]">{formatTijd(event.days)}</p>
+                      <p className={`text-xs ${subClr}`}>Tijd</p>
+                      <p className={`text-sm font-semibold ${titleClr}`}>{formatTijd(event.days)}</p>
                     </div>
                   </div>
 
                   {event.location && (
                     <div className="flex items-center gap-3">
-                      <div className="bg-gradient-to-br from-[#eaf3de] to-[#d4e84a]/30 p-2.5 rounded-xl shrink-0">
-                        <MapPin className="w-4 h-4 text-[#1a3d2b]" />
+                      <div className={`${iconBg} p-2.5 rounded-xl shrink-0`}>
+                        <MapPin className={`w-4 h-4 ${iconClr}`} />
                       </div>
                       <div>
-                        <p className="text-xs text-gray-400">Locatie</p>
-                        <p className="text-sm font-semibold text-[#1a3d2b]">{event.location}</p>
+                        <p className={`text-xs ${subClr}`}>Locatie</p>
+                        <p className={`text-sm font-semibold ${titleClr}`}>{event.location}</p>
                       </div>
                     </div>
                   )}
 
                   {capacity !== null && (
                     <div className="flex items-center gap-3">
-                      <div className={`p-2.5 rounded-xl shrink-0 ${isFull ? 'bg-red-50' : 'bg-gradient-to-br from-[#eaf3de] to-[#d4e84a]/30'}`}>
-                        <Users className={`w-4 h-4 ${isFull ? 'text-red-400' : 'text-[#1a3d2b]'}`} />
+                      <div className={`p-2.5 rounded-xl shrink-0 ${isFull ? 'bg-red-50' : iconBg}`}>
+                        <Users className={`w-4 h-4 ${isFull ? 'text-red-400' : iconClr}`} />
                       </div>
                       <div className="flex-1">
-                        <p className="text-xs text-gray-400">Beschikbare plekken</p>
-                        <p className={`text-sm font-semibold ${isFull ? 'text-red-500' : 'text-[#1a3d2b]'}`}>
+                        <p className={`text-xs ${subClr}`}>Beschikbare plekken</p>
+                        <p className={`text-sm font-semibold ${isFull ? 'text-red-500' : titleClr}`}>
                           {isFull ? 'Vol — geen plekken meer beschikbaar' : `${spotsLeft} van ${capacity} plekken vrij`}
                         </p>
                       </div>
@@ -311,7 +368,7 @@ export default function EventDetail() {
                   {/* Voortgangsbalk */}
                   {spotsPct !== null && (
                     <div className="flex items-center gap-2.5">
-                      <div className="flex-1 bg-gray-100 rounded-full h-1.5 overflow-hidden">
+                      <div className={`flex-1 ${barBg} rounded-full h-1.5 overflow-hidden`}>
                         <motion.div
                           initial={{ width: 0 }}
                           animate={{ width: `${spotsPct}%` }}
@@ -319,7 +376,7 @@ export default function EventDetail() {
                           className={`h-full rounded-full ${isFull ? 'bg-gradient-to-r from-red-300 to-red-400' : 'bg-gradient-to-r from-[#1a3d2b] to-[#4a8c60]'}`}
                         />
                       </div>
-                      <span className={`text-xs font-bold shrink-0 ${isFull ? 'text-red-400' : 'text-[#1a3d2b]'}`}>
+                      <span className={`text-xs font-bold shrink-0 ${isFull ? 'text-red-400' : titleClr}`}>
                         {registered}/{capacity}
                       </span>
                     </div>
@@ -333,12 +390,12 @@ export default function EventDetail() {
                   initial={{ opacity: 0, y: 14 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ type: 'spring', stiffness: 350, damping: 30, delay: 0.18 }}
-                  className="bg-white rounded-3xl border border-gray-100 overflow-hidden shadow-sm"
+                  className={`${cardBg} rounded-3xl border ${cardBorder} overflow-hidden shadow-sm`}
                 >
                   <div className="h-0.5 bg-gradient-to-r from-[#1a3d2b] via-[#4a8c60] to-[#d4e84a]" />
                   <div className="p-5">
-                    <h2 className="text-sm font-bold text-[#1a3d2b] mb-3">Over dit event</h2>
-                    <p className="text-sm text-gray-500 leading-relaxed">{event.description}</p>
+                    <h2 className={`text-sm font-bold mb-3 ${titleClr}`}>Over dit event</h2>
+                    <p className={`text-sm leading-relaxed ${subClr}`}>{event.description}</p>
                   </div>
                 </motion.div>
               )}
@@ -349,16 +406,18 @@ export default function EventDetail() {
                   initial={{ opacity: 0, y: 14 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ type: 'spring', stiffness: 350, damping: 30, delay: 0.26 }}
-                  className="bg-white rounded-3xl border border-gray-100 overflow-hidden shadow-sm"
+                  className={`${cardBg} rounded-3xl border ${cardBorder} overflow-hidden shadow-sm`}
                 >
                   <div className="h-0.5 bg-gradient-to-r from-[#1a3d2b] via-[#4a8c60] to-[#d4e84a]" />
                   <div className="p-5">
-                    <h2 className="text-sm font-bold text-[#1a3d2b] mb-3">Programma</h2>
+                    <h2 className={`text-sm font-bold mb-3 ${titleClr}`}>Programma</h2>
                     <div className="flex flex-col gap-2">
                       {event.days.map((dag, i) => (
-                        <div key={i} className="flex justify-between items-center text-sm py-2 border-b border-gray-50 last:border-0">
-                          <span className="text-[#1a3d2b] font-semibold capitalize">{formatDatumKort(dag.date)}</span>
-                          <span className="text-xs text-gray-400 bg-gray-50 px-2.5 py-1 rounded-lg">{dag.start_time} – {dag.end_time}</span>
+                        <div key={i} className={`flex justify-between items-center text-sm py-2 border-b ${rowBorder} last:border-0`}>
+                          <span className={`font-semibold capitalize ${titleClr}`}>{formatDatumKort(dag.date)}</span>
+                          <span className={`text-xs px-2.5 py-1 rounded-lg ${d ? 'text-white/45 bg-white/[0.06]' : 'text-gray-400 bg-gray-50'}`}>
+                            {dag.start_time} – {dag.end_time}
+                          </span>
                         </div>
                       ))}
                     </div>
@@ -379,9 +438,9 @@ export default function EventDetail() {
                   disabled={registreerLoading || (isFull && !ingeschreven)}
                   className={`w-full rounded-2xl py-4 text-sm font-bold flex items-center justify-center gap-2 transition-colors
                     ${ingeschreven
-                      ? 'bg-gray-100 text-gray-500 hover:bg-red-50 hover:text-red-500'
+                      ? d ? 'bg-white/[0.07] text-white/40 hover:bg-red-900/30 hover:text-red-400' : 'bg-gray-100 text-gray-500 hover:bg-red-50 hover:text-red-500'
                       : isFull
-                      ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                      ? d ? 'bg-white/[0.05] text-white/25 cursor-not-allowed' : 'bg-gray-100 text-gray-400 cursor-not-allowed'
                       : 'bg-[#d4e84a] text-[#1a3d2b] hover:bg-[#c8dc3e]'
                     } disabled:opacity-60`}
                 >

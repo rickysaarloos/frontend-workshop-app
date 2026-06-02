@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { motion } from 'motion/react'
-import { CalendarDays, BookOpen, User, LogOut, ArrowRight, MapPin } from 'lucide-react'
+import { motion, AnimatePresence } from 'motion/react'
+import { CalendarDays, BookOpen, User, LogOut, ArrowRight, MapPin, Moon, Sun } from 'lucide-react'
 import { toast, Toaster } from 'sonner'
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://187.124.29.171:8002'
@@ -14,6 +14,15 @@ function Home() {
   const [workshops, setWorkshops] = useState([])
   const [aankomendEvent, setAankomendEvent] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [dark, setDark] = useState(() => localStorage.getItem('theme') === 'dark')
+
+  function toggleDark() {
+    setDark(d => {
+      const next = !d
+      localStorage.setItem('theme', next ? 'dark' : 'light')
+      return next
+    })
+  }
 
   useEffect(() => {
     const token = localStorage.getItem('token')
@@ -23,29 +32,21 @@ function Home() {
 
   async function fetchData(token) {
     const headers = { Authorization: `Bearer ${token}`, Accept: 'application/json' }
-
     try {
       const [workshopsRes, eventsRes] = await Promise.all([
         fetch(`${API_URL}/api/workshops`, { headers }),
         fetch(`${API_URL}/api/events`, { headers }),
       ])
-
-      if (workshopsRes.status === 401 || eventsRes.status === 401) {
-        navigate('/login')
-        return
-      }
-
+      if (workshopsRes.status === 401 || eventsRes.status === 401) { navigate('/login'); return }
       const [workshopsJson, eventsJson] = await Promise.all([
         workshopsRes.json(),
         eventsRes.json(),
       ])
-
       setWorkshops(workshopsJson.data || [])
-
       const vandaag = new Date()
       vandaag.setHours(0, 0, 0, 0)
       const komende = (eventsJson.data || [])
-        .filter((e) => {
+        .filter(e => {
           const datum = new Date(e.days?.[0]?.date || e.start_date?.split(' ')?.[0] || 0)
           return datum >= vandaag
         })
@@ -54,7 +55,6 @@ function Home() {
           const db = new Date(b.days?.[0]?.date || b.start_date?.split(' ')?.[0] || 0)
           return da - db
         })
-
       setAankomendEvent(komende[0] || null)
     } catch {
       toast.error('Gegevens ophalen mislukt')
@@ -63,13 +63,11 @@ function Home() {
     }
   }
 
-  const ingeschrevenWorkshops = workshops.filter((w) => w.is_registered)
+  const ingeschrevenWorkshops = workshops.filter(w => w.is_registered)
   const aantalWorkshops = workshops.length
 
   function formatDatum(datum) {
-    return new Date(datum).toLocaleDateString('nl-NL', {
-      weekday: 'long', day: 'numeric', month: 'long',
-    })
+    return new Date(datum).toLocaleDateString('nl-NL', { weekday: 'long', day: 'numeric', month: 'long' })
   }
 
   function handleUitloggen() {
@@ -79,8 +77,31 @@ function Home() {
     setTimeout(() => navigate('/login'), 600)
   }
 
+  // Kleur-tokens voor dark/light mode
+  const d = dark
+  const contentBg  = d ? 'bg-[#111111]'         : 'bg-[#e4e8e2]'
+  const cardBg     = d ? 'bg-[#1c1c1e]'         : 'bg-white'
+  const cardBorder = d ? 'border-white/[0.07]'   : 'border-gray-100'
+  const divider    = d ? 'border-white/[0.05]'   : 'border-gray-50'
+  const labelClr   = d ? 'text-white/30'         : 'text-gray-400'
+  const titleClr   = d ? 'text-white'            : 'text-[#1a3d2b]'
+  const subClr     = d ? 'text-white/45'         : 'text-gray-400'
+  const arrowClr   = d ? 'text-white/20'         : 'text-gray-300'
+  const skelBg     = d ? 'bg-white/[0.07]'       : 'bg-gray-100'
+  const emptyBg    = d ? 'bg-white/[0.05]'       : 'bg-gray-50'
+  const emptyIcon  = d ? 'text-white/20'         : 'text-gray-300'
+  const emptyBtn   = d
+    ? 'text-[#d4e84a] bg-[#d4e84a]/10 hover:bg-[#d4e84a]/20'
+    : 'text-[#1a3d2b] bg-[#eaf3de] hover:bg-[#d4e84a]'
+  const navHover   = d ? '#242424' : '#f8faf7'
+  const navIcons   = [
+    { kleur: d ? 'bg-[#d4e84a]/12' : 'bg-[#d4e84a]',  iconKleur: d ? 'text-[#d4e84a]'  : 'text-[#1a3d2b]' },
+    { kleur: d ? 'bg-white/8'      : 'bg-[#eaf3de]',  iconKleur: d ? 'text-white/55'   : 'text-[#1a3d2b]' },
+    { kleur: 'bg-[#1a3d2b]',                           iconKleur: 'text-[#d4e84a]'                         },
+  ]
+
   return (
-    <div className="min-h-screen bg-[#1a3d2b] flex flex-col">
+    <div className="min-h-[100dvh] bg-[#1a3d2b] flex flex-col">
       <Toaster position="top-right" richColors />
 
       {/* Header */}
@@ -104,18 +125,53 @@ function Home() {
           </div>
         </div>
 
-        <motion.button
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.92 }}
-          onClick={handleUitloggen}
-          className="flex items-center gap-1.5 text-xs text-white/40 hover:text-white/70 transition-colors px-3 py-1.5 rounded-xl hover:bg-white/10"
-        >
-          <LogOut className="w-3.5 h-3.5" />
-          Uitloggen
-        </motion.button>
+        <div className="flex items-center gap-1">
+          {/* Dark mode toggle */}
+          <motion.button
+            whileHover={{ scale: 1.08 }}
+            whileTap={{ scale: 0.88 }}
+            onClick={toggleDark}
+            className="w-8 h-8 flex items-center justify-center rounded-xl hover:bg-white/10 transition-colors text-white/40 hover:text-white/70"
+            aria-label="Wissel kleurmodus"
+          >
+            <AnimatePresence mode="wait">
+              {dark ? (
+                <motion.div
+                  key="sun"
+                  initial={{ opacity: 0, rotate: -40, scale: 0.6 }}
+                  animate={{ opacity: 1, rotate: 0, scale: 1 }}
+                  exit={{ opacity: 0, rotate: 40, scale: 0.6 }}
+                  transition={{ duration: 0.18 }}
+                >
+                  <Sun className="w-4 h-4" />
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="moon"
+                  initial={{ opacity: 0, rotate: 40, scale: 0.6 }}
+                  animate={{ opacity: 1, rotate: 0, scale: 1 }}
+                  exit={{ opacity: 0, rotate: -40, scale: 0.6 }}
+                  transition={{ duration: 0.18 }}
+                >
+                  <Moon className="w-4 h-4" />
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </motion.button>
+
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.92 }}
+            onClick={handleUitloggen}
+            className="flex items-center gap-1.5 text-xs text-white/40 hover:text-white/70 transition-colors px-3 py-1.5 rounded-xl hover:bg-white/10"
+          >
+            <LogOut className="w-3.5 h-3.5" />
+            Uitloggen
+          </motion.button>
+        </div>
       </motion.header>
 
-      {/* Hero sectie */}
+      {/* Hero */}
       <div className="px-6 pt-2 pb-10 relative overflow-hidden">
         <motion.div
           animate={{ scale: [1, 1.12, 1], opacity: [0.06, 0.1, 0.06] }}
@@ -137,12 +193,13 @@ function Home() {
             initial={{ opacity: 0, x: -12 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.28 }}
-            className="text-[#d4e84a] text-xs font-bold uppercase tracking-widest mb-2"
+            className="text-[#d4e84a]/70 text-xs font-bold uppercase tracking-widest mb-2"
           >
             Workshop app
           </motion.p>
           <h1 className="text-4xl font-black text-white leading-none tracking-tight mb-1">
-            Hoi,<br />{voornaam}!
+            Hoi,<br />
+            <span className="text-[#d4e84a]">{voornaam}!</span>
           </h1>
           <motion.p
             initial={{ opacity: 0 }}
@@ -155,8 +212,10 @@ function Home() {
         </motion.div>
       </div>
 
-      {/* Content sectie */}
-      <div className="flex-1 bg-[#e4e8e2] rounded-t-[2.5rem] px-5 pt-7 pb-10 flex flex-col gap-4">
+      {/* Content */}
+      <div
+        className={`flex-1 ${contentBg} rounded-t-[2.5rem] px-5 pt-7 pb-10 flex flex-col gap-4 transition-colors duration-300`}
+      >
 
         {/* Aankomend event banner */}
         {loading ? (
@@ -166,7 +225,7 @@ function Home() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ type: 'spring', stiffness: 200, damping: 38, delay: 0.28 }}
-            whileHover={{ y: -3, boxShadow: '0 20px 48px rgba(26,61,43,0.28)' }}
+            whileHover={{ y: -3, boxShadow: '0 20px 48px rgba(26,61,43,0.32)' }}
             whileTap={{ scale: 0.98 }}
             onClick={() => navigate(`/events/${aankomendEvent.id}`)}
             className="bg-[#1a3d2b] rounded-3xl p-6 cursor-pointer relative overflow-hidden"
@@ -181,7 +240,6 @@ function Home() {
               transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut', delay: 2 }}
               className="absolute right-8 -bottom-10 w-24 h-24 bg-white rounded-full pointer-events-none"
             />
-
             <div className="flex items-start justify-between relative">
               <div className="flex-1">
                 <p className="text-[#d4e84a] text-xs font-bold uppercase tracking-widest mb-2">Aankomend event</p>
@@ -233,20 +291,20 @@ function Home() {
           </motion.div>
 
           <motion.div
-            whileHover={{ y: -3, boxShadow: '0 12px 28px rgba(26,61,43,0.1)' }}
+            whileHover={{ y: -3, boxShadow: d ? '0 12px 28px rgba(212,232,74,0.1)' : '0 12px 28px rgba(26,61,43,0.1)' }}
             whileTap={{ scale: 0.96 }}
             onClick={() => navigate('/events')}
-            className="col-span-1 bg-white rounded-2xl p-4 cursor-pointer flex flex-col justify-between min-h-[120px] border border-gray-100"
+            className={`col-span-1 ${cardBg} rounded-2xl p-4 cursor-pointer flex flex-col justify-between min-h-[120px] border ${cardBorder} transition-colors duration-300`}
           >
-            <CalendarDays className="w-5 h-5 text-[#1a3d2b]" />
+            <CalendarDays className={`w-5 h-5 ${titleClr}`} />
             <div>
-              <p className="text-[#1a3d2b] text-xs font-bold leading-tight">Alle events</p>
-              <ArrowRight className="w-3.5 h-3.5 text-[#1a3d2b]/40 mt-1" />
+              <p className={`text-xs font-bold leading-tight ${titleClr}`}>Alle events</p>
+              <ArrowRight className={`w-3.5 h-3.5 mt-1 ${arrowClr}`} />
             </div>
           </motion.div>
 
           <motion.div
-            whileHover={{ y: -3, boxShadow: '0 12px 28px rgba(26,61,43,0.2)' }}
+            whileHover={{ y: -3, boxShadow: '0 12px 28px rgba(26,61,43,0.22)' }}
             whileTap={{ scale: 0.96 }}
             onClick={() => navigate('/profiel')}
             className="col-span-1 bg-[#1a3d2b] rounded-2xl p-4 cursor-pointer flex flex-col justify-between min-h-[120px]"
@@ -264,7 +322,7 @@ function Home() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.5 }}
-          className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-1"
+          className={`text-xs font-bold ${labelClr} uppercase tracking-widest mt-1`}
         >
           Snel navigeren
         </motion.p>
@@ -273,28 +331,28 @@ function Home() {
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ type: 'spring', stiffness: 200, damping: 38, delay: 0.54 }}
-          className="bg-white rounded-3xl border border-gray-100 overflow-hidden shadow-sm"
+          className={`${cardBg} rounded-3xl border ${cardBorder} overflow-hidden shadow-sm transition-colors duration-300`}
         >
           {[
-            { label: 'Workshops', desc: 'Bekijk en schrijf je in', icon: BookOpen, path: '/workshops', kleur: 'bg-[#d4e84a]', iconKleur: 'text-[#1a3d2b]' },
-            { label: 'Events', desc: 'Aankomende evenementen', icon: CalendarDays, path: '/events', kleur: 'bg-[#eaf3de]', iconKleur: 'text-[#1a3d2b]' },
-            { label: 'Mijn profiel', desc: 'Gegevens en dieetwensen', icon: User, path: '/profiel', kleur: 'bg-[#1a3d2b]', iconKleur: 'text-[#d4e84a]' },
-          ].map(({ label, desc, icon: Icon, path, kleur, iconKleur }, index, arr) => (
+            { label: 'Workshops', desc: 'Bekijk en schrijf je in', icon: BookOpen, path: '/workshops' },
+            { label: 'Events', desc: 'Aankomende evenementen', icon: CalendarDays, path: '/events' },
+            { label: 'Mijn profiel', desc: 'Gegevens en dieetwensen', icon: User, path: '/profiel' },
+          ].map(({ label, desc, icon: Icon, path }, index, arr) => (
             <motion.div
               key={path}
-              whileHover={{ x: 4, backgroundColor: '#f8faf7' }}
+              whileHover={{ x: 4, backgroundColor: navHover }}
               whileTap={{ scale: 0.99 }}
               onClick={() => navigate(path)}
-              className={`flex items-center gap-4 px-5 py-4 cursor-pointer transition-colors duration-150 ${index !== arr.length - 1 ? 'border-b border-gray-50' : ''}`}
+              className={`flex items-center gap-4 px-5 py-4 cursor-pointer transition-colors duration-150 ${index !== arr.length - 1 ? `border-b ${divider}` : ''}`}
             >
-              <div className={`${kleur} p-2.5 rounded-xl shrink-0`}>
-                <Icon className={`w-4 h-4 ${iconKleur}`} />
+              <div className={`${navIcons[index].kleur} p-2.5 rounded-xl shrink-0`}>
+                <Icon className={`w-4 h-4 ${navIcons[index].iconKleur}`} />
               </div>
               <div className="flex-1">
-                <p className="text-sm font-semibold text-[#1a3d2b]">{label}</p>
-                <p className="text-xs text-gray-400">{desc}</p>
+                <p className={`text-sm font-semibold ${titleClr}`}>{label}</p>
+                <p className={`text-xs ${subClr}`}>{desc}</p>
               </div>
-              <ArrowRight className="w-4 h-4 text-gray-300 shrink-0" />
+              <ArrowRight className={`w-4 h-4 ${arrowClr} shrink-0`} />
             </motion.div>
           ))}
         </motion.div>
@@ -304,7 +362,7 @@ function Home() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.62 }}
-          className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-1"
+          className={`text-xs font-bold ${labelClr} uppercase tracking-widest mt-1`}
         >
           Jouw workshops
         </motion.p>
@@ -316,29 +374,29 @@ function Home() {
           className="flex flex-col gap-2"
         >
           {loading ? (
-            [1, 2].map((i) => (
-              <div key={i} className="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm">
-                <div className="h-0.5 bg-gray-100 animate-pulse" />
+            [1, 2].map(i => (
+              <div key={i} className={`${cardBg} rounded-2xl border ${cardBorder} overflow-hidden shadow-sm transition-colors duration-300`}>
+                <div className={`h-0.5 ${skelBg} animate-pulse`} />
                 <div className="px-4 py-3.5 flex items-center gap-3">
-                  <div className="w-11 h-11 bg-gray-100 rounded-xl animate-pulse shrink-0" />
+                  <div className={`w-11 h-11 ${skelBg} rounded-xl animate-pulse shrink-0`} />
                   <div className="flex-1 space-y-2">
-                    <div className="h-3 bg-gray-100 rounded-full w-40 animate-pulse" />
-                    <div className="h-2.5 bg-gray-100 rounded-full w-28 animate-pulse" />
+                    <div className={`h-3 ${skelBg} rounded-full w-40 animate-pulse`} />
+                    <div className={`h-2.5 ${skelBg} rounded-full w-28 animate-pulse`} />
                   </div>
                 </div>
               </div>
             ))
           ) : ingeschrevenWorkshops.length === 0 ? (
-            <div className="bg-white rounded-3xl border border-gray-100 p-8 text-center shadow-sm">
-              <div className="w-12 h-12 bg-gray-50 rounded-2xl flex items-center justify-center mx-auto mb-3">
-                <BookOpen className="w-5 h-5 text-gray-300" />
+            <div className={`${cardBg} rounded-3xl border ${cardBorder} p-8 text-center shadow-sm transition-colors duration-300`}>
+              <div className={`w-12 h-12 ${emptyBg} rounded-2xl flex items-center justify-center mx-auto mb-3`}>
+                <BookOpen className={`w-5 h-5 ${emptyIcon}`} />
               </div>
-              <p className="text-sm text-gray-400 mb-3">Je bent nog niet ingeschreven voor workshops</p>
+              <p className={`text-sm ${subClr} mb-3`}>Je bent nog niet ingeschreven voor workshops</p>
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => navigate('/workshops')}
-                className="text-xs text-[#1a3d2b] font-bold bg-[#eaf3de] px-3 py-1.5 rounded-lg hover:bg-[#d4e84a] transition-colors"
+                className={`text-xs font-bold px-3 py-1.5 rounded-lg transition-colors ${emptyBtn}`}
               >
                 Bekijk workshops
               </motion.button>
@@ -349,17 +407,16 @@ function Home() {
                 const datum = workshop.start_date?.split(' ')?.[0] || ''
                 const tijdStart = workshop.start_date?.split(' ')?.[1] || ''
                 const tijdEind = workshop.end_date?.split(' ')?.[1] || ''
-
                 return (
                   <motion.div
                     key={workshop.id}
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ type: 'spring', stiffness: 200, damping: 38, delay: 0.72 + index * 0.1 }}
-                    whileHover={{ y: -2, boxShadow: '0 8px 24px rgba(26,61,43,0.1)' }}
+                    whileHover={{ y: -2, boxShadow: '0 8px 24px rgba(26,61,43,0.14)' }}
                     whileTap={{ scale: 0.99 }}
                     onClick={() => navigate(`/workshops/${workshop.id}`)}
-                    className="bg-white rounded-2xl border border-gray-100 overflow-hidden cursor-pointer shadow-sm"
+                    className={`${cardBg} rounded-2xl border ${cardBorder} overflow-hidden cursor-pointer shadow-sm transition-colors duration-300`}
                   >
                     <div className="h-0.5 bg-gradient-to-r from-[#1a3d2b] via-[#4a8c60] to-[#d4e84a]" />
                     <div className="px-4 py-3.5 flex items-center gap-3">
@@ -372,12 +429,12 @@ function Home() {
                         </p>
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-bold text-[#1a3d2b] truncate">{workshop.title}</p>
-                        <p className="text-xs text-gray-400 mt-0.5 truncate">
+                        <p className={`text-sm font-bold truncate ${titleClr}`}>{workshop.title}</p>
+                        <p className={`text-xs mt-0.5 truncate ${subClr}`}>
                           {tijdStart} – {tijdEind} · {workshop.location}
                         </p>
                       </div>
-                      <ArrowRight className="w-4 h-4 text-gray-300 shrink-0" />
+                      <ArrowRight className={`w-4 h-4 ${arrowClr} shrink-0`} />
                     </div>
                   </motion.div>
                 )
@@ -387,7 +444,7 @@ function Home() {
                 whileHover={{ x: 3 }}
                 whileTap={{ scale: 0.97 }}
                 onClick={() => navigate('/workshops')}
-                className="flex items-center gap-1.5 text-xs text-[#1a3d2b] font-bold px-1 pt-1 hover:underline underline-offset-2"
+                className={`flex items-center gap-1.5 text-xs font-bold px-1 pt-1 hover:underline underline-offset-2 ${titleClr}`}
               >
                 Alle workshops bekijken
                 <ArrowRight className="w-3.5 h-3.5" />
