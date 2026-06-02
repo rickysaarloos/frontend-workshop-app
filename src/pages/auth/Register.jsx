@@ -4,40 +4,71 @@ import { motion, AnimatePresence } from 'motion/react'
 import { Mail, Lock, User, UserPlus, ArrowRight } from 'lucide-react'
 import { toast, Toaster } from 'sonner'
 
-async function mockRegister(naam, email, wachtwoord) {
-  await new Promise((resolve) => setTimeout(resolve, 1000))
-  const bestaandeEmails = ['bezet@tcrmbo.nl']
-  if (bestaandeEmails.includes(email)) throw { message: 'Dit e-mailadres is al in gebruik.' }
-  return { token: 'mock-token-nieuw-67890', user: { id: 99, name: naam, email, role: 'student' } }
-}
-
 function Register() {
+  const navigate = useNavigate()
   const [naam, setNaam] = useState('')
   const [email, setEmail] = useState('')
   const [wachtwoord, setWachtwoord] = useState('')
   const [wachtwoordHerhaal, setWachtwoordHerhaal] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [focusedField, setFocusedField] = useState(null)
-  const navigate = useNavigate()
 
   async function handleSubmit(e) {
     e.preventDefault()
-    if (!naam || !email || !wachtwoord || !wachtwoordHerhaal) { toast.error('Vul alle velden in'); return }
-    if (wachtwoord !== wachtwoordHerhaal) { toast.error('Wachtwoorden komen niet overeen'); return }
-    if (wachtwoord.length < 8) { toast.error('Wachtwoord moet minimaal 8 tekens zijn'); return }
+
+    if (!naam || !email || !wachtwoord || !wachtwoordHerhaal) {
+      toast.error('Vul alle velden in')
+      return
+    }
+
+    if (wachtwoord !== wachtwoordHerhaal) {
+      toast.error('Wachtwoorden komen niet overeen')
+      return
+    }
+
+    if (wachtwoord.length < 8) {
+      toast.error('Wachtwoord moet minimaal 8 tekens zijn')
+      return
+    }
+
     setIsLoading(true)
+
     try {
-      const data = await mockRegister(naam, email, wachtwoord)
-      localStorage.setItem('token', data.token)
-      localStorage.setItem('user', JSON.stringify(data.user))
-      toast.success('Account aangemaakt! Welkom bij TCR.')
-      setTimeout(() => navigate('/home'), 800)
-    } catch (err) {
-      toast.error(err.message || 'Registreren mislukt, probeer opnieuw.')
+      const response = await fetch('http://187.124.29.171:8002/api/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+        },
+        body: JSON.stringify({
+          name: naam,
+          email,
+          password: wachtwoord,
+          password_confirmation: wachtwoordHerhaal,
+        }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        toast.error(data.message || 'Registreren mislukt')
+        return
+      }
+
+      toast.success('Account succesvol aangemaakt')
+
+      setTimeout(() => {
+        navigate('/login')
+      }, 1000)
+
+    } catch (error) {
+      toast.error('Kan geen verbinding maken met de server')
     } finally {
       setIsLoading(false)
     }
   }
+
+
 
   const fields = [
     { key: 'naam', label: 'Naam', type: 'text', value: naam, onChange: setNaam, placeholder: 'Jouw volledige naam', Icon: User },
