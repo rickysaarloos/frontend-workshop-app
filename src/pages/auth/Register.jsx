@@ -116,17 +116,11 @@ function Register() {
         transition={{ type: 'spring', stiffness: 220, damping: 40 }}
         className="flex items-center gap-3 mb-8 z-10"
       >
-        <motion.div
-          whileHover={{ rotate: -8, scale: 1.1 }}
-          transition={{ type: 'spring', stiffness: 260, damping: 26 }}
-          className="w-8 h-8 bg-[#d4e84a] rounded-xl flex items-center justify-center cursor-default"
-        >
-          <span className="text-[#1a3d2b] font-black text-sm">T</span>
-        </motion.div>
-        <div className="flex flex-col leading-none">
-          <span className="text-white font-bold text-xs tracking-tight">Techniek College</span>
-          <span className="text-white/50 font-medium text-xs tracking-tight">Rotterdam</span>
-        </div>
+        <img
+          src="/img/techniek-college-rotterdam2.jpg"
+          alt="Techniek College Rotterdam"
+          className="h-9 w-auto object-contain rounded"
+        />
       </motion.div>
 
       {/* Kaart */}

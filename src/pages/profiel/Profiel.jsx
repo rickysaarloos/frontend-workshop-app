@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { motion, AnimatePresence } from 'motion/react'
+import { motion, AnimatePresence, useReducedMotion } from 'motion/react'
 import { User, Mail, Lock, Utensils, LogOut, ChevronLeft, Save, Check, BookOpen, CalendarDays, ArrowRight, Eye, EyeOff, Moon, Sun } from 'lucide-react'
 import { toast, Toaster } from 'sonner'
+import Footer from '../../components/Footer'
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://187.124.29.171:8002'
 
@@ -13,6 +14,7 @@ const dieetOpties = [
 
 function Profiel() {
   const navigate = useNavigate()
+  const shouldReduce = useReducedMotion()
 
   const [naam, setNaam] = useState(() => JSON.parse(localStorage.getItem('user') || 'null')?.name || '')
   const [email, setEmail] = useState(() => JSON.parse(localStorage.getItem('user') || 'null')?.email || '')
@@ -63,17 +65,13 @@ function Profiel() {
         workshopsRes.json(),
         eventsRes.json(),
       ])
-
       if (userJson.name)  setNaam(userJson.name)
       if (userJson.email) setEmail(userJson.email)
       const fetchedRol = userJson.roles?.[0] || userJson.role
       if (fetchedRol) setRol(fetchedRol)
       if (userJson.dietary_preferences?.length) setGeselecteerdeDieet(userJson.dietary_preferences)
-
-      // Merge — nooit het hele object overschrijven zodat bestaande velden (name, roles) bewaard blijven
       const existing = JSON.parse(localStorage.getItem('user') || '{}')
       localStorage.setItem('user', JSON.stringify({ ...existing, ...userJson }))
-
       setIngeschrevenWorkshops((workshopsJson.data || []).filter(w => w.is_registered))
       setIngeschrevenEvents((eventsJson.data || []).filter(e => e.is_registered))
     } catch {
@@ -108,7 +106,6 @@ function Profiel() {
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.message || 'Opslaan mislukt')
-      // Lees altijd vers uit localStorage — niet de stale snapshot gebruiken
       const fresh = JSON.parse(localStorage.getItem('user') || '{}')
       localStorage.setItem('user', JSON.stringify({ ...fresh, name: naam, email }))
       toast.success('Profiel opgeslagen!')
@@ -174,37 +171,36 @@ function Profiel() {
     return new Date(datum).toLocaleDateString('nl-NL', { day: 'numeric', month: 'long' })
   }
 
-  // Dark mode tokens — zelfde systeem als Home.jsx
+  // Design tokens
   const d = dark
-  const contentBg  = d ? 'bg-[#111111]'       : 'bg-[#e4e8e2]'
-  const cardBg     = d ? 'bg-[#1c1c1e]'       : 'bg-white'
-  const cardBorder = d ? 'border-white/[0.07]' : 'border-gray-100'
-const labelClr   = d ? 'text-white/30'       : 'text-gray-400'
-  const titleClr   = d ? 'text-white'          : 'text-[#1a3d2b]'
-  const subClr     = d ? 'text-white/45'       : 'text-gray-400'
-  const arrowClr   = d ? 'text-white/20'       : 'text-gray-300'
-  const inputBg    = d ? 'bg-white/[0.06]'     : 'bg-gray-50'
-  const inputClr   = d ? 'text-white'          : 'text-[#1a3d2b]'
+  const contentBg      = d ? 'bg-[#111111]'         : 'bg-[#e8ecdf]'
+  const cardBg         = d ? 'bg-[#1c1c1e]'         : 'bg-white'
+  const shellBg        = d ? 'bg-white/[0.025]'      : 'bg-black/[0.018]'
+  const shellBorder    = d ? 'border-white/[0.07]'   : 'border-black/[0.05]'
+  const cardInnerShadow = d ? 'shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]' : 'shadow-sm'
+  const labelClr       = d ? 'text-white/30'         : 'text-gray-400'
+  const titleClr       = d ? 'text-white'            : 'text-[#1a3d2b]'
+  const subClr         = d ? 'text-white/45'         : 'text-gray-400'
+  const arrowClr       = d ? 'text-white/20'         : 'text-gray-300'
+  const inputBg        = d ? 'bg-white/[0.06]'       : 'bg-gray-50'
+  const inputClr       = d ? 'text-white'            : 'text-[#1a3d2b]'
+  const skelBg         = d ? 'bg-white/[0.07]'       : 'bg-gray-100'
+  const itemHover      = d ? '#222222'               : '#edf5e4'
+  const itemBg         = d ? 'bg-white/[0.04]'       : 'bg-[#f6faf2]'
+  const tabInactive    = d ? 'text-white/30 hover:text-white/60' : 'text-gray-400 hover:text-[#1a3d2b]'
+  const tabBarBg       = d ? cardBg                  : 'bg-white'
+  const tabBarBorder   = d ? 'border-white/[0.07]'   : 'border-gray-100'
+
   const focusShadow = (field) => ({
     boxShadow: focusedField === field
       ? '0 0 0 2px #1a3d2b, 0 4px 12px rgba(26,61,43,0.1)'
       : d ? '0 0 0 1.5px rgba(255,255,255,0.08)' : '0 0 0 1.5px #e5e7eb',
   })
-  const skelBg     = d ? 'bg-white/[0.07]' : 'bg-gray-100'
-  const itemHover  = d ? '#242424'         : '#eaf3de'
-  const itemBg     = d ? 'bg-white/[0.04]' : 'bg-gray-50'
-  const tabActive  = d
-    ? 'bg-[#1a3d2b] text-[#d4e84a]'
-    : 'bg-[#1a3d2b] text-[#d4e84a]'
-  const tabInactive = d
-    ? 'text-white/30 hover:text-white/60'
-    : 'text-gray-400 hover:text-[#1a3d2b]'
-  const tabBar     = d ? `${cardBg} border-white/[0.07]` : 'bg-white border-gray-100'
 
   const tabs = [
-    { key: 'info',      label: 'Overzicht' },
-    { key: 'bewerken',  label: 'Bewerken'  },
-    { key: 'dieet',     label: 'Dieet'     },
+    { key: 'info',     label: 'Overzicht' },
+    { key: 'bewerken', label: 'Bewerken'  },
+    { key: 'dieet',    label: 'Dieet'     },
   ]
 
   const SpinnerIcon = () => (
@@ -212,6 +208,15 @@ const labelClr   = d ? 'text-white/30'       : 'text-gray-400'
       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
     </svg>
+  )
+
+  // Reusable double-bezel card wrapper
+  const Card = ({ children, className = '' }) => (
+    <div className={`${shellBg} border ${shellBorder} p-[5px] rounded-[32px] ${className}`}>
+      <div className={`${cardBg} rounded-[27px] overflow-hidden ${cardInnerShadow} transition-colors duration-300`}>
+        {children}
+      </div>
+    </div>
   )
 
   return (
@@ -234,17 +239,11 @@ const labelClr   = d ? 'text-white/30'       : 'text-gray-400'
           >
             <ChevronLeft className="w-5 h-5" />
           </motion.button>
-          <motion.div
-            whileHover={{ rotate: -8, scale: 1.1 }}
-            transition={{ type: 'spring', stiffness: 260, damping: 26 }}
-            className="w-7 h-7 bg-[#d4e84a] rounded-lg flex items-center justify-center cursor-default"
-          >
-            <span className="text-[#1a3d2b] font-black text-xs">T</span>
-          </motion.div>
-          <div className="flex flex-col leading-none">
-            <span className="text-white font-bold text-xs tracking-tight">Techniek College</span>
-            <span className="text-white/40 text-xs">Rotterdam</span>
-          </div>
+          <img
+            src="/img/techniek-college-rotterdam2.jpg"
+            alt="Techniek College Rotterdam"
+            className="h-8 w-auto object-contain rounded"
+          />
         </div>
 
         <div className="flex items-center gap-1">
@@ -257,11 +256,23 @@ const labelClr   = d ? 'text-white/30'       : 'text-gray-400'
           >
             <AnimatePresence mode="wait">
               {dark ? (
-                <motion.div key="sun" initial={{ opacity: 0, rotate: -40, scale: 0.6 }} animate={{ opacity: 1, rotate: 0, scale: 1 }} exit={{ opacity: 0, rotate: 40, scale: 0.6 }} transition={{ duration: 0.18 }}>
+                <motion.div
+                  key="sun"
+                  initial={shouldReduce ? false : { opacity: 0, rotate: -40, scale: 0.6 }}
+                  animate={{ opacity: 1, rotate: 0, scale: 1 }}
+                  exit={shouldReduce ? {} : { opacity: 0, rotate: 40, scale: 0.6 }}
+                  transition={{ duration: 0.18 }}
+                >
                   <Sun className="w-4 h-4" />
                 </motion.div>
               ) : (
-                <motion.div key="moon" initial={{ opacity: 0, rotate: 40, scale: 0.6 }} animate={{ opacity: 1, rotate: 0, scale: 1 }} exit={{ opacity: 0, rotate: -40, scale: 0.6 }} transition={{ duration: 0.18 }}>
+                <motion.div
+                  key="moon"
+                  initial={shouldReduce ? false : { opacity: 0, rotate: 40, scale: 0.6 }}
+                  animate={{ opacity: 1, rotate: 0, scale: 1 }}
+                  exit={shouldReduce ? {} : { opacity: 0, rotate: -40, scale: 0.6 }}
+                  transition={{ duration: 0.18 }}
+                >
                   <Moon className="w-4 h-4" />
                 </motion.div>
               )}
@@ -282,16 +293,20 @@ const labelClr   = d ? 'text-white/30'       : 'text-gray-400'
 
       {/* Hero */}
       <div className="px-6 pt-2 pb-10 relative overflow-hidden">
-        <motion.div
-          animate={{ scale: [1, 1.12, 1], opacity: [0.06, 0.1, 0.06] }}
-          transition={{ duration: 7, repeat: Infinity, ease: 'easeInOut' }}
-          className="absolute -right-16 -top-8 w-64 h-64 bg-[#d4e84a] rounded-full pointer-events-none"
-        />
-        <motion.div
-          animate={{ scale: [1, 1.18, 1], opacity: [0.03, 0.06, 0.03] }}
-          transition={{ duration: 9, repeat: Infinity, ease: 'easeInOut', delay: 3 }}
-          className="absolute -left-20 bottom-0 w-48 h-48 bg-[#d4e84a] rounded-full pointer-events-none"
-        />
+        {!shouldReduce && (
+          <>
+            <motion.div
+              animate={{ scale: [1, 1.12, 1], opacity: [0.06, 0.1, 0.06] }}
+              transition={{ duration: 7, repeat: Infinity, ease: 'easeInOut' }}
+              className="absolute -right-16 -top-8 w-64 h-64 bg-[#d4e84a] rounded-full pointer-events-none"
+            />
+            <motion.div
+              animate={{ scale: [1, 1.18, 1], opacity: [0.03, 0.06, 0.03] }}
+              transition={{ duration: 9, repeat: Infinity, ease: 'easeInOut', delay: 3 }}
+              className="absolute -left-20 bottom-0 w-48 h-48 bg-[#d4e84a] rounded-full pointer-events-none"
+            />
+          </>
+        )}
 
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -308,22 +323,26 @@ const labelClr   = d ? 'text-white/30'       : 'text-gray-400'
           </motion.p>
 
           <div className="flex items-center gap-4 mb-6">
+            {/* Avatar — double-bezel */}
             <motion.div
               initial={{ scale: 0.8, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               transition={{ type: 'spring', stiffness: 260, damping: 28, delay: 0.18 }}
-              className="w-16 h-16 rounded-2xl bg-[#d4e84a] flex items-center justify-center shadow-xl shrink-0"
+              className="shrink-0 p-[3px] rounded-[22px] bg-[#d4e84a]/25 border border-[#d4e84a]/20"
             >
-              <span className="text-[#1a3d2b] font-black text-2xl">
-                {naam ? naam.charAt(0).toUpperCase() : '?'}
-              </span>
+              <div className="w-16 h-16 rounded-[19px] bg-[#d4e84a] flex items-center justify-center shadow-[inset_0_1px_1px_rgba(255,255,255,0.4)]">
+                <span className="text-[#1a3d2b] font-black text-2xl select-none">
+                  {naam ? naam.charAt(0).toUpperCase() : '?'}
+                </span>
+              </div>
             </motion.div>
+
             <div className="flex-1 min-w-0">
-              <h1 className="text-2xl font-black text-white tracking-tight leading-tight truncate">
-                {naam || '—'}
+              <h1 className="text-3xl font-black text-white tracking-tight leading-none truncate">
+                {naam || 'Laden...'}
               </h1>
-              <p className="text-white/40 text-xs mt-0.5 truncate">{email}</p>
-              <span className="inline-block mt-1.5 bg-[#d4e84a]/20 text-[#d4e84a] text-xs font-bold px-2.5 py-0.5 rounded-lg capitalize">
+              <p className="text-white/40 text-xs mt-1.5 truncate">{email}</p>
+              <span className="inline-block mt-2 bg-[#d4e84a]/15 text-[#d4e84a] text-xs font-bold px-2.5 py-0.5 rounded-lg capitalize border border-[#d4e84a]/20">
                 {rol}
               </span>
             </div>
@@ -334,20 +353,23 @@ const labelClr   = d ? 'text-white/30'       : 'text-gray-400'
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ type: 'spring', stiffness: 200, damping: 38, delay: 0.28 }}
-            className="flex gap-3"
+            className="flex gap-2.5"
           >
             {[
-              { label: 'workshops', value: ingeschrevenWorkshops.length },
-              { label: 'events',    value: ingeschrevenEvents.length },
+              { label: 'workshops',   value: ingeschrevenWorkshops.length },
+              { label: 'events',      value: ingeschrevenEvents.length },
               { label: 'dieetwensen', value: geselecteerdeDieet.filter(x => x !== 'Geen restricties').length },
             ].map(({ label, value }) => (
-              <div key={label} className="flex-1 bg-white/10 rounded-2xl p-3.5 text-center border border-white/10">
+              <div
+                key={label}
+                className="flex-1 bg-white/[0.08] rounded-[20px] p-3.5 text-center border border-white/[0.1] shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]"
+              >
                 {dataLoading ? (
                   <div className="h-7 w-6 bg-white/10 rounded-lg animate-pulse mx-auto mb-1" />
                 ) : (
-                  <p className="text-white font-black text-2xl leading-none">{value}</p>
+                  <p className="text-white font-black text-2xl leading-none tabular-nums">{value}</p>
                 )}
-                <p className="text-white/40 text-[11px] font-medium mt-1">{label}</p>
+                <p className="text-white/40 text-[10px] font-semibold uppercase tracking-widest mt-1.5">{label}</p>
               </div>
             ))}
           </motion.div>
@@ -357,24 +379,30 @@ const labelClr   = d ? 'text-white/30'       : 'text-gray-400'
       {/* Content */}
       <div className={`flex-1 ${contentBg} rounded-t-[2.5rem] px-5 pt-6 pb-10 flex flex-col gap-4 transition-colors duration-300`}>
 
-        {/* Tabs */}
+        {/* Tabs — sliding pill via layoutId */}
         <motion.div
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ type: 'spring', stiffness: 200, damping: 38, delay: 0.32 }}
-          className={`flex gap-2 ${tabBar} rounded-2xl p-1.5 border shadow-sm transition-colors duration-300`}
+          className={`flex ${tabBarBg} border ${tabBarBorder} rounded-[22px] p-1.5 shadow-sm transition-colors duration-300`}
         >
           {tabs.map(({ key, label }) => (
-            <motion.button
+            <button
               key={key}
-              whileTap={{ scale: 0.96 }}
               onClick={() => setActieveTab(key)}
-              className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 ${
-                actieveTab === key ? tabActive : tabInactive
-              }`}
+              className="relative flex-1 py-2.5 rounded-xl text-xs font-bold"
             >
-              {label}
-            </motion.button>
+              {actieveTab === key && (
+                <motion.div
+                  layoutId="tab-pill"
+                  className="absolute inset-0 bg-[#1a3d2b] rounded-xl shadow-sm"
+                  transition={{ type: 'spring', stiffness: 380, damping: 38 }}
+                />
+              )}
+              <span className={`relative z-10 transition-colors duration-150 ${actieveTab === key ? 'text-[#d4e84a]' : tabInactive}`}>
+                {label}
+              </span>
+            </button>
           ))}
         </motion.div>
 
@@ -390,13 +418,11 @@ const labelClr   = d ? 'text-white/30'       : 'text-gray-400'
               transition={{ type: 'spring', stiffness: 260, damping: 32 }}
               className="flex flex-col gap-3"
             >
-              {/* Workshops */}
-              <div className={`${cardBg} rounded-3xl border ${cardBorder} overflow-hidden shadow-sm transition-colors duration-300`}>
-                <div className="h-0.5 bg-gradient-to-r from-[#1a3d2b] via-[#4a8c60] to-[#d4e84a]" />
+              <Card>
                 <div className="p-5">
                   <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-2">
-                      <div className="bg-[#d4e84a] p-2 rounded-xl">
+                    <div className="flex items-center gap-2.5">
+                      <div className="bg-[#d4e84a] p-2 rounded-xl shadow-sm">
                         <BookOpen className="w-4 h-4 text-[#1a3d2b]" />
                       </div>
                       <h2 className={`text-sm font-bold ${titleClr}`}>Mijn workshops</h2>
@@ -412,25 +438,28 @@ const labelClr   = d ? 'text-white/30'       : 'text-gray-400'
                     </div>
                   ) : ingeschrevenWorkshops.length === 0 ? (
                     <div className="text-center py-5">
-                      <p className={`text-xs ${subClr} mb-2`}>Nog niet ingeschreven voor workshops</p>
+                      <p className={`text-xs ${subClr} mb-3`}>Nog niet ingeschreven voor workshops</p>
                       <motion.button
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
+                        whileHover={{ scale: 1.04 }}
+                        whileTap={{ scale: 0.96 }}
                         onClick={() => navigate('/workshops')}
-                        className="text-xs text-[#1a3d2b] font-bold bg-[#eaf3de] px-3 py-1.5 rounded-lg hover:bg-[#d4e84a] transition-colors"
+                        className="text-xs text-[#1a3d2b] font-bold bg-[#d4e84a]/20 px-4 py-2 rounded-xl hover:bg-[#d4e84a]/30 transition-colors"
                       >
                         Bekijk workshops
                       </motion.button>
                     </div>
                   ) : (
                     <div className="flex flex-col gap-2">
-                      {ingeschrevenWorkshops.map(w => {
+                      {ingeschrevenWorkshops.map((w, i) => {
                         const datum = w.start_date?.split(' ')?.[0] || ''
                         const tijdStart = w.start_date?.split(' ')?.[1] || ''
                         const tijdEind = w.end_date?.split(' ')?.[1] || ''
                         return (
                           <motion.div
                             key={w.id}
+                            initial={{ opacity: 0, y: 8 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: i * 0.05, type: 'spring', stiffness: 260, damping: 32 }}
                             whileHover={{ x: 4, backgroundColor: itemHover }}
                             whileTap={{ scale: 0.99 }}
                             onClick={() => navigate(`/workshops/${w.id}`)}
@@ -447,14 +476,12 @@ const labelClr   = d ? 'text-white/30'       : 'text-gray-400'
                     </div>
                   )}
                 </div>
-              </div>
+              </Card>
 
-              {/* Events */}
-              <div className={`${cardBg} rounded-3xl border ${cardBorder} overflow-hidden shadow-sm transition-colors duration-300`}>
-                <div className="h-0.5 bg-gradient-to-r from-[#1a3d2b] via-[#4a8c60] to-[#d4e84a]" />
+              <Card>
                 <div className="p-5">
                   <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2.5">
                       <div className="bg-[#1a3d2b] p-2 rounded-xl">
                         <CalendarDays className="w-4 h-4 text-[#d4e84a]" />
                       </div>
@@ -469,23 +496,26 @@ const labelClr   = d ? 'text-white/30'       : 'text-gray-400'
                     <div className={`h-14 ${skelBg} rounded-2xl animate-pulse`} />
                   ) : ingeschrevenEvents.length === 0 ? (
                     <div className="text-center py-5">
-                      <p className={`text-xs ${subClr} mb-2`}>Nog niet ingeschreven voor events</p>
+                      <p className={`text-xs ${subClr} mb-3`}>Nog niet ingeschreven voor events</p>
                       <motion.button
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
+                        whileHover={{ scale: 1.04 }}
+                        whileTap={{ scale: 0.96 }}
                         onClick={() => navigate('/events')}
-                        className="text-xs text-[#1a3d2b] font-bold bg-[#eaf3de] px-3 py-1.5 rounded-lg hover:bg-[#d4e84a] transition-colors"
+                        className="text-xs text-[#1a3d2b] font-bold bg-[#d4e84a]/20 px-4 py-2 rounded-xl hover:bg-[#d4e84a]/30 transition-colors"
                       >
                         Bekijk events
                       </motion.button>
                     </div>
                   ) : (
                     <div className="flex flex-col gap-2">
-                      {ingeschrevenEvents.map(e => {
+                      {ingeschrevenEvents.map((e, i) => {
                         const datum = e.days?.[0]?.date || e.start_date?.split(' ')?.[0] || ''
                         return (
                           <motion.div
                             key={e.id}
+                            initial={{ opacity: 0, y: 8 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: i * 0.05, type: 'spring', stiffness: 260, damping: 32 }}
                             whileHover={{ x: 4, backgroundColor: itemHover }}
                             whileTap={{ scale: 0.99 }}
                             onClick={() => navigate(`/events/${e.id}`)}
@@ -502,7 +532,7 @@ const labelClr   = d ? 'text-white/30'       : 'text-gray-400'
                     </div>
                   )}
                 </div>
-              </div>
+              </Card>
             </motion.div>
           )}
 
@@ -516,12 +546,10 @@ const labelClr   = d ? 'text-white/30'       : 'text-gray-400'
               transition={{ type: 'spring', stiffness: 260, damping: 32 }}
               className="flex flex-col gap-3"
             >
-              {/* Gegevens */}
-              <div className={`${cardBg} rounded-3xl border ${cardBorder} overflow-hidden shadow-sm transition-colors duration-300`}>
-                <div className="h-0.5 bg-gradient-to-r from-[#1a3d2b] via-[#4a8c60] to-[#d4e84a]" />
+              <Card>
                 <div className="p-6">
-                  <div className="flex items-center gap-2 mb-5">
-                    <div className="bg-[#d4e84a]/20 p-2.5 rounded-xl">
+                  <div className="flex items-center gap-2.5 mb-5">
+                    <div className="bg-[#d4e84a]/25 p-2.5 rounded-xl">
                       <User className="w-4 h-4 text-[#1a3d2b]" />
                     </div>
                     <h2 className={`text-sm font-bold ${titleClr}`}>Gegevens bewerken</h2>
@@ -530,7 +558,7 @@ const labelClr   = d ? 'text-white/30'       : 'text-gray-400'
                   <form onSubmit={handleProfielOpslaan} className="flex flex-col gap-4">
                     {[
                       { key: 'naam',  label: 'Naam',        type: 'text',  icon: User, value: naam,  onChange: setNaam  },
-                      { key: 'email', label: 'E-mailadres',  type: 'email', icon: Mail, value: email, onChange: setEmail },
+                      { key: 'email', label: 'E-mailadres', type: 'email', icon: Mail, value: email, onChange: setEmail },
                     ].map(({ key, label, type, icon: Icon, value, onChange }) => (
                       <div key={key} className="flex flex-col gap-1.5">
                         <label className={`text-xs font-bold ${labelClr} uppercase tracking-widest`}>{label}</label>
@@ -558,30 +586,28 @@ const labelClr   = d ? 'text-white/30'       : 'text-gray-400'
                       whileTap={{ scale: profielLoading ? 1 : 0.97 }}
                       type="submit"
                       disabled={profielLoading}
-                      className="bg-[#1a3d2b] text-[#d4e84a] rounded-2xl py-3.5 text-sm font-bold flex items-center justify-center gap-2 disabled:opacity-60"
+                      className="bg-[#1a3d2b] text-[#d4e84a] rounded-2xl py-3.5 text-sm font-bold flex items-center justify-center gap-2 disabled:opacity-60 transition-shadow"
                     >
                       {profielLoading ? <><SpinnerIcon />Opslaan...</> : <><Save className="w-4 h-4" />Opslaan</>}
                     </motion.button>
                   </form>
                 </div>
-              </div>
+              </Card>
 
-              {/* Wachtwoord */}
-              <div className={`${cardBg} rounded-3xl border ${cardBorder} overflow-hidden shadow-sm transition-colors duration-300`}>
-                <div className="h-0.5 bg-gradient-to-r from-[#1a3d2b] via-[#4a8c60] to-[#d4e84a]" />
+              <Card>
                 <div className="p-6">
-                  <div className="flex items-center gap-2 mb-5">
-                    <div className="bg-[#1a3d2b]/10 p-2.5 rounded-xl">
-                      <Lock className="w-4 h-4 text-[#1a3d2b]" />
+                  <div className="flex items-center gap-2.5 mb-5">
+                    <div className={`${d ? 'bg-white/[0.08]' : 'bg-[#1a3d2b]/10'} p-2.5 rounded-xl`}>
+                      <Lock className={`w-4 h-4 ${d ? 'text-white/50' : 'text-[#1a3d2b]'}`} />
                     </div>
                     <h2 className={`text-sm font-bold ${titleClr}`}>Wachtwoord wijzigen</h2>
                   </div>
 
                   <form onSubmit={handleWachtwoordWijzigen} className="flex flex-col gap-4">
                     {[
-                      { key: 'huidig',  label: 'Huidig wachtwoord',      value: huidigWachtwoord,  onChange: setHuidigWachtwoord,  hint: null       },
-                      { key: 'nieuw',   label: 'Nieuw wachtwoord',        value: nieuwWachtwoord,   onChange: setNieuwWachtwoord,   hint: 'Min. 8 tekens' },
-                      { key: 'herhaal', label: 'Herhaal nieuw wachtwoord', value: wachtwoordHerhaal, onChange: setWachtwoordHerhaal, hint: null       },
+                      { key: 'huidig',  label: 'Huidig wachtwoord',       value: huidigWachtwoord,  onChange: setHuidigWachtwoord,  hint: null },
+                      { key: 'nieuw',   label: 'Nieuw wachtwoord',         value: nieuwWachtwoord,   onChange: setNieuwWachtwoord,   hint: 'Min. 8 tekens' },
+                      { key: 'herhaal', label: 'Herhaal nieuw wachtwoord', value: wachtwoordHerhaal, onChange: setWachtwoordHerhaal, hint: null },
                     ].map(({ key, label, value, onChange, hint }) => (
                       <div key={key} className="flex flex-col gap-1.5">
                         <label className={`text-xs font-bold ${labelClr} uppercase tracking-widest`}>{label}</label>
@@ -610,8 +636,16 @@ const labelClr   = d ? 'text-white/30'       : 'text-gray-400'
                             >
                               <AnimatePresence mode="wait">
                                 {toonNieuw
-                                  ? <motion.div key="hide" initial={{ opacity: 0, rotate: -10 }} animate={{ opacity: 1, rotate: 0 }} exit={{ opacity: 0, rotate: 10 }}><EyeOff className="w-4 h-4" /></motion.div>
-                                  : <motion.div key="show" initial={{ opacity: 0, rotate: 10 }} animate={{ opacity: 1, rotate: 0 }} exit={{ opacity: 0, rotate: -10 }}><Eye className="w-4 h-4" /></motion.div>
+                                  ? <motion.div key="hide"
+                                      initial={shouldReduce ? false : { opacity: 0, rotate: -10 }}
+                                      animate={{ opacity: 1, rotate: 0 }}
+                                      exit={shouldReduce ? {} : { opacity: 0, rotate: 10 }}
+                                    ><EyeOff className="w-4 h-4" /></motion.div>
+                                  : <motion.div key="show"
+                                      initial={shouldReduce ? false : { opacity: 0, rotate: 10 }}
+                                      animate={{ opacity: 1, rotate: 0 }}
+                                      exit={shouldReduce ? {} : { opacity: 0, rotate: -10 }}
+                                    ><Eye className="w-4 h-4" /></motion.div>
                                 }
                               </AnimatePresence>
                             </motion.button>
@@ -626,15 +660,14 @@ const labelClr   = d ? 'text-white/30'       : 'text-gray-400'
                       whileTap={{ scale: wachtwoordLoading ? 1 : 0.97 }}
                       type="submit"
                       disabled={wachtwoordLoading}
-                      className="bg-[#1a3d2b] text-[#d4e84a] rounded-2xl py-3.5 text-sm font-bold flex items-center justify-center gap-2 disabled:opacity-60"
+                      className="bg-[#1a3d2b] text-[#d4e84a] rounded-2xl py-3.5 text-sm font-bold flex items-center justify-center gap-2 disabled:opacity-60 transition-shadow"
                     >
                       {wachtwoordLoading ? <><SpinnerIcon />Opslaan...</> : <><Save className="w-4 h-4" />Wachtwoord wijzigen</>}
                     </motion.button>
                   </form>
                 </div>
-              </div>
+              </Card>
 
-              {/* Uitloggen */}
               <motion.button
                 whileHover={{ scale: 1.02, boxShadow: '0 8px 24px rgba(239,68,68,0.1)' }}
                 whileTap={{ scale: 0.97 }}
@@ -656,11 +689,10 @@ const labelClr   = d ? 'text-white/30'       : 'text-gray-400'
               exit={{ opacity: 0, y: -8 }}
               transition={{ type: 'spring', stiffness: 260, damping: 32 }}
             >
-              <div className={`${cardBg} rounded-3xl border ${cardBorder} overflow-hidden shadow-sm transition-colors duration-300`}>
-                <div className="h-0.5 bg-gradient-to-r from-[#1a3d2b] via-[#4a8c60] to-[#d4e84a]" />
+              <Card>
                 <div className="p-6">
-                  <div className="flex items-center gap-2 mb-1">
-                    <div className="bg-[#d4e84a]/20 p-2.5 rounded-xl">
+                  <div className="flex items-center gap-2.5 mb-1">
+                    <div className="bg-[#d4e84a]/25 p-2.5 rounded-xl">
                       <Utensils className="w-4 h-4 text-[#1a3d2b]" />
                     </div>
                     <h2 className={`text-sm font-bold ${titleClr}`}>Dieetwensen</h2>
@@ -686,7 +718,11 @@ const labelClr   = d ? 'text-white/30'       : 'text-gray-400'
                           }`}
                         >
                           {actief && (
-                            <motion.span initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring', stiffness: 400, damping: 20 }}>
+                            <motion.span
+                              initial={{ scale: 0 }}
+                              animate={{ scale: 1 }}
+                              transition={{ type: 'spring', stiffness: 400, damping: 20 }}
+                            >
                               <Check className="w-3 h-3" />
                             </motion.span>
                           )}
@@ -707,12 +743,13 @@ const labelClr   = d ? 'text-white/30'       : 'text-gray-400'
                     {dieetLoading ? <><SpinnerIcon />Opslaan...</> : <><Save className="w-4 h-4" />Dieetwensen opslaan</>}
                   </motion.button>
                 </div>
-              </div>
+              </Card>
             </motion.div>
           )}
 
         </AnimatePresence>
       </div>
+      <Footer />
     </div>
   )
 }

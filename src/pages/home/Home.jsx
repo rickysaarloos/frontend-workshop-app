@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'motion/react'
 import { CalendarDays, BookOpen, User, LogOut, ArrowRight, MapPin, Moon, Sun } from 'lucide-react'
 import { toast, Toaster } from 'sonner'
+import Footer from '../../components/Footer'
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://187.124.29.171:8002'
 
@@ -66,6 +67,7 @@ function Home() {
   const ingeschrevenWorkshops = workshops.filter(w => w.is_registered)
   const aantalWorkshops = workshops.length
 
+
   function formatDatum(datum) {
     return new Date(datum).toLocaleDateString('nl-NL', { weekday: 'long', day: 'numeric', month: 'long' })
   }
@@ -112,13 +114,11 @@ function Home() {
         className="px-6 py-5 flex items-center justify-between"
       >
         <div className="flex items-center gap-3">
-          <motion.div
-            whileHover={{ rotate: 8, scale: 1.1 }}
-            transition={{ type: 'spring', stiffness: 260, damping: 26 }}
-            className="w-7 h-7 bg-[#d4e84a] rounded-lg flex items-center justify-center cursor-default"
-          >
-            <span className="text-[#1a3d2b] font-black text-xs">T</span>
-          </motion.div>
+          <img
+            src="/img/techniek-college-rotterdam2.jpg"
+            alt="Techniek College Rotterdam"
+            className="h-8 w-auto object-contain rounded"
+          />
           <div className="flex flex-col leading-none">
             <span className="text-white font-bold text-xs tracking-tight">Techniek College</span>
             <span className="text-white/50 font-medium text-xs tracking-tight">Rotterdam</span>
@@ -453,6 +453,7 @@ function Home() {
           )}
         </motion.div>
       </div>
+      <Footer />
     </div>
   )
 }

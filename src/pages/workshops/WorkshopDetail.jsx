@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { motion, AnimatePresence } from 'motion/react'
 import { ChevronLeft, CalendarDays, Clock, Users, CheckCircle, MapPin, BookOpen, User, Tag, Moon, Sun } from 'lucide-react'
 import { toast, Toaster } from 'sonner'
+import Footer from '../../components/Footer'
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://187.124.29.171:8002'
 
@@ -146,17 +147,11 @@ function WorkshopDetail() {
           >
             <ChevronLeft className="w-5 h-5" />
           </motion.button>
-          <motion.div
-            whileHover={{ rotate: 8, scale: 1.1 }}
-            transition={{ type: 'spring', stiffness: 400, damping: 20 }}
-            className="w-7 h-7 bg-[#d4e84a] rounded-lg flex items-center justify-center cursor-default"
-          >
-            <span className="text-[#1a3d2b] font-black text-xs">T</span>
-          </motion.div>
-          <div className="flex flex-col leading-none">
-            <span className="text-white font-bold text-xs tracking-tight">Techniek College</span>
-            <span className="text-white/40 text-xs">Rotterdam</span>
-          </div>
+          <img
+            src="/img/techniek-college-rotterdam2.jpg"
+            alt="Techniek College Rotterdam"
+            className="h-8 w-auto object-contain rounded"
+          />
         </div>
 
         <motion.button
@@ -502,6 +497,7 @@ function WorkshopDetail() {
           )}
         </div>
       </div>
+      <Footer />
     </div>
   )
 }
