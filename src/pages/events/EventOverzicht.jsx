@@ -4,10 +4,10 @@ import { motion, AnimatePresence } from 'motion/react'
 import { ChevronLeft, CalendarDays, Clock, MapPin, Search, Calendar, Moon, Sun } from 'lucide-react'
 import { toast, Toaster } from 'sonner'
 import Footer from '../../components/Footer'
-
+ 
 const API_URL = import.meta.env.VITE_API_URL || 'http://187.124.29.171:8002'
 const categorieen = ['Alle', 'Studiedag', 'Open dag', 'Gastcollege', 'Expo']
-
+ 
 const containerVariants = {
   hidden: { opacity: 0 },
   visible: {
@@ -15,7 +15,7 @@ const containerVariants = {
     transition: { staggerChildren: 0.07, delayChildren: 0.05 },
   },
 }
-
+ 
 const cardVariants = {
   hidden: { opacity: 0, y: 18 },
   visible: {
@@ -24,12 +24,12 @@ const cardVariants = {
     transition: { type: 'spring', stiffness: 380, damping: 28 },
   },
 }
-
+ 
 function EventCard({ event, navigate, formatDatum, getDagenTot, dark }) {
   const d = dark
   const dagenTot = getDagenTot(event.datum)
   const isVoorbij = dagenTot < 0
-
+ 
   const cardBg    = d ? 'bg-[#1c1c1e]'       : 'bg-white'
   const cardBord  = d ? 'border-white/[0.07]' : 'border-gray-100'
   const catBg     = d ? 'bg-[#d4e84a]/12 text-[#d4e84a]' : 'bg-[#eaf3de] text-[#1a3d2b]'
@@ -39,7 +39,7 @@ function EventCard({ event, navigate, formatDatum, getDagenTot, dark }) {
   const metaClr   = d ? 'text-white/55'       : 'text-gray-500'
   const metaIcon  = d ? 'text-white/30'       : 'text-gray-400'
   const countClr  = isVoorbij ? (d ? 'text-white/20' : 'text-gray-300') : (d ? 'text-white' : 'text-[#1a3d2b]')
-
+ 
   return (
     <motion.div
       variants={cardVariants}
@@ -49,22 +49,22 @@ function EventCard({ event, navigate, formatDatum, getDagenTot, dark }) {
       className={`${cardBg} rounded-3xl border ${cardBord} overflow-hidden cursor-pointer`}
     >
       <div className={`h-0.5 w-full ${isVoorbij ? (d ? 'bg-white/10' : 'bg-gradient-to-r from-gray-200 to-gray-300') : 'bg-gradient-to-r from-[#1a3d2b] via-[#4a8c60] to-[#d4e84a]'}`} />
-
+ 
       <div className="p-5">
         <div className="flex justify-between gap-4">
           <div className="flex-1 min-w-0">
             <span className={`text-xs font-semibold px-2 py-1 rounded-lg ${catBg}`}>
               {event.categorie}
             </span>
-
+ 
             <h2 className={`font-bold mt-2 text-sm leading-snug truncate ${titleClr}`}>
               {event.titel}
             </h2>
-
+ 
             <p className={`text-xs mt-1 mb-3 line-clamp-2 leading-relaxed ${subClr}`}>
               {event.beschrijving}
             </p>
-
+ 
             <div className="flex flex-wrap gap-2">
               <span className={`flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-lg ${metaBg} ${metaClr}`}>
                 <CalendarDays className={`w-3 h-3 ${metaIcon}`} />
@@ -84,7 +84,7 @@ function EventCard({ event, navigate, formatDatum, getDagenTot, dark }) {
               )}
             </div>
           </div>
-
+ 
           <div className="text-right shrink-0 flex flex-col items-end justify-center">
             <p className={`text-lg font-bold ${countClr}`}>
               {isVoorbij ? '–' : dagenTot}
@@ -98,16 +98,16 @@ function EventCard({ event, navigate, formatDatum, getDagenTot, dark }) {
     </motion.div>
   )
 }
-
+ 
 function EventOverzicht() {
   const navigate = useNavigate()
-
+ 
   const [events, setEvents] = useState([])
   const [loading, setLoading] = useState(true)
   const [zoekterm, setZoekterm] = useState('')
   const [actieveCategorie, setActieveCategorie] = useState('Alle')
   const [dark, setDark] = useState(() => localStorage.getItem('theme') === 'dark')
-
+ 
   function toggleDark() {
     setDark(d => {
       const next = !d
@@ -115,7 +115,7 @@ function EventOverzicht() {
       return next
     })
   }
-
+ 
   useEffect(() => {
     const token = localStorage.getItem('token')
     if (!token) {
@@ -124,7 +124,7 @@ function EventOverzicht() {
     }
     fetchEvents(token)
   }, [])
-
+ 
   async function fetchEvents(token) {
     try {
       const res = await fetch(`${API_URL}/api/events`, {
@@ -133,18 +133,18 @@ function EventOverzicht() {
           Accept: 'application/json',
         },
       })
-
+ 
       if (res.status === 401) {
         localStorage.removeItem('token')
         localStorage.removeItem('user')
         navigate('/login')
         return
       }
-
+ 
       if (!res.ok) throw new Error(`Kon events niet ophalen (${res.status})`)
-
+ 
       const json = await res.json()
-
+ 
       const mapped = (json.data || []).map((e) => ({
         id: e.id,
         titel: e.title,
@@ -155,7 +155,7 @@ function EventOverzicht() {
         tijd: formatTimeRange(e.days),
         startDate: e.start_date,
       }))
-
+ 
       setEvents(mapped)
     } catch (err) {
       toast.error('Events ophalen mislukt')
@@ -164,7 +164,7 @@ function EventOverzicht() {
       setLoading(false)
     }
   }
-
+ 
   function mapCategory(cat) {
     const map = {
       conference: 'Studiedag',
@@ -174,13 +174,13 @@ function EventOverzicht() {
     }
     return map[cat] || cat
   }
-
+ 
   function formatTimeRange(days) {
     if (!days?.length) return ''
     const day = days[0]
     return `${day.start_time} - ${day.end_time}`
   }
-
+ 
   function formatDatum(datum) {
     if (!datum) return ''
     return new Date(datum).toLocaleDateString('nl-NL', {
@@ -189,30 +189,30 @@ function EventOverzicht() {
       month: 'short',
     })
   }
-
+ 
   function getDagenTot(datum) {
     if (!datum) return 0
     const verschil = new Date(datum) - new Date()
     return Math.ceil(verschil / (1000 * 60 * 60 * 24))
   }
-
+ 
   const gefilterd = events.filter((e) => {
     const matchZoek = e.titel?.toLowerCase().includes(zoekterm.toLowerCase())
     const matchCategorie = actieveCategorie === 'Alle' || e.categorie === actieveCategorie
     return matchZoek && matchCategorie
   })
-
+ 
   const d = dark
   const contentBg  = d ? 'bg-[#111111]'       : 'bg-[#e4e8e2]'
   const cardBg     = d ? 'bg-[#1c1c1e]'       : 'bg-white'
   const cardBorder = d ? 'border-white/[0.07]' : 'border-gray-100'
   const skelBg     = d ? 'bg-white/[0.07]'    : 'bg-gray-100'
   const labelClr   = d ? 'text-white/30'       : 'text-gray-400'
-
+ 
   return (
     <div className="min-h-[100dvh] bg-[#1a3d2b] flex flex-col">
       <Toaster position="top-right" richColors />
-
+ 
       {/* Header */}
       <motion.header
         initial={{ opacity: 0, y: -16 }}
@@ -235,7 +235,7 @@ function EventOverzicht() {
             className="h-8 w-auto object-contain rounded"
           />
         </div>
-
+ 
         <motion.button
           whileHover={{ scale: 1.08 }}
           whileTap={{ scale: 0.88 }}
@@ -268,7 +268,7 @@ function EventOverzicht() {
           </AnimatePresence>
         </motion.button>
       </motion.header>
-
+ 
       {/* Hero */}
       <div className="px-6 pt-2 pb-10 relative overflow-hidden">
         <motion.div
@@ -281,7 +281,7 @@ function EventOverzicht() {
           transition={{ duration: 9, repeat: Infinity, ease: 'easeInOut', delay: 3 }}
           className="absolute -left-20 bottom-0 w-48 h-48 bg-[#d4e84a] rounded-full pointer-events-none"
         />
-
+ 
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -312,11 +312,11 @@ function EventOverzicht() {
           </motion.div>
         </motion.div>
       </div>
-
+ 
       {/* Content sectie */}
       <div className={`flex-1 ${contentBg} rounded-t-[2.5rem] px-5 pt-7 pb-10`}>
         <div className="max-w-2xl mx-auto flex flex-col gap-4">
-
+ 
           {/* Zoekbalk */}
           <div className="relative">
             <Search className={`absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 ${d ? 'text-white/20' : 'text-gray-300'}`} />
@@ -332,7 +332,7 @@ function EventOverzicht() {
               }`}
             />
           </div>
-
+ 
           {/* Categorie filter */}
           <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
             {categorieen.map((cat) => (
@@ -352,7 +352,7 @@ function EventOverzicht() {
               </motion.button>
             ))}
           </div>
-
+ 
           {/* Label */}
           <AnimatePresence mode="wait">
             <motion.p
@@ -366,7 +366,7 @@ function EventOverzicht() {
               {loading ? 'Laden...' : `${gefilterd.length} events gevonden`}
             </motion.p>
           </AnimatePresence>
-
+ 
           {/* Skeleton loading */}
           {loading && (
             <div className="flex flex-col gap-3">
@@ -396,7 +396,7 @@ function EventOverzicht() {
               ))}
             </div>
           )}
-
+ 
           {/* Event lijst */}
           <AnimatePresence mode="wait">
             {!loading && (
@@ -455,5 +455,5 @@ function EventOverzicht() {
     </div>
   )
 }
-
+ 
 export default EventOverzicht

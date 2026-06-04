@@ -4,9 +4,9 @@ import { motion, AnimatePresence } from 'motion/react'
 import { ChevronLeft, CalendarDays, Clock, MapPin, Users, CheckCircle, Calendar, Moon, Sun } from 'lucide-react'
 import { toast, Toaster } from 'sonner'
 import Footer from '../../components/Footer'
-
+ 
 const API_URL = import.meta.env.VITE_API_URL || 'http://187.124.29.171:8002'
-
+ 
 function mapCategory(cat) {
   const map = {
     conference: 'Studiedag',
@@ -16,7 +16,7 @@ function mapCategory(cat) {
   }
   return map[cat] || cat
 }
-
+ 
 function formatDatum(datum) {
   if (!datum) return ''
   return new Date(datum).toLocaleDateString('nl-NL', {
@@ -26,7 +26,7 @@ function formatDatum(datum) {
     year: 'numeric',
   })
 }
-
+ 
 function formatDatumKort(datum) {
   if (!datum) return ''
   return new Date(datum).toLocaleDateString('nl-NL', {
@@ -35,23 +35,23 @@ function formatDatumKort(datum) {
     month: 'short',
   })
 }
-
+ 
 function formatTijd(days) {
   if (!days?.length) return ''
   const day = days[0]
   return `${day.start_time} - ${day.end_time}`
 }
-
+ 
 export default function EventDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
-
+ 
   const [event, setEvent] = useState(null)
   const [loading, setLoading] = useState(true)
   const [ingeschreven, setIngeschreven] = useState(false)
   const [registreerLoading, setRegistreerLoading] = useState(false)
   const [dark, setDark] = useState(() => localStorage.getItem('theme') === 'dark')
-
+ 
   function toggleDark() {
     setDark(d => {
       const next = !d
@@ -59,13 +59,13 @@ export default function EventDetail() {
       return next
     })
   }
-
+ 
   useEffect(() => {
     const token = localStorage.getItem('token')
     if (!token) { navigate('/login'); return }
     fetchEvent(token)
   }, [id])
-
+ 
   async function fetchEvent(token) {
     try {
       const res = await fetch(`${API_URL}/api/events/${id}`, {
@@ -74,10 +74,10 @@ export default function EventDetail() {
           Accept: 'application/json',
         },
       })
-
+ 
       if (res.status === 401) { navigate('/login'); return }
       if (!res.ok) throw new Error(`Kon event niet ophalen (${res.status})`)
-
+ 
       const json = await res.json()
       const e = json.data
       setEvent(e)
@@ -88,11 +88,11 @@ export default function EventDetail() {
       setLoading(false)
     }
   }
-
+ 
   async function handleRegistreer() {
     const token = localStorage.getItem('token')
     if (!token) { navigate('/login'); return }
-
+ 
     setRegistreerLoading(true)
     try {
       if (ingeschreven) {
@@ -120,14 +120,14 @@ export default function EventDetail() {
       setRegistreerLoading(false)
     }
   }
-
+ 
   const datum = event?.days?.[0]?.date || event?.start_date?.split(' ')?.[0] || ''
   const spotsLeft = event?.spots_left ?? null
   const capacity = event?.capacity ?? null
   const registered = event?.registered ?? null
   const isFull = event?.is_full ?? false
   const spotsPct = capacity ? Math.round((registered / capacity) * 100) : null
-
+ 
   const d = dark
   const contentBg  = d ? 'bg-[#111111]'       : 'bg-[#e4e8e2]'
   const cardBg     = d ? 'bg-[#1c1c1e]'       : 'bg-white'
@@ -139,11 +139,11 @@ export default function EventDetail() {
   const iconClr    = d ? 'text-[#d4e84a]'      : 'text-[#1a3d2b]'
   const barBg      = d ? 'bg-white/10'         : 'bg-gray-100'
   const rowBorder  = d ? 'border-white/[0.05]' : 'border-gray-50'
-
+ 
   return (
     <div className="min-h-[100dvh] bg-[#1a3d2b] flex flex-col">
       <Toaster position="top-right" richColors />
-
+ 
       {/* Header */}
       <motion.header
         initial={{ opacity: 0, y: -16 }}
@@ -166,7 +166,7 @@ export default function EventDetail() {
             className="h-8 w-auto object-contain rounded"
           />
         </div>
-
+ 
         <motion.button
           whileHover={{ scale: 1.08 }}
           whileTap={{ scale: 0.88 }}
@@ -199,7 +199,7 @@ export default function EventDetail() {
           </AnimatePresence>
         </motion.button>
       </motion.header>
-
+ 
       {/* Hero */}
       <div className="px-6 pt-2 pb-10 relative overflow-hidden">
         <motion.div
@@ -207,7 +207,7 @@ export default function EventDetail() {
           transition={{ duration: 7, repeat: Infinity, ease: 'easeInOut' }}
           className="absolute -right-16 -top-8 w-64 h-64 bg-[#d4e84a] rounded-full pointer-events-none"
         />
-
+ 
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -221,7 +221,7 @@ export default function EventDetail() {
           >
             Event
           </motion.p>
-
+ 
           {loading ? (
             <div className="space-y-2">
               <div className="h-8 w-56 bg-white/10 rounded-xl animate-pulse" />
@@ -240,11 +240,11 @@ export default function EventDetail() {
           ) : null}
         </motion.div>
       </div>
-
+ 
       {/* Content */}
       <div className={`flex-1 ${contentBg} rounded-t-[2.5rem] px-5 pt-7 pb-10`}>
         <div className="max-w-2xl mx-auto flex flex-col gap-4">
-
+ 
           {/* Loading skeleton */}
           {loading && (
             <div className="flex flex-col gap-4">
@@ -260,7 +260,7 @@ export default function EventDetail() {
               ))}
             </div>
           )}
-
+ 
           {/* Niet gevonden */}
           {!loading && !event && (
             <motion.div
@@ -284,7 +284,7 @@ export default function EventDetail() {
               </motion.button>
             </motion.div>
           )}
-
+ 
           {!loading && event && (
             <>
               {/* Ingeschreven badge */}
@@ -301,7 +301,7 @@ export default function EventDetail() {
                   </motion.div>
                 )}
               </AnimatePresence>
-
+ 
               {/* Info kaart */}
               <motion.div
                 initial={{ opacity: 0, y: 14 }}
@@ -311,7 +311,7 @@ export default function EventDetail() {
               >
                 <div className="h-0.5 bg-gradient-to-r from-[#1a3d2b] via-[#4a8c60] to-[#d4e84a]" />
                 <div className="p-5 flex flex-col gap-4">
-
+ 
                   <div className="flex items-center gap-3">
                     <div className={`${iconBg} p-2.5 rounded-xl shrink-0`}>
                       <CalendarDays className={`w-4 h-4 ${iconClr}`} />
@@ -323,7 +323,7 @@ export default function EventDetail() {
                       </p>
                     </div>
                   </div>
-
+ 
                   <div className="flex items-center gap-3">
                     <div className={`${iconBg} p-2.5 rounded-xl shrink-0`}>
                       <Clock className={`w-4 h-4 ${iconClr}`} />
@@ -333,7 +333,7 @@ export default function EventDetail() {
                       <p className={`text-sm font-semibold ${titleClr}`}>{formatTijd(event.days)}</p>
                     </div>
                   </div>
-
+ 
                   {event.location && (
                     <div className="flex items-center gap-3">
                       <div className={`${iconBg} p-2.5 rounded-xl shrink-0`}>
@@ -345,7 +345,7 @@ export default function EventDetail() {
                       </div>
                     </div>
                   )}
-
+ 
                   {capacity !== null && (
                     <div className="flex items-center gap-3">
                       <div className={`p-2.5 rounded-xl shrink-0 ${isFull ? 'bg-red-50' : iconBg}`}>
@@ -359,7 +359,7 @@ export default function EventDetail() {
                       </div>
                     </div>
                   )}
-
+ 
                   {/* Voortgangsbalk */}
                   {spotsPct !== null && (
                     <div className="flex items-center gap-2.5">
@@ -378,7 +378,7 @@ export default function EventDetail() {
                   )}
                 </div>
               </motion.div>
-
+ 
               {/* Beschrijving */}
               {event.description && (
                 <motion.div
@@ -394,7 +394,7 @@ export default function EventDetail() {
                   </div>
                 </motion.div>
               )}
-
+ 
               {/* Meerdere dagen / programma */}
               {event.days?.length > 1 && (
                 <motion.div
@@ -419,7 +419,7 @@ export default function EventDetail() {
                   </div>
                 </motion.div>
               )}
-
+ 
               {/* Actie knop */}
               <motion.div
                 initial={{ opacity: 0, y: 14 }}
