@@ -244,6 +244,10 @@ function Profiel() {
             alt="Techniek College Rotterdam"
             className="h-8 w-auto object-contain rounded"
           />
+          <div className="flex flex-col leading-none">
+            <span className="text-white font-bold text-xs tracking-tight">Techniek College</span>
+            <span className="text-white/50 font-medium text-xs tracking-tight">Rotterdam</span>
+          </div>
         </div>
 
         <div className="flex items-center gap-1">

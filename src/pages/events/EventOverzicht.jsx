@@ -234,8 +234,12 @@ function EventOverzicht() {
             alt="Techniek College Rotterdam"
             className="h-8 w-auto object-contain rounded"
           />
+          <div className="flex flex-col leading-none">
+            <span className="text-white font-bold text-xs tracking-tight">Techniek College</span>
+            <span className="text-white/50 font-medium text-xs tracking-tight">Rotterdam</span>
+          </div>
         </div>
- 
+
         <motion.button
           whileHover={{ scale: 1.08 }}
           whileTap={{ scale: 0.88 }}

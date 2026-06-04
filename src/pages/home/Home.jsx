@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'motion/react'
-import { CalendarDays, BookOpen, User, LogOut, ArrowRight, MapPin, Moon, Sun } from 'lucide-react'
+import { CalendarDays, BookOpen, User, LogOut, ArrowRight, MapPin, Moon, Sun, Clock } from 'lucide-react'
 import { toast, Toaster } from 'sonner'
 import Footer from '../../components/Footer'
 
@@ -358,30 +358,36 @@ function Home() {
         </motion.div>
 
         {/* Jouw workshops */}
-        <motion.p
+        <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.62 }}
-          className={`text-xs font-bold ${labelClr} uppercase tracking-widest mt-1`}
+          className="flex items-center justify-between mt-1"
         >
-          Jouw workshops
-        </motion.p>
+          <p className={`text-xs font-bold ${labelClr} uppercase tracking-widest`}>Jouw workshops</p>
+          {!loading && ingeschrevenWorkshops.length > 0 && (
+            <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${d ? 'bg-white/8 text-white/35' : 'bg-gray-100 text-gray-400'}`}>
+              {ingeschrevenWorkshops.length}
+            </span>
+          )}
+        </motion.div>
 
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ type: 'spring', stiffness: 200, damping: 38, delay: 0.66 }}
-          className="flex flex-col gap-2"
+          className="flex flex-col gap-2.5"
         >
           {loading ? (
             [1, 2].map(i => (
               <div key={i} className={`${cardBg} rounded-2xl border ${cardBorder} overflow-hidden shadow-sm transition-colors duration-300`}>
-                <div className={`h-0.5 ${skelBg} animate-pulse`} />
-                <div className="px-4 py-3.5 flex items-center gap-3">
-                  <div className={`w-11 h-11 ${skelBg} rounded-xl animate-pulse shrink-0`} />
-                  <div className="flex-1 space-y-2">
+                <div className={`h-[3px] ${skelBg} animate-pulse`} />
+                <div className="px-4 py-4 flex items-center gap-4">
+                  <div className={`w-[52px] h-[58px] ${skelBg} rounded-xl animate-pulse shrink-0`} />
+                  <div className="flex-1 space-y-2.5">
                     <div className={`h-3 ${skelBg} rounded-full w-40 animate-pulse`} />
-                    <div className={`h-2.5 ${skelBg} rounded-full w-28 animate-pulse`} />
+                    <div className={`h-2.5 ${skelBg} rounded-full w-24 animate-pulse`} />
+                    <div className={`h-2.5 ${skelBg} rounded-full w-32 animate-pulse`} />
                   </div>
                 </div>
               </div>
@@ -413,38 +419,56 @@ function Home() {
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ type: 'spring', stiffness: 200, damping: 38, delay: 0.72 + index * 0.1 }}
-                    whileHover={{ y: -2, boxShadow: '0 8px 24px rgba(26,61,43,0.14)' }}
+                    whileHover={{ y: -2, boxShadow: d ? '0 8px 24px rgba(0,0,0,0.3)' : '0 8px 24px rgba(26,61,43,0.12)' }}
                     whileTap={{ scale: 0.99 }}
                     onClick={() => navigate(`/workshops/${workshop.id}`)}
                     className={`${cardBg} rounded-2xl border ${cardBorder} overflow-hidden cursor-pointer shadow-sm transition-colors duration-300`}
                   >
-                    <div className="h-0.5 bg-gradient-to-r from-[#1a3d2b] via-[#4a8c60] to-[#d4e84a]" />
-                    <div className="px-4 py-3.5 flex items-center gap-3">
-                      <div className="bg-[#1a3d2b] rounded-xl px-2.5 py-2 text-center shrink-0 min-w-[44px]">
-                        <p className="text-[#d4e84a] text-xs font-black leading-none">
-                          {new Date(datum).getDate()}
+                    <div className="h-[3px] bg-gradient-to-r from-[#1a3d2b] via-[#4a8c60] to-[#d4e84a]" />
+                    <div className="px-4 py-4 flex items-center gap-4">
+                      <div className="bg-[#1a3d2b] rounded-xl px-3 py-2.5 text-center shrink-0 min-w-[52px]">
+                        <p className="text-[#d4e84a] text-xl font-black leading-none">
+                          {datum ? new Date(datum).getDate() : '—'}
                         </p>
-                        <p className="text-white/50 text-[10px] font-medium mt-0.5 capitalize">
-                          {new Date(datum).toLocaleDateString('nl-NL', { month: 'short' })}
+                        <p className="text-white/50 text-[10px] font-semibold mt-1 uppercase tracking-wide">
+                          {datum ? new Date(datum).toLocaleDateString('nl-NL', { month: 'short' }) : ''}
                         </p>
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className={`text-sm font-bold truncate ${titleClr}`}>{workshop.title}</p>
-                        <p className={`text-xs mt-0.5 truncate ${subClr}`}>
-                          {tijdStart} – {tijdEind} · {workshop.location}
-                        </p>
+                        <div className="flex items-center gap-2 mb-1.5">
+                          <p className={`text-sm font-bold truncate ${titleClr}`}>{workshop.title}</p>
+                          <span className={`shrink-0 text-[10px] font-bold px-1.5 py-0.5 rounded-md ${d ? 'bg-[#d4e84a]/12 text-[#d4e84a]/70' : 'bg-[#1a3d2b]/8 text-[#1a3d2b]/60'}`}>
+                            ✓
+                          </span>
+                        </div>
+                        <div className="flex flex-col gap-0.5">
+                          {(tijdStart || tijdEind) && (
+                            <div className={`flex items-center gap-1.5 text-xs ${subClr}`}>
+                              <Clock className="w-3 h-3 shrink-0" />
+                              <span>{tijdStart}{tijdEind ? ` – ${tijdEind}` : ''}</span>
+                            </div>
+                          )}
+                          {workshop.location && (
+                            <div className={`flex items-center gap-1.5 text-xs ${subClr}`}>
+                              <MapPin className="w-3 h-3 shrink-0" />
+                              <span className="truncate">{workshop.location}</span>
+                            </div>
+                          )}
+                        </div>
                       </div>
-                      <ArrowRight className={`w-4 h-4 ${arrowClr} shrink-0`} />
+                      <div className={`shrink-0 w-7 h-7 rounded-xl flex items-center justify-center ${d ? 'bg-white/5' : 'bg-gray-50'}`}>
+                        <ArrowRight className={`w-3.5 h-3.5 ${arrowClr}`} />
+                      </div>
                     </div>
                   </motion.div>
                 )
               })}
 
               <motion.button
-                whileHover={{ x: 3 }}
-                whileTap={{ scale: 0.97 }}
+                whileHover={{ scale: 1.01, y: -1 }}
+                whileTap={{ scale: 0.98 }}
                 onClick={() => navigate('/workshops')}
-                className={`flex items-center gap-1.5 text-xs font-bold px-1 pt-1 hover:underline underline-offset-2 ${titleClr}`}
+                className={`w-full flex items-center justify-center gap-1.5 text-xs font-bold py-3 rounded-2xl transition-colors ${emptyBtn}`}
               >
                 Alle workshops bekijken
                 <ArrowRight className="w-3.5 h-3.5" />
