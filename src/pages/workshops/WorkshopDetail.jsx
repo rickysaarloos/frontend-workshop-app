@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { motion, AnimatePresence, useReducedMotion } from 'motion/react'
-import { ChevronLeft, CalendarDays, Clock, Users, CheckCircle, MapPin, BookOpen, User, Tag, Moon, Sun } from 'lucide-react'
+import { ChevronLeft, CalendarDays, Clock, Users, CheckCircle, MapPin, BookOpen, User, Tag, Moon, Sun, AlertTriangle, ClipboardList, Leaf } from 'lucide-react'
 import { toast, Toaster } from 'sonner'
 import Footer from '../../components/Footer'
 
@@ -387,6 +387,87 @@ function WorkshopDetail() {
                   <p className={`text-sm leading-relaxed ${subClr}`}>{workshop.description}</p>
                 </div>
               </motion.div>
+
+              {/* Waarschuwingen */}
+              {workshop.important_notes && (
+                <motion.div
+                  initial={{ opacity: 0, y: 14 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ type: 'spring', stiffness: 350, damping: 30, delay: 0.24 }}
+                  className={`rounded-3xl border overflow-hidden shadow-sm ${d ? 'bg-amber-950/30 border-amber-500/25' : 'bg-amber-50 border-amber-200'}`}
+                >
+                  <div className="h-0.5 bg-gradient-to-r from-amber-400 via-orange-400 to-yellow-300" />
+                  <div className="p-5">
+                    <h2 className={`text-sm font-bold mb-3 flex items-center gap-2 ${d ? 'text-amber-300' : 'text-amber-700'}`}>
+                      <AlertTriangle className="w-3.5 h-3.5" />
+                      Belangrijke informatie
+                    </h2>
+                    <p className={`text-sm leading-relaxed ${d ? 'text-amber-200/70' : 'text-amber-700/75'}`}>{workshop.important_notes}</p>
+                  </div>
+                </motion.div>
+              )}
+
+              {/* Benodigdheden */}
+              {workshop.requirements && (Array.isArray(workshop.requirements) ? workshop.requirements.length > 0 : true) && (
+                <motion.div
+                  initial={{ opacity: 0, y: 14 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ type: 'spring', stiffness: 350, damping: 30, delay: 0.3 }}
+                  className={`${cardBg} rounded-3xl border ${cardBorder} overflow-hidden shadow-sm`}
+                >
+                  <div className="h-0.5 bg-gradient-to-r from-[#1a3d2b] via-[#4a8c60] to-[#d4e84a]" />
+                  <div className="p-5">
+                    <h2 className={`text-sm font-bold mb-3 flex items-center gap-2 ${titleClr}`}>
+                      <ClipboardList className="w-3.5 h-3.5" />
+                      Benodigdheden
+                    </h2>
+                    {Array.isArray(workshop.requirements) ? (
+                      <ul className="flex flex-col gap-2">
+                        {workshop.requirements.map((item, i) => (
+                          <li key={i} className={`flex items-start gap-2.5 text-sm ${subClr}`}>
+                            <span className={`w-1.5 h-1.5 rounded-full mt-1.5 shrink-0 ${d ? 'bg-[#d4e84a]/50' : 'bg-[#1a3d2b]/40'}`} />
+                            {item}
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className={`text-sm leading-relaxed ${subClr}`}>{workshop.requirements}</p>
+                    )}
+                  </div>
+                </motion.div>
+              )}
+
+              {/* Dieetwensen & allergenen */}
+              {(workshop.dietary_info || workshop.allergens) && (
+                <motion.div
+                  initial={{ opacity: 0, y: 14 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ type: 'spring', stiffness: 350, damping: 30, delay: 0.36 }}
+                  className={`${cardBg} rounded-3xl border ${cardBorder} overflow-hidden shadow-sm`}
+                >
+                  <div className="h-0.5 bg-gradient-to-r from-[#1a3d2b] via-[#4a8c60] to-[#d4e84a]" />
+                  <div className="p-5">
+                    <h2 className={`text-sm font-bold mb-3 flex items-center gap-2 ${titleClr}`}>
+                      <Leaf className="w-3.5 h-3.5" />
+                      Dieetwensen & allergenen
+                    </h2>
+                    {(() => {
+                      const info = workshop.dietary_info || workshop.allergens
+                      return Array.isArray(info) ? (
+                        <div className="flex flex-wrap gap-2">
+                          {info.map((item, i) => (
+                            <span key={i} className={`text-xs font-semibold px-2.5 py-1 rounded-full ${d ? 'bg-[#d4e84a]/12 text-[#d4e84a]/80' : 'bg-[#eaf3de] text-[#1a3d2b]'}`}>
+                              {item}
+                            </span>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className={`text-sm leading-relaxed ${subClr}`}>{info}</p>
+                      )
+                    })()}
+                  </div>
+                </motion.div>
+              )}
 
               {/* Sessie-selectie */}
               {workshop.registration_mode === 'session' && workshop.sessions?.length > 0 && !ingeschreven && (

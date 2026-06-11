@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence, useReducedMotion } from 'motion/react'
-import { ChevronLeft, ChevronRight, BookOpen, MapPin, Clock, Calendar, Users, Moon, Sun } from 'lucide-react'
+import { ChevronLeft, ChevronRight, BookOpen, MapPin, Clock, Calendar, Users, Moon, Sun, AlertTriangle, ClipboardList, Leaf } from 'lucide-react'
 import { toast, Toaster } from 'sonner'
 import Footer from '../../components/Footer'
 
@@ -115,6 +115,29 @@ function WorkshopCard({ workshop, index, navigate, formatDatum, dark }) {
                 </span>
               </div>
             </div>
+
+            {(workshop.important_notes || workshop.requirements || workshop.dietary_info || workshop.allergens) && (
+              <div className="flex flex-wrap gap-1.5 mt-2.5">
+                {workshop.important_notes && (
+                  <span className={`flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full ${d ? 'bg-amber-500/15 text-amber-400' : 'bg-amber-50 text-amber-600 border border-amber-200'}`}>
+                    <AlertTriangle className="w-2.5 h-2.5" />
+                    Waarschuwing
+                  </span>
+                )}
+                {workshop.requirements && (Array.isArray(workshop.requirements) ? workshop.requirements.length > 0 : true) && (
+                  <span className={`flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full ${d ? 'bg-white/10 text-white/45' : 'bg-gray-100 text-gray-500'}`}>
+                    <ClipboardList className="w-2.5 h-2.5" />
+                    Benodigdheden
+                  </span>
+                )}
+                {(workshop.dietary_info || workshop.allergens) && (
+                  <span className={`flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full ${d ? 'bg-[#d4e84a]/10 text-[#d4e84a]/60' : 'bg-[#eaf3de] text-[#4a8c60]'}`}>
+                    <Leaf className="w-2.5 h-2.5" />
+                    Dieetinfo
+                  </span>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </div>

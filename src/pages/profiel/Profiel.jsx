@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence, useReducedMotion } from 'motion/react'
-import { User, Mail, Lock, Utensils, LogOut, ChevronLeft, Save, Check, BookOpen, CalendarDays, ArrowRight, Eye, EyeOff, Moon, Sun, UserPlus, Copy, Clock } from 'lucide-react'
+import { User, Mail, Lock, Utensils, LogOut, ChevronLeft, Save, Check, BookOpen, CalendarDays, ArrowRight, Eye, EyeOff, Moon, Sun, UserPlus, Copy, Clock, Network, Hash, UserCheck } from 'lucide-react'
 import { toast, Toaster } from 'sonner'
 import Footer from '../../components/Footer'
 
@@ -38,6 +38,13 @@ function Profiel() {
   const [dark, setDark] = useState(() => localStorage.getItem('theme') === 'dark')
   const [stuurlinkLoading, setStuurlinkLoading] = useState(false)
   const [gegenereerdeLink, setGegenereerdeLink] = useState(null)
+  const [netwerkcode, setNetwerkcode] = useState(null)
+  const [netwerkcodeLoading, setNetwerkcodeLoading] = useState(false)
+  const [netwerkContacten, setNetwerkContacten] = useState([])
+  const [contactenLoading, setContactenLoading] = useState(false)
+  const [invulCode, setInvulCode] = useState('')
+  const [codeToevoegenLoading, setCodeToevoegenLoading] = useState(false)
+  const [netwerkGeladen, setNetwerkGeladen] = useState(false)
 
   function toggleDark() {
     setDark(d => {
@@ -52,6 +59,13 @@ function Profiel() {
     if (!token) { navigate('/login'); return }
     fetchAlles(token)
   }, [])
+
+  useEffect(() => {
+    if (actieveTab !== 'netwerk' || netwerkGeladen) return
+    const token = localStorage.getItem('token')
+    if (!token) return
+    fetchNetwerkdata(token)
+  }, [actieveTab])
 
   async function fetchAlles(token) {
     const headers = { Authorization: `Bearer ${token}`, Accept: 'application/json' }
@@ -183,6 +197,56 @@ function Profiel() {
     }
   }
 
+  async function fetchNetwerkdata(token) {
+    setNetwerkGeladen(true)
+    const headers = { Authorization: `Bearer ${token}`, Accept: 'application/json' }
+    setNetwerkcodeLoading(true)
+    setContactenLoading(true)
+    try {
+      const [codeRes, contactenRes] = await Promise.all([
+        fetch(`${API_URL}/api/user/netwerkcode`, { headers }),
+        fetch(`${API_URL}/api/user/netwerk`, { headers }),
+      ])
+      const codeJson = await codeRes.json()
+      const contactenJson = await contactenRes.json()
+      if (codeRes.ok) setNetwerkcode(codeJson.code || codeJson.netwerkcode || codeJson.data?.code || null)
+      if (contactenRes.ok) setNetwerkContacten(contactenJson.data || contactenJson.contacts || [])
+    } catch {
+      toast.error('Netwerkgegevens ophalen mislukt')
+    } finally {
+      setNetwerkcodeLoading(false)
+      setContactenLoading(false)
+    }
+  }
+
+  async function handleCodeToevoegen() {
+    if (!invulCode.trim()) { toast.error('Voer een code in'); return }
+    setCodeToevoegenLoading(true)
+    try {
+      const token = localStorage.getItem('token')
+      const res = await fetch(`${API_URL}/api/netwerken`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, Accept: 'application/json', 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: invulCode.trim() }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.message || 'Toevoegen mislukt')
+      toast.success(data.message || 'Contact toegevoegd!')
+      setInvulCode('')
+      const contactenRes = await fetch(`${API_URL}/api/user/netwerk`, {
+        headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
+      })
+      if (contactenRes.ok) {
+        const contactenJson = await contactenRes.json()
+        setNetwerkContacten(contactenJson.data || contactenJson.contacts || [])
+      }
+    } catch (err) {
+      toast.error(err.message)
+    } finally {
+      setCodeToevoegenLoading(false)
+    }
+  }
+
   async function handleKopieer(url) {
     try {
       await navigator.clipboard.writeText(url)
@@ -233,6 +297,7 @@ function Profiel() {
     { key: 'bewerken',   label: 'Bewerken'   },
     { key: 'dieet',      label: 'Dieet'      },
     { key: 'stuurlinks', label: 'Uitnodigen' },
+    { key: 'netwerk',    label: 'Netwerk'    },
   ]
 
   const SpinnerIcon = () => (
@@ -436,7 +501,7 @@ function Profiel() {
             <button
               key={key}
               onClick={() => setActieveTab(key)}
-              className="relative flex-1 py-2.5 rounded-xl text-xs font-bold"
+              className="relative flex-1 py-2.5 rounded-xl text-[10px] font-bold"
             >
               {actieveTab === key && (
                 <motion.div
@@ -897,6 +962,169 @@ function Profiel() {
                       </motion.div>
                     )}
                   </AnimatePresence>
+                </div>
+              </Card>
+            </motion.div>
+          )}
+
+          {/* TAB: Netwerk */}
+          {actieveTab === 'netwerk' && (
+            <motion.div
+              key="netwerk"
+              initial={{ opacity: 0, y: 14 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ type: 'spring', stiffness: 260, damping: 32 }}
+              className="flex flex-col gap-3"
+            >
+              {/* Jouw netwerkcode */}
+              <Card>
+                <div className={gradientTop} />
+                <div className="p-6">
+                  <div className="flex items-center gap-2.5 mb-5">
+                    <div className={`p-2.5 rounded-xl border ${d ? 'bg-white/[0.06] border-white/[0.08]' : 'bg-[#1a3d2b]/[0.08] border-[#1a3d2b]/[0.1]'}`}>
+                      <Network className={`w-4 h-4 ${d ? 'text-white/55' : 'text-[#1a3d2b]'}`} />
+                    </div>
+                    <div>
+                      <h2 className={`text-sm font-bold ${titleClr}`}>Jouw netwerkcode</h2>
+                      <p className={`text-[11px] ${subClr} mt-0.5`}>Deel met anderen om te verbinden</p>
+                    </div>
+                  </div>
+
+                  {netwerkcodeLoading ? (
+                    <div className={`h-16 ${skelBg} rounded-2xl animate-pulse mb-4`} />
+                  ) : netwerkcode ? (
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.95 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      className={`flex items-center justify-center py-5 mb-4 rounded-2xl ${d ? 'bg-white/[0.05] border border-white/[0.07]' : 'bg-[#f4f9ef] border border-[#ddebd3]'}`}
+                    >
+                      <span className={`font-black tracking-[0.28em] text-2xl select-all ${titleClr}`}>
+                        {netwerkcode}
+                      </span>
+                    </motion.div>
+                  ) : (
+                    <div className={`flex items-center justify-center py-5 mb-4 rounded-2xl ${d ? 'bg-white/[0.04] border border-white/[0.05]' : 'bg-gray-50 border border-gray-100'}`}>
+                      <span className={`text-sm ${subClr}`}>Geen code beschikbaar</span>
+                    </div>
+                  )}
+
+                  {netwerkcode && (
+                    <motion.button
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.97 }}
+                      onClick={() => handleKopieer(netwerkcode)}
+                      className="w-full bg-[#d4e84a] text-[#1a3d2b] rounded-2xl py-3.5 text-sm font-bold flex items-center justify-center gap-2 hover:bg-[#c9df3a] transition-colors"
+                    >
+                      <Copy className="w-4 h-4" />
+                      Code kopiëren
+                    </motion.button>
+                  )}
+                </div>
+              </Card>
+
+              {/* Contact toevoegen */}
+              <Card>
+                <div className={gradientTop} />
+                <div className="p-6">
+                  <div className="flex items-center gap-2.5 mb-5">
+                    <div className="bg-[#d4e84a]/20 p-2.5 rounded-xl border border-[#d4e84a]/25">
+                      <UserPlus className="w-4 h-4 text-[#1a3d2b]" />
+                    </div>
+                    <div>
+                      <h2 className={`text-sm font-bold ${titleClr}`}>Contact toevoegen</h2>
+                      <p className={`text-[11px] ${subClr} mt-0.5`}>Voer de code van iemand in</p>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-2">
+                    <motion.div
+                      animate={focusShadow('invulcode')}
+                      transition={{ duration: 0.18 }}
+                      className={`flex-1 relative ${inputBg} rounded-2xl overflow-hidden`}
+                    >
+                      <Hash className={`absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 transition-colors duration-200 ${focusedField === 'invulcode' ? 'text-[#1a3d2b]' : d ? 'text-white/20' : 'text-[#1a3d2b]/25'}`} />
+                      <input
+                        type="text"
+                        value={invulCode}
+                        onChange={e => setInvulCode(e.target.value.toUpperCase())}
+                        onFocus={() => setFocusedField('invulcode')}
+                        onBlur={() => setFocusedField(null)}
+                        onKeyDown={e => e.key === 'Enter' && handleCodeToevoegen()}
+                        placeholder="Code..."
+                        maxLength={20}
+                        disabled={codeToevoegenLoading}
+                        className={`w-full pl-10 pr-4 py-3.5 text-sm font-bold tracking-widest ${inputClr} bg-transparent outline-none placeholder:text-gray-300 placeholder:font-normal placeholder:tracking-normal uppercase disabled:opacity-50`}
+                      />
+                    </motion.div>
+                    <motion.button
+                      whileHover={{ scale: codeToevoegenLoading ? 1 : 1.05 }}
+                      whileTap={{ scale: codeToevoegenLoading ? 1 : 0.93 }}
+                      onClick={handleCodeToevoegen}
+                      disabled={codeToevoegenLoading || !invulCode.trim()}
+                      className="bg-[#1a3d2b] text-[#d4e84a] rounded-2xl px-5 py-3.5 text-sm font-bold flex items-center justify-center disabled:opacity-40 transition-opacity shrink-0"
+                    >
+                      {codeToevoegenLoading ? <SpinnerIcon /> : <UserPlus className="w-4 h-4" />}
+                    </motion.button>
+                  </div>
+                </div>
+              </Card>
+
+              {/* Contacten lijst */}
+              <Card>
+                <div className={gradientTop} />
+                <div className="p-5">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-2.5">
+                      <div className={`p-2 rounded-xl ${d ? 'bg-white/[0.06]' : 'bg-[#eef3e8]'}`}>
+                        <UserCheck className={`w-4 h-4 ${d ? 'text-white/55' : 'text-[#1a3d2b]'}`} />
+                      </div>
+                      <h2 className={`text-sm font-bold ${titleClr}`}>Mijn contacten</h2>
+                    </div>
+                    {!contactenLoading && (
+                      <span className={`text-[11px] font-medium ${subClr} px-2.5 py-1 rounded-full ${d ? 'bg-white/[0.06]' : 'bg-[#eef3e8]'}`}>
+                        {netwerkContacten.length} contact{netwerkContacten.length !== 1 ? 'en' : ''}
+                      </span>
+                    )}
+                  </div>
+
+                  {contactenLoading ? (
+                    <div className="flex flex-col gap-2.5">
+                      {[1, 2].map(i => <div key={i} className={`h-[52px] ${skelBg} rounded-2xl animate-pulse`} />)}
+                    </div>
+                  ) : netwerkContacten.length === 0 ? (
+                    <div className="text-center py-6">
+                      <div className={`w-10 h-10 ${d ? 'bg-white/[0.06]' : 'bg-[#eef3e8]'} rounded-2xl flex items-center justify-center mx-auto mb-2.5`}>
+                        <UserCheck className={`w-5 h-5 ${d ? 'text-white/20' : 'text-[#1a3d2b]/25'}`} />
+                      </div>
+                      <p className={`text-xs ${subClr}`}>Nog geen contacten — voeg iemand toe via hun code</p>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col gap-2">
+                      {netwerkContacten.map((contact, i) => (
+                        <motion.div
+                          key={contact.id || i}
+                          initial={{ opacity: 0, y: 8 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: i * 0.05, type: 'spring', stiffness: 260, damping: 32 }}
+                          className={`flex items-center gap-3 p-3 rounded-2xl ${itemBg}`}
+                        >
+                          <div className="shrink-0 w-9 h-9 rounded-xl bg-gradient-to-br from-[#d4e84a]/80 to-[#b8d43a]/60 flex items-center justify-center">
+                            <span className="text-[#1a3d2b] font-black text-sm">
+                              {(contact.name || contact.naam || '?').charAt(0).toUpperCase()}
+                            </span>
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className={`text-sm font-semibold ${titleClr} truncate`}>{contact.name || contact.naam}</p>
+                            {(contact.email || contact.role) && (
+                              <p className={`text-xs ${subClr} mt-0.5 truncate`}>{contact.email || contact.role}</p>
+                            )}
+                          </div>
+                          <UserCheck className={`w-4 h-4 shrink-0 ${d ? 'text-[#d4e84a]/40' : 'text-[#4a8c60]/50'}`} />
+                        </motion.div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </Card>
             </motion.div>
