@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { motion, AnimatePresence } from 'motion/react'
+import { motion, AnimatePresence, useReducedMotion } from 'motion/react'
 import { ChevronLeft, CalendarDays, Clock, Users, CheckCircle, MapPin, BookOpen, User, Tag, Moon, Sun } from 'lucide-react'
 import { toast, Toaster } from 'sonner'
 import Footer from '../../components/Footer'
@@ -17,6 +17,7 @@ function WorkshopDetail() {
   const [registratieLoading, setRegistratieLoading] = useState(false)
   const [geselecteerdeSessie, setGeselecteerdeSessie] = useState(null)
   const [dark, setDark] = useState(() => localStorage.getItem('theme') === 'dark')
+  const shouldReduce = useReducedMotion()
 
   function toggleDark() {
     setDark(d => {
@@ -193,11 +194,13 @@ function WorkshopDetail() {
 
       {/* Hero */}
       <div className="px-6 pt-2 pb-10 relative overflow-hidden">
-        <motion.div
-          animate={{ scale: [1, 1.12, 1], opacity: [0.06, 0.1, 0.06] }}
-          transition={{ duration: 7, repeat: Infinity, ease: 'easeInOut' }}
-          className="absolute -right-16 -top-8 w-64 h-64 bg-[#d4e84a] rounded-full pointer-events-none"
-        />
+        {!shouldReduce && (
+          <motion.div
+            animate={{ scale: [1, 1.12, 1], opacity: [0.06, 0.1, 0.06] }}
+            transition={{ duration: 7, repeat: Infinity, ease: 'easeInOut' }}
+            className="absolute -right-16 -top-8 w-64 h-64 bg-[#d4e84a] rounded-full pointer-events-none"
+          />
+        )}
 
         <motion.div
           initial={{ opacity: 0, y: 20 }}

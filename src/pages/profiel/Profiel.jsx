@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence, useReducedMotion } from 'motion/react'
-import { User, Mail, Lock, Utensils, LogOut, ChevronLeft, Save, Check, BookOpen, CalendarDays, ArrowRight, Eye, EyeOff, Moon, Sun } from 'lucide-react'
+import { User, Mail, Lock, Utensils, LogOut, ChevronLeft, Save, Check, BookOpen, CalendarDays, ArrowRight, Eye, EyeOff, Moon, Sun, UserPlus, Copy, Clock } from 'lucide-react'
 import { toast, Toaster } from 'sonner'
 import Footer from '../../components/Footer'
 
@@ -36,6 +36,8 @@ function Profiel() {
   const [dataLoading, setDataLoading] = useState(true)
   const [toonNieuw, setToonNieuw] = useState(false)
   const [dark, setDark] = useState(() => localStorage.getItem('theme') === 'dark')
+  const [stuurlinkLoading, setStuurlinkLoading] = useState(false)
+  const [gegenereerdeLink, setGegenereerdeLink] = useState(null)
 
   function toggleDark() {
     setDark(d => {
@@ -159,6 +161,37 @@ function Profiel() {
     }
   }
 
+  async function handleStuurlinkAanmaken() {
+    setStuurlinkLoading(true)
+    setGegenereerdeLink(null)
+    try {
+      const token = localStorage.getItem('token')
+      const res = await fetch(`${API_URL}/api/invite-tokens`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, Accept: 'application/json', 'Content-Type': 'application/json' },
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.message || 'Aanmaken mislukt')
+      const inviteToken = data.token || data.data?.token
+      const expiresAt = data.expires_at || data.data?.expires_at
+      const url = data.url || data.data?.url || `${window.location.origin}/register?token=${inviteToken}`
+      setGegenereerdeLink({ url, expiresAt })
+    } catch (err) {
+      toast.error(err.message)
+    } finally {
+      setStuurlinkLoading(false)
+    }
+  }
+
+  async function handleKopieer(url) {
+    try {
+      await navigator.clipboard.writeText(url)
+      toast.success('Link gekopieerd!')
+    } catch {
+      toast.error('Kopiëren mislukt')
+    }
+  }
+
   function handleUitloggen() {
     localStorage.removeItem('token')
     localStorage.removeItem('user')
@@ -198,9 +231,10 @@ function Profiel() {
   })
 
   const tabs = [
-    { key: 'info',     label: 'Overzicht' },
-    { key: 'bewerken', label: 'Bewerken'  },
-    { key: 'dieet',    label: 'Dieet'     },
+    { key: 'info',       label: 'Overzicht'  },
+    { key: 'bewerken',   label: 'Bewerken'   },
+    { key: 'dieet',      label: 'Dieet'      },
+    { key: 'stuurlinks', label: 'Stuurlinks' },
   ]
 
   const SpinnerIcon = () => (
@@ -746,6 +780,70 @@ function Profiel() {
                   >
                     {dieetLoading ? <><SpinnerIcon />Opslaan...</> : <><Save className="w-4 h-4" />Dieetwensen opslaan</>}
                   </motion.button>
+                </div>
+              </Card>
+            </motion.div>
+          )}
+
+          {/* TAB: Stuurlinks (alleen admin / docent) */}
+          {actieveTab === 'stuurlinks' && (
+            <motion.div
+              key="stuurlinks"
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ type: 'spring', stiffness: 260, damping: 32 }}
+            >
+              <Card>
+                <div className="p-6">
+                  <div className="flex items-center gap-2.5 mb-2">
+                    <div className="bg-[#d4e84a]/25 p-2.5 rounded-xl">
+                      <UserPlus className="w-4 h-4 text-[#1a3d2b]" />
+                    </div>
+                    <h2 className={`text-sm font-bold ${titleClr}`}>Stuurlink aanmaken</h2>
+                  </div>
+                  <p className={`text-xs ${subClr} mb-5 pl-1`}>Eenmalig geldig · verloopt na 24 uur</p>
+
+                  <motion.button
+                    whileHover={{ scale: stuurlinkLoading ? 1 : 1.02, boxShadow: stuurlinkLoading ? 'none' : '0 10px 28px rgba(26,61,43,0.28)' }}
+                    whileTap={{ scale: stuurlinkLoading ? 1 : 0.97 }}
+                    type="button"
+                    onClick={handleStuurlinkAanmaken}
+                    disabled={stuurlinkLoading}
+                    className="w-full bg-[#1a3d2b] text-[#d4e84a] rounded-2xl py-3.5 text-sm font-bold flex items-center justify-center gap-2 disabled:opacity-60 transition-shadow"
+                  >
+                    {stuurlinkLoading ? <><SpinnerIcon />Aanmaken...</> : <><UserPlus className="w-4 h-4" />Nieuwe stuurlink</>}
+                  </motion.button>
+
+                  <AnimatePresence>
+                    {gegenereerdeLink && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -6 }}
+                        transition={{ type: 'spring', stiffness: 260, damping: 32 }}
+                        className={`mt-4 ${itemBg} rounded-2xl p-4`}
+                      >
+                        {gegenereerdeLink.expiresAt && (
+                          <div className={`flex items-center gap-1.5 text-xs ${subClr} mb-2`}>
+                            <Clock className="w-3.5 h-3.5 shrink-0" />
+                            Geldig tot {new Date(gegenereerdeLink.expiresAt).toLocaleString('nl-NL', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })}
+                          </div>
+                        )}
+                        <p className={`text-xs font-mono break-all ${subClr} mb-3`}>{gegenereerdeLink.url}</p>
+                        <motion.button
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.96 }}
+                          type="button"
+                          onClick={() => handleKopieer(gegenereerdeLink.url)}
+                          className="w-full bg-[#d4e84a] text-[#1a3d2b] rounded-xl py-2.5 text-xs font-bold flex items-center justify-center gap-2 hover:bg-[#c8dc3e] transition-colors"
+                        >
+                          <Copy className="w-3.5 h-3.5" />
+                          Kopieer link
+                        </motion.button>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
               </Card>
             </motion.div>

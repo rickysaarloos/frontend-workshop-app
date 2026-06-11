@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { motion, AnimatePresence } from 'motion/react'
-import { CalendarDays, BookOpen, User, LogOut, ArrowRight, MapPin, Moon, Sun, Clock } from 'lucide-react'
+import { motion, AnimatePresence, useReducedMotion } from 'motion/react'
+import { CalendarDays, BookOpen, User, LogOut, ArrowRight, MapPin, Moon, Sun, Clock, UserPlus, Copy } from 'lucide-react'
 import { toast, Toaster } from 'sonner'
 import Footer from '../../components/Footer'
 
@@ -9,6 +9,7 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://187.124.29.171:8002'
 
 function Home() {
   const navigate = useNavigate()
+  const shouldReduce = useReducedMotion()
   const user = JSON.parse(localStorage.getItem('user') || 'null')
   const voornaam = user?.name?.split(' ')[0]
 
@@ -16,6 +17,8 @@ function Home() {
   const [aankomendEvent, setAankomendEvent] = useState(null)
   const [loading, setLoading] = useState(true)
   const [dark, setDark] = useState(() => localStorage.getItem('theme') === 'dark')
+  const [stuurlinkLoading, setStuurlinkLoading] = useState(false)
+  const [gegenereerdeLink, setGegenereerdeLink] = useState(null)
 
   function toggleDark() {
     setDark(d => {
@@ -67,7 +70,6 @@ function Home() {
   const ingeschrevenWorkshops = workshops.filter(w => w.is_registered)
   const aantalWorkshops = workshops.length
 
-
   function formatDatum(datum) {
     return new Date(datum).toLocaleDateString('nl-NL', { weekday: 'long', day: 'numeric', month: 'long' })
   }
@@ -79,28 +81,80 @@ function Home() {
     setTimeout(() => navigate('/login'), 600)
   }
 
+  async function handleStuurlinkAanmaken() {
+    setStuurlinkLoading(true)
+    setGegenereerdeLink(null)
+    try {
+      const token = localStorage.getItem('token')
+      const res = await fetch(`${API_URL}/api/invite-tokens`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, Accept: 'application/json', 'Content-Type': 'application/json' },
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.message || 'Aanmaken mislukt')
+      const inviteToken = data.token || data.data?.token
+      const expiresAt = data.expires_at || data.data?.expires_at
+      const url = data.url || data.data?.url || `${window.location.origin}/register?token=${inviteToken}`
+      setGegenereerdeLink({ url, expiresAt })
+    } catch (err) {
+      toast.error(err.message)
+    } finally {
+      setStuurlinkLoading(false)
+    }
+  }
+
+  async function handleKopieer(url) {
+    try {
+      await navigator.clipboard.writeText(url)
+      toast.success('Link gekopieerd!')
+    } catch {
+      toast.error('Kopiëren mislukt')
+    }
+  }
+
   // Kleur-tokens voor dark/light mode
   const d = dark
-  const contentBg  = d ? 'bg-[#111111]'         : 'bg-[#e4e8e2]'
-  const cardBg     = d ? 'bg-[#1c1c1e]'         : 'bg-white'
-  const cardBorder = d ? 'border-white/[0.07]'   : 'border-gray-100'
-  const divider    = d ? 'border-white/[0.05]'   : 'border-gray-50'
-  const labelClr   = d ? 'text-white/30'         : 'text-gray-400'
-  const titleClr   = d ? 'text-white'            : 'text-[#1a3d2b]'
-  const subClr     = d ? 'text-white/45'         : 'text-gray-400'
-  const arrowClr   = d ? 'text-white/20'         : 'text-gray-300'
-  const skelBg     = d ? 'bg-white/[0.07]'       : 'bg-gray-100'
-  const emptyBg    = d ? 'bg-white/[0.05]'       : 'bg-gray-50'
-  const emptyIcon  = d ? 'text-white/20'         : 'text-gray-300'
-  const emptyBtn   = d
+  const contentBg   = d ? 'bg-[#111111]'         : 'bg-[#e4e8e2]'
+  const cardBg      = d ? 'bg-[#1c1c1e]'         : 'bg-white'
+  const cardBorder  = d ? 'border-white/[0.07]'   : 'border-gray-100'
+  const divider     = d ? 'border-white/[0.05]'   : 'border-gray-50'
+  const labelClr    = d ? 'text-white/30'         : 'text-gray-400'
+  const titleClr    = d ? 'text-white'            : 'text-[#1a3d2b]'
+  const subClr      = d ? 'text-white/45'         : 'text-gray-400'
+  const arrowClr    = d ? 'text-white/20'         : 'text-gray-300'
+  const skelBg      = d ? 'bg-white/[0.07]'       : 'bg-gray-100'
+  const emptyBg     = d ? 'bg-white/[0.05]'       : 'bg-gray-50'
+  const emptyIcon   = d ? 'text-white/20'         : 'text-gray-300'
+  const itemBg      = d ? 'bg-white/[0.04]'       : 'bg-[#f6faf2]'
+  // Double-bezel shell (nested-hardware look, gedeeld met Profiel)
+  const shellBg     = d ? 'bg-white/[0.025]'      : 'bg-black/[0.018]'
+  const shellBorder = d ? 'border-white/[0.07]'   : 'border-black/[0.05]'
+  const innerShadow = d ? 'shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]' : 'shadow-sm'
+  const emptyBtn    = d
     ? 'text-[#d4e84a] bg-[#d4e84a]/10 hover:bg-[#d4e84a]/20'
     : 'text-[#1a3d2b] bg-[#eaf3de] hover:bg-[#d4e84a]'
-  const navHover   = d ? '#242424' : '#f8faf7'
-  const navIcons   = [
+  const navHover    = d ? '#242424' : '#f8faf7'
+  const navIcons    = [
     { kleur: d ? 'bg-[#d4e84a]/12' : 'bg-[#d4e84a]',  iconKleur: d ? 'text-[#d4e84a]'  : 'text-[#1a3d2b]' },
     { kleur: d ? 'bg-white/8'      : 'bg-[#eaf3de]',  iconKleur: d ? 'text-white/55'   : 'text-[#1a3d2b]' },
     { kleur: 'bg-[#1a3d2b]',                           iconKleur: 'text-[#d4e84a]'                         },
   ]
+
+  const SpinnerIcon = () => (
+    <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
+      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+    </svg>
+  )
+
+  // Double-bezel card wrapper (outer shell + inner core), gedeeld met Profiel
+  const Card = ({ children, className = '' }) => (
+    <div className={`${shellBg} border ${shellBorder} p-[5px] rounded-[32px] ${className}`}>
+      <div className={`${cardBg} rounded-[27px] overflow-hidden ${innerShadow} transition-colors duration-300`}>
+        {children}
+      </div>
+    </div>
+  )
 
   return (
     <div className="min-h-[100dvh] bg-[#1a3d2b] flex flex-col">
@@ -138,9 +192,9 @@ function Home() {
               {dark ? (
                 <motion.div
                   key="sun"
-                  initial={{ opacity: 0, rotate: -40, scale: 0.6 }}
+                  initial={shouldReduce ? false : { opacity: 0, rotate: -40, scale: 0.6 }}
                   animate={{ opacity: 1, rotate: 0, scale: 1 }}
-                  exit={{ opacity: 0, rotate: 40, scale: 0.6 }}
+                  exit={shouldReduce ? {} : { opacity: 0, rotate: 40, scale: 0.6 }}
                   transition={{ duration: 0.18 }}
                 >
                   <Sun className="w-4 h-4" />
@@ -148,9 +202,9 @@ function Home() {
               ) : (
                 <motion.div
                   key="moon"
-                  initial={{ opacity: 0, rotate: 40, scale: 0.6 }}
+                  initial={shouldReduce ? false : { opacity: 0, rotate: 40, scale: 0.6 }}
                   animate={{ opacity: 1, rotate: 0, scale: 1 }}
-                  exit={{ opacity: 0, rotate: -40, scale: 0.6 }}
+                  exit={shouldReduce ? {} : { opacity: 0, rotate: -40, scale: 0.6 }}
                   transition={{ duration: 0.18 }}
                 >
                   <Moon className="w-4 h-4" />
@@ -173,16 +227,20 @@ function Home() {
 
       {/* Hero */}
       <div className="px-6 pt-2 pb-10 relative overflow-hidden">
-        <motion.div
-          animate={{ scale: [1, 1.12, 1], opacity: [0.06, 0.1, 0.06] }}
-          transition={{ duration: 7, repeat: Infinity, ease: 'easeInOut' }}
-          className="absolute -right-16 -top-8 w-64 h-64 bg-[#d4e84a] rounded-full pointer-events-none"
-        />
-        <motion.div
-          animate={{ scale: [1, 1.18, 1], opacity: [0.03, 0.06, 0.03] }}
-          transition={{ duration: 9, repeat: Infinity, ease: 'easeInOut', delay: 3 }}
-          className="absolute -left-20 bottom-0 w-48 h-48 bg-[#d4e84a] rounded-full pointer-events-none"
-        />
+        {!shouldReduce && (
+          <>
+            <motion.div
+              animate={{ scale: [1, 1.12, 1], opacity: [0.06, 0.1, 0.06] }}
+              transition={{ duration: 7, repeat: Infinity, ease: 'easeInOut' }}
+              className="absolute -right-16 -top-8 w-64 h-64 bg-[#d4e84a] rounded-full pointer-events-none"
+            />
+            <motion.div
+              animate={{ scale: [1, 1.18, 1], opacity: [0.03, 0.06, 0.03] }}
+              transition={{ duration: 9, repeat: Infinity, ease: 'easeInOut', delay: 3 }}
+              className="absolute -left-20 bottom-0 w-48 h-48 bg-[#d4e84a] rounded-full pointer-events-none"
+            />
+          </>
+        )}
 
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -230,16 +288,20 @@ function Home() {
             onClick={() => navigate(`/events/${aankomendEvent.id}`)}
             className="bg-[#1a3d2b] rounded-3xl p-6 cursor-pointer relative overflow-hidden"
           >
-            <motion.div
-              animate={{ scale: [1, 1.15, 1], opacity: [0.08, 0.14, 0.08] }}
-              transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
-              className="absolute -right-8 -top-8 w-32 h-32 bg-[#d4e84a] rounded-full pointer-events-none"
-            />
-            <motion.div
-              animate={{ scale: [1, 1.2, 1], opacity: [0.04, 0.07, 0.04] }}
-              transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut', delay: 2 }}
-              className="absolute right-8 -bottom-10 w-24 h-24 bg-white rounded-full pointer-events-none"
-            />
+            {!shouldReduce && (
+              <>
+                <motion.div
+                  animate={{ scale: [1, 1.15, 1], opacity: [0.08, 0.14, 0.08] }}
+                  transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
+                  className="absolute -right-8 -top-8 w-32 h-32 bg-[#d4e84a] rounded-full pointer-events-none"
+                />
+                <motion.div
+                  animate={{ scale: [1, 1.2, 1], opacity: [0.04, 0.07, 0.04] }}
+                  transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut', delay: 2 }}
+                  className="absolute right-8 -bottom-10 w-24 h-24 bg-white rounded-full pointer-events-none"
+                />
+              </>
+            )}
             <div className="flex items-start justify-between relative">
               <div className="flex-1">
                 <p className="text-[#d4e84a] text-xs font-bold uppercase tracking-widest mb-2">Aankomend event</p>
@@ -355,6 +417,68 @@ function Home() {
               <ArrowRight className={`w-4 h-4 ${arrowClr} shrink-0`} />
             </motion.div>
           ))}
+        </motion.div>
+
+        {/* Nodig iemand uit — stuurlink */}
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ type: 'spring', stiffness: 200, damping: 38, delay: 0.58 }}
+        >
+          <Card>
+            <div className="p-5">
+              <div className="flex items-start gap-3 mb-4">
+                <div className="bg-[#d4e84a]/25 p-2.5 rounded-xl shrink-0">
+                  <UserPlus className="w-4 h-4 text-[#1a3d2b]" />
+                </div>
+                <div className="min-w-0">
+                  <h2 className={`text-sm font-bold ${titleClr}`}>Nodig iemand uit</h2>
+                  <p className={`text-xs ${subClr} mt-0.5`}>Eenmalig geldig &middot; verloopt na 24 uur</p>
+                </div>
+              </div>
+
+              <motion.button
+                whileHover={{ scale: stuurlinkLoading ? 1 : 1.02, boxShadow: stuurlinkLoading ? 'none' : '0 10px 28px rgba(26,61,43,0.28)' }}
+                whileTap={{ scale: stuurlinkLoading ? 1 : 0.97 }}
+                type="button"
+                onClick={handleStuurlinkAanmaken}
+                disabled={stuurlinkLoading}
+                className="w-full bg-[#1a3d2b] text-[#d4e84a] rounded-2xl py-3.5 text-sm font-bold flex items-center justify-center gap-2 disabled:opacity-60 transition-shadow"
+              >
+                {stuurlinkLoading ? <><SpinnerIcon />Aanmaken...</> : <><UserPlus className="w-4 h-4" />Nieuwe stuurlink</>}
+              </motion.button>
+
+              <AnimatePresence>
+                {gegenereerdeLink && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -6 }}
+                    transition={{ type: 'spring', stiffness: 260, damping: 32 }}
+                    className={`mt-4 ${itemBg} rounded-2xl p-4`}
+                  >
+                    {gegenereerdeLink.expiresAt && (
+                      <div className={`flex items-center gap-1.5 text-xs ${subClr} mb-2`}>
+                        <Clock className="w-3.5 h-3.5 shrink-0" />
+                        Geldig tot {new Date(gegenereerdeLink.expiresAt).toLocaleString('nl-NL', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })}
+                      </div>
+                    )}
+                    <p className={`text-xs font-mono break-all ${subClr} mb-3`}>{gegenereerdeLink.url}</p>
+                    <motion.button
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.96 }}
+                      type="button"
+                      onClick={() => handleKopieer(gegenereerdeLink.url)}
+                      className="w-full bg-[#d4e84a] text-[#1a3d2b] rounded-xl py-2.5 text-xs font-bold flex items-center justify-center gap-2 hover:bg-[#c8dc3e] transition-colors"
+                    >
+                      <Copy className="w-3.5 h-3.5" />
+                      Kopieer link
+                    </motion.button>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          </Card>
         </motion.div>
 
         {/* Jouw workshops */}

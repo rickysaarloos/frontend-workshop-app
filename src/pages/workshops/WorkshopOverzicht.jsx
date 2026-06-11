@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { motion, AnimatePresence } from 'motion/react'
+import { motion, AnimatePresence, useReducedMotion } from 'motion/react'
 import { ChevronLeft, ChevronRight, BookOpen, MapPin, Clock, Calendar, Users, Moon, Sun } from 'lucide-react'
 import { toast, Toaster } from 'sonner'
 import Footer from '../../components/Footer'
@@ -140,6 +140,7 @@ function WorkshopOverzicht() {
   const [geselecteerdeDag, setGeselecteerdeDag] = useState(null)
   const [maandRichting, setMaandRichting] = useState(1)
   const [dark, setDark] = useState(() => localStorage.getItem('theme') === 'dark')
+  const shouldReduce = useReducedMotion()
 
   function toggleDark() {
     setDark(d => {
@@ -287,16 +288,20 @@ function WorkshopOverzicht() {
 
       {/* Hero */}
       <div className="px-6 pt-2 pb-10 relative overflow-hidden">
-        <motion.div
-          animate={{ scale: [1, 1.12, 1], opacity: [0.06, 0.1, 0.06] }}
-          transition={{ duration: 7, repeat: Infinity, ease: 'easeInOut' }}
-          className="absolute -right-16 -top-8 w-64 h-64 bg-[#d4e84a] rounded-full pointer-events-none"
-        />
-        <motion.div
-          animate={{ scale: [1, 1.18, 1], opacity: [0.03, 0.06, 0.03] }}
-          transition={{ duration: 9, repeat: Infinity, ease: 'easeInOut', delay: 3 }}
-          className="absolute -left-20 bottom-0 w-48 h-48 bg-[#d4e84a] rounded-full pointer-events-none"
-        />
+        {!shouldReduce && (
+          <>
+            <motion.div
+              animate={{ scale: [1, 1.12, 1], opacity: [0.06, 0.1, 0.06] }}
+              transition={{ duration: 7, repeat: Infinity, ease: 'easeInOut' }}
+              className="absolute -right-16 -top-8 w-64 h-64 bg-[#d4e84a] rounded-full pointer-events-none"
+            />
+            <motion.div
+              animate={{ scale: [1, 1.18, 1], opacity: [0.03, 0.06, 0.03] }}
+              transition={{ duration: 9, repeat: Infinity, ease: 'easeInOut', delay: 3 }}
+              className="absolute -left-20 bottom-0 w-48 h-48 bg-[#d4e84a] rounded-full pointer-events-none"
+            />
+          </>
+        )}
 
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -331,14 +336,14 @@ function WorkshopOverzicht() {
 
       {/* Content sectie */}
       <div className={`flex-1 ${contentBg} rounded-t-[2.5rem] px-5 pt-7 pb-10`}>
-        <div className="max-w-5xl mx-auto flex gap-6 items-start">
+        <div className="max-w-5xl mx-auto flex flex-col gap-4 md:flex-row md:gap-6 md:items-start">
 
           {/* Kalender */}
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ type: 'spring', stiffness: 300, damping: 30, delay: 0.25 }}
-            className={`${cardBg} rounded-3xl border ${cardBorder} shadow-sm p-6 w-80 shrink-0 sticky top-6`}
+            className={`${cardBg} rounded-3xl border ${cardBorder} shadow-sm p-6 w-full md:w-80 md:shrink-0 md:sticky md:top-6`}
           >
             {/* Maand navigatie */}
             <div className="flex items-center justify-between mb-5">

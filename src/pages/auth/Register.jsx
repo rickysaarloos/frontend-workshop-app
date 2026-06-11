@@ -1,7 +1,7 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { motion, AnimatePresence } from 'motion/react'
-import { Mail, Lock, User, ArrowRight, Eye, EyeOff } from 'lucide-react'
+import { Mail, Lock, User, ArrowRight, Eye, EyeOff, ShieldAlert } from 'lucide-react'
 import { toast, Toaster } from 'sonner'
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://187.124.29.171:8002'
@@ -21,6 +21,8 @@ const strengthMeta = {
 
 function Register() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const token = searchParams.get('token')
   const [naam, setNaam] = useState('')
   const [email, setEmail] = useState('')
   const [wachtwoord, setWachtwoord] = useState('')
@@ -30,6 +32,7 @@ function Register() {
   const [toonWachtwoord, setToonWachtwoord] = useState(false)
   const [toonHerhaal, setToonHerhaal] = useState(false)
   const [registered, setRegistered] = useState(false)
+  const [linkError, setLinkError] = useState(null)
 
   async function handleSubmit(e) {
     e.preventDefault()
@@ -56,10 +59,17 @@ function Register() {
           email,
           password: wachtwoord,
           password_confirmation: wachtwoordHerhaal,
+          token,
         }),
       })
       const data = await response.json()
       if (!response.ok) {
+        // Stuurlink afgekeurd door de backend (ongeldig of verlopen)
+        const tokenError = data.errors?.token?.[0]
+        if (tokenError || response.status === 403 || response.status === 410) {
+          setLinkError(tokenError || data.message || 'Deze stuurlink is ongeldig of verlopen.')
+          return
+        }
         toast.error(data.message || 'Registreren mislukt')
         return
       }
@@ -73,6 +83,9 @@ function Register() {
 
   const pwStrength = passwordStrength(wachtwoord)
   const pwMeta = strengthMeta[pwStrength]
+  // Zonder geldige stuurlink is registreren niet mogelijk (US-04c),
+  // en een door de backend afgekeurde link toont dezelfde kaart (US-04b).
+  const showBlocked = !token || linkError
 
   return (
     <div className="min-h-[100dvh] bg-[#1a3d2b] flex flex-col items-center justify-center relative overflow-hidden px-6 py-12">
@@ -135,6 +148,37 @@ function Register() {
         className="w-full max-w-sm bg-white rounded-3xl p-7 z-10 relative"
         style={{ boxShadow: '0 32px 80px rgba(0,0,0,0.28), 0 8px 24px rgba(0,0,0,0.12)' }}
       >
+        {showBlocked ? (
+          /* Geblokkeerd: geen of ongeldige stuurlink (US-04b / US-04c) */
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ type: 'spring', stiffness: 200, damping: 38, delay: 0.28 }}
+            className="flex flex-col items-center text-center py-2"
+          >
+            <div className="w-14 h-14 rounded-2xl bg-red-50 flex items-center justify-center mb-5">
+              <ShieldAlert className="w-7 h-7 text-red-400" />
+            </div>
+            <h1 className="text-2xl font-black text-[#1a3d2b] leading-tight tracking-tight mb-2">
+              {linkError ? 'Ongeldige stuurlink' : 'Stuurlink vereist'}
+            </h1>
+            <p className="text-gray-400 text-xs leading-relaxed mb-6 max-w-[16rem]">
+              {linkError
+                ? linkError
+                : 'Registreren kan alleen via een geldige stuurlink. Vraag je beheerder om een nieuwe uitnodiging.'}
+            </p>
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.97 }}
+              onClick={() => navigate('/login')}
+              className="w-full bg-[#1a3d2b] text-[#d4e84a] rounded-2xl py-3.5 text-sm font-bold transition-all duration-200 flex items-center justify-center gap-2"
+            >
+              Naar inloggen
+              <ArrowRight className="w-4 h-4" />
+            </motion.button>
+          </motion.div>
+        ) : (
+         <>
         {/* Kaart heading */}
         <div className="mb-6">
           <motion.p
@@ -415,6 +459,8 @@ function Register() {
           </motion.p>
 
         </form>
+         </>
+        )}
       </motion.div>
 
       {/* Radiale transitie-overlay naar Login, identiek aan Login → Home */}
