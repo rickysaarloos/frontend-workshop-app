@@ -12,6 +12,11 @@ dist
 dist-ssr
 *.local
 
+# Env-bestanden met geheimen / omgevingsspecifieke URLs (niet committen)
+.env
+.env.*
+!.env.example
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

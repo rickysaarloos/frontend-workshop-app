@@ -5,12 +5,13 @@ import { CalendarDays, BookOpen, User, LogOut, ArrowRight, MapPin, Moon, Sun, Cl
 import { toast, Toaster } from 'sonner'
 import Footer from '../../components/Footer'
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://187.124.29.171:8002'
+import { API_URL } from '@/lib/config'
+import { getStoredUser } from '@/lib/auth'
 
 function Home() {
   const navigate = useNavigate()
   const shouldReduce = useReducedMotion()
-  const user = JSON.parse(localStorage.getItem('user') || 'null')
+  const user = getStoredUser()
   const voornaam = user?.name?.split(' ')[0]
 
   const [workshops, setWorkshops] = useState([])

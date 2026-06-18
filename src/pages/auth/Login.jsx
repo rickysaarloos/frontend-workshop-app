@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'motion/react'
 import { Mail, Lock, ArrowRight, Eye, EyeOff } from 'lucide-react'
 import { toast, Toaster } from 'sonner'
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://187.124.29.171:8002'
+import { API_URL } from '@/lib/config'
 
 function Login() {
   const [email, setEmail] = useState('')

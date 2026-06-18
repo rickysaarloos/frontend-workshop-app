@@ -5,7 +5,8 @@ import { User, Mail, Lock, Utensils, LogOut, ChevronLeft, Save, Check, BookOpen,
 import { toast, Toaster } from 'sonner'
 import Footer from '../../components/Footer'
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://187.124.29.171:8002'
+import { API_URL } from '@/lib/config'
+import { getStoredUser } from '@/lib/auth'
 
 const dieetOpties = [
   'Vegetarisch', 'Veganistisch', 'Glutenvrij', 'Lactosevrij',
@@ -16,10 +17,10 @@ function Profiel() {
   const navigate = useNavigate()
   const shouldReduce = useReducedMotion()
 
-  const [naam, setNaam] = useState(() => JSON.parse(localStorage.getItem('user') || 'null')?.name || '')
-  const [email, setEmail] = useState(() => JSON.parse(localStorage.getItem('user') || 'null')?.email || '')
+  const [naam, setNaam] = useState(() => getStoredUser()?.name || '')
+  const [email, setEmail] = useState(() => getStoredUser()?.email || '')
   const [rol, setRol] = useState(() => {
-    const u = JSON.parse(localStorage.getItem('user') || 'null')
+    const u = getStoredUser()
     return u?.roles?.[0] || u?.role || 'student'
   })
   const [huidigWachtwoord, setHuidigWachtwoord] = useState('')
@@ -111,7 +112,7 @@ function Profiel() {
       const fetchedRol = userJson.roles?.[0] || userJson.role
       if (fetchedRol) setRol(fetchedRol)
       if (userJson.dietary_preferences?.length) setGeselecteerdeDieet(userJson.dietary_preferences)
-      const existing = JSON.parse(localStorage.getItem('user') || '{}')
+      const existing = getStoredUser() || {}
       localStorage.setItem('user', JSON.stringify({ ...existing, ...userJson }))
       setIngeschrevenWorkshops((workshopsJson.data || []).filter(w => w.is_registered))
       setIngeschrevenEvents((eventsJson.data || []).filter(e => e.is_registered))
@@ -147,7 +148,7 @@ function Profiel() {
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.message || 'Opslaan mislukt')
-      const fresh = JSON.parse(localStorage.getItem('user') || '{}')
+      const fresh = getStoredUser() || {}
       localStorage.setItem('user', JSON.stringify({ ...fresh, name: naam, email }))
       toast.success('Profiel opgeslagen')
     } catch (err) {
