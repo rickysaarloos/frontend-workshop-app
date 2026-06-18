@@ -5,7 +5,7 @@ import { ChevronLeft, CalendarDays, Clock, MapPin, Users, CheckCircle, Calendar,
 import { toast, Toaster } from 'sonner'
 import Footer from '../../components/Footer'
  
-const API_URL = import.meta.env.VITE_API_URL || 'http://187.124.29.171:8002'
+import { API_URL } from '@/lib/config'
  
 function mapCategory(cat) {
   const map = {

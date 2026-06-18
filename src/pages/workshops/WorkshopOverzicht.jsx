@@ -5,7 +5,7 @@ import { ChevronLeft, ChevronRight, BookOpen, MapPin, Clock, Calendar, Users, Mo
 import { toast, Toaster } from 'sonner'
 import Footer from '../../components/Footer'
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://187.124.29.171:8002'
+import { API_URL } from '@/lib/config'
 
 const MAANDEN = ['Januari', 'Februari', 'Maart', 'April', 'Mei', 'Juni', 'Juli', 'Augustus', 'September', 'Oktober', 'November', 'December']
 const DAGEN_KORT = ['Ma', 'Di', 'Wo', 'Do', 'Vr', 'Za', 'Zo']
