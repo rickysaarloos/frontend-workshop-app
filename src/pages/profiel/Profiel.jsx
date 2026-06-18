@@ -438,6 +438,7 @@ function Profiel() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ type: 'spring', stiffness: 200, damping: 38, delay: 0.1 }}
+          className="relative max-w-2xl mx-auto"
         >
           <motion.p
             initial={{ opacity: 0, x: -12 }}
@@ -512,7 +513,8 @@ function Profiel() {
       </div>
 
       {/* Content */}
-      <div className={`flex-1 ${contentBg} rounded-t-[2.5rem] px-5 pt-6 pb-10 flex flex-col gap-4 transition-colors duration-300`}>
+      <div className={`flex-1 ${contentBg} rounded-t-[2.5rem] px-5 pt-6 pb-10 transition-colors duration-300`}>
+        <div className="max-w-2xl mx-auto flex flex-col gap-4">
 
         {/* Tab bar — pill indicator via layoutId */}
         <motion.div
@@ -646,7 +648,7 @@ function Profiel() {
                             </div>
                             <div className="flex-1 min-w-0">
                               <p className={`text-sm font-semibold ${titleClr} truncate`}>{w.title}</p>
-                              <p className={`text-xs ${subClr} mt-0.5`}>{tijdStart} &ndash; {tijdEind}</p>
+                              <p className={`text-xs ${subClr} mt-0.5`}>{tijdStart} - {tijdEind}</p>
                             </div>
                             <ArrowRight className={`w-4 h-4 ${arrowClr} shrink-0`} />
                           </motion.div>
@@ -1150,7 +1152,7 @@ function Profiel() {
                       <div className={`w-10 h-10 ${d ? 'bg-white/[0.06]' : 'bg-[#eef3e8]'} rounded-2xl flex items-center justify-center mx-auto mb-2.5`}>
                         <UserCheck className={`w-5 h-5 ${d ? 'text-white/20' : 'text-[#1a3d2b]/25'}`} />
                       </div>
-                      <p className={`text-xs ${subClr}`}>Nog geen contacten — voeg iemand toe via hun code</p>
+                      <p className={`text-xs ${subClr}`}>Nog geen contacten. Voeg iemand toe via hun code.</p>
                     </div>
                   ) : (
                     <div className="flex flex-col gap-2">
@@ -1184,6 +1186,7 @@ function Profiel() {
           )}
 
         </AnimatePresence>
+        </div>
       </div>
       <Footer />
     </div>

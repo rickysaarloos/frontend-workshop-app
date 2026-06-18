@@ -7,6 +7,17 @@ import Footer from '../../components/Footer'
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://187.124.29.171:8002'
 
+const EASE = [0.22, 1, 0.36, 1]
+
+function SpinnerIcon() {
+  return (
+    <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
+      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+    </svg>
+  )
+}
+
 function WorkshopDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
@@ -237,15 +248,24 @@ function WorkshopDetail() {
   }
 
   const d = dark
-  const contentBg  = d ? 'bg-[#111111]'       : 'bg-[#e4e8e2]'
-  const cardBg     = d ? 'bg-[#1c1c1e]'       : 'bg-white'
-  const cardBorder = d ? 'border-white/[0.07]' : 'border-gray-100'
-  const skelBg     = d ? 'bg-white/[0.07]'    : 'bg-gray-100'
+  const contentBg  = d ? 'bg-[#111111]'        : 'bg-[#e4e8e2]'
+  const cardBg     = d ? 'bg-[#1c1c1e]'        : 'bg-white'
+  const cardBorder = d ? 'border-white/[0.08]' : 'border-black/[0.06]'
+  const hairline   = d ? 'border-white/[0.07]' : 'border-[#1a3d2b]/[0.07]'
+  const skelBg     = d ? 'bg-white/[0.07]'     : 'bg-black/[0.05]'
   const titleClr   = d ? 'text-white'          : 'text-[#1a3d2b]'
-  const subClr     = d ? 'text-white/45'       : 'text-gray-400'
-  const iconBg     = d ? 'bg-[#d4e84a]/12'     : 'bg-gradient-to-br from-[#eaf3de] to-[#d4e84a]/30'
-  const iconClr    = d ? 'text-[#d4e84a]'      : 'text-[#1a3d2b]'
-  const barBg      = d ? 'bg-white/10'         : 'bg-gray-100'
+  const bodyClr    = d ? 'text-white/60'       : 'text-[#1a3d2b]/70'
+  const subClr     = d ? 'text-white/40'       : 'text-[#1a3d2b]/45'
+  const labelClr   = d ? 'text-white/35'       : 'text-[#1a3d2b]/45'
+  const cardShadow = d ? 'shadow-[0_2px_24px_rgba(0,0,0,0.30)]' : 'shadow-[0_1px_2px_rgba(26,61,43,0.04),0_18px_40px_-24px_rgba(26,61,43,0.22)]'
+  const barBg      = d ? 'bg-white/10'         : 'bg-[#1a3d2b]/[0.08]'
+  const headIcon   = d ? 'text-white/45'       : 'text-[#1a3d2b]/55'
+
+  // Rustige, getierde motion — respecteert useReducedMotion
+  const stack = { hidden: {}, visible: { transition: { staggerChildren: 0.06, delayChildren: 0.05 } } }
+  const rise = shouldReduce
+    ? { hidden: { opacity: 0 }, visible: { opacity: 1, transition: { duration: 0.3 } } }
+    : { hidden: { opacity: 0, y: 8 }, visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: EASE } } }
 
   return (
     <div className="min-h-[100dvh] bg-[#1a3d2b] flex flex-col">
@@ -255,56 +275,56 @@ function WorkshopDetail() {
       <motion.header
         initial={{ opacity: 0, y: -16 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ type: 'spring', stiffness: 400, damping: 36 }}
-        className="px-6 py-5 flex items-center justify-between"
+        transition={{ duration: 0.6, ease: EASE }}
+        className="flex items-center justify-between px-6 py-5"
       >
         <div className="flex items-center gap-3">
           <motion.button
-            whileHover={{ scale: 1.1, x: -2 }}
+            whileHover={{ x: -2 }}
             whileTap={{ scale: 0.85 }}
             onClick={() => navigate('/workshops')}
-            className="text-white/40 hover:text-white transition-colors p-1.5 rounded-xl hover:bg-white/10"
+            className="rounded-xl p-1.5 text-white/40 transition-colors hover:bg-white/10 hover:text-white"
           >
-            <ChevronLeft className="w-5 h-5" />
+            <ChevronLeft className="h-5 w-5" />
           </motion.button>
           <img
             src="/img/techniek-college-rotterdam2.jpg"
             alt="Techniek College Rotterdam"
-            className="h-8 w-auto object-contain rounded"
+            className="h-8 w-auto rounded object-contain"
           />
           <div className="flex flex-col leading-none">
-            <span className="text-white font-bold text-xs tracking-tight">Techniek College</span>
-            <span className="text-white/50 font-medium text-xs tracking-tight">Rotterdam</span>
+            <span className="text-xs font-bold tracking-tight text-white">Techniek College</span>
+            <span className="text-xs font-medium tracking-tight text-white/50">Rotterdam</span>
           </div>
         </div>
 
         <motion.button
-          whileHover={{ scale: 1.08 }}
-          whileTap={{ scale: 0.88 }}
+          whileHover={{ scale: 1.06 }}
+          whileTap={{ scale: 0.9 }}
           onClick={toggleDark}
-          className="w-8 h-8 flex items-center justify-center rounded-xl hover:bg-white/10 transition-colors text-white/40 hover:text-white/70"
+          className="flex h-8 w-8 items-center justify-center rounded-xl text-white/40 transition-colors hover:bg-white/10 hover:text-white/70"
           aria-label="Wissel kleurmodus"
         >
           <AnimatePresence mode="wait">
             {dark ? (
               <motion.div
                 key="sun"
-                initial={{ opacity: 0, rotate: -40, scale: 0.6 }}
+                initial={shouldReduce ? false : { opacity: 0, rotate: -40, scale: 0.6 }}
                 animate={{ opacity: 1, rotate: 0, scale: 1 }}
-                exit={{ opacity: 0, rotate: 40, scale: 0.6 }}
+                exit={shouldReduce ? {} : { opacity: 0, rotate: 40, scale: 0.6 }}
                 transition={{ duration: 0.18 }}
               >
-                <Sun className="w-4 h-4" />
+                <Sun className="h-4 w-4" />
               </motion.div>
             ) : (
               <motion.div
                 key="moon"
-                initial={{ opacity: 0, rotate: 40, scale: 0.6 }}
+                initial={shouldReduce ? false : { opacity: 0, rotate: 40, scale: 0.6 }}
                 animate={{ opacity: 1, rotate: 0, scale: 1 }}
-                exit={{ opacity: 0, rotate: -40, scale: 0.6 }}
+                exit={shouldReduce ? {} : { opacity: 0, rotate: -40, scale: 0.6 }}
                 transition={{ duration: 0.18 }}
               >
-                <Moon className="w-4 h-4" />
+                <Moon className="h-4 w-4" />
               </motion.div>
             )}
           </AnimatePresence>
@@ -312,42 +332,33 @@ function WorkshopDetail() {
       </motion.header>
 
       {/* Hero */}
-      <div className="px-6 pt-2 pb-10 relative overflow-hidden">
-        {!shouldReduce && (
-          <motion.div
-            animate={{ scale: [1, 1.12, 1], opacity: [0.06, 0.1, 0.06] }}
-            transition={{ duration: 7, repeat: Infinity, ease: 'easeInOut' }}
-            className="absolute -right-16 -top-8 w-64 h-64 bg-[#d4e84a] rounded-full pointer-events-none"
-          />
-        )}
+      <div className="relative overflow-hidden px-6 pb-12 pt-3">
+        {/* Statische, rustige gloed */}
+        <div className="pointer-events-none absolute -right-20 -top-20 h-72 w-72 rounded-full bg-[#d4e84a]/[0.08] blur-2xl" />
 
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={shouldReduce ? { opacity: 0 } : { opacity: 0, y: 18 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ type: 'spring', stiffness: 300, damping: 30, delay: 0.1 }}
+          transition={{ duration: 0.6, ease: EASE, delay: 0.05 }}
+          className="relative max-w-2xl"
         >
-          <motion.p
-            initial={{ opacity: 0, x: -12 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.2 }}
-            className="text-[#d4e84a] text-xs font-bold uppercase tracking-widest mb-2"
-          >
+          <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.22em] text-[#d4e84a]">
             Workshop
-          </motion.p>
+          </p>
 
           {loading ? (
-            <div className="space-y-2">
-              <div className="h-8 w-56 bg-white/10 rounded-xl animate-pulse" />
-              <div className="h-4 w-32 bg-white/10 rounded-full animate-pulse" />
+            <div className="space-y-3">
+              <div className="h-9 w-64 animate-pulse rounded-xl bg-white/10" />
+              <div className="h-5 w-36 animate-pulse rounded-full bg-white/10" />
             </div>
           ) : workshop ? (
             <>
-              <h1 className="text-3xl font-black text-white tracking-tight leading-tight mb-2">
+              <h1 className="mb-3 text-[2rem] font-black leading-[1.02] tracking-[-0.03em] text-white md:text-[2.6rem]">
                 {workshop.title}
               </h1>
               {workshop.teacher && (
-                <span className="inline-flex items-center gap-1.5 bg-white/10 text-white/70 text-xs font-medium px-3 py-1.5 rounded-full">
-                  <User className="w-3 h-3" />
+                <span className="inline-flex items-center gap-2 text-sm font-medium text-white/55">
+                  <User className="h-4 w-4 text-[#d4e84a]" />
                   {workshop.teacher}
                 </span>
               )}
@@ -357,19 +368,18 @@ function WorkshopDetail() {
       </div>
 
       {/* Content */}
-      <div className={`flex-1 ${contentBg} rounded-t-[2.5rem] px-5 pt-7 pb-10`}>
-        <div className="max-w-2xl mx-auto flex flex-col gap-4">
+      <div className={`flex-1 ${contentBg} rounded-t-[2.5rem] px-5 pb-10 pt-8 transition-colors duration-300`}>
+        <div className="mx-auto flex max-w-2xl flex-col gap-5">
 
           {/* Loading skeleton */}
           {loading && (
-            <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-5">
               {[1, 2, 3].map((i) => (
-                <div key={i} className={`${cardBg} rounded-3xl border ${cardBorder} overflow-hidden`}>
-                  <div className={`h-0.5 ${skelBg} animate-pulse`} />
-                  <div className="p-5 space-y-3">
-                    <div className={`h-4 w-32 ${skelBg} rounded-full animate-pulse`} />
-                    <div className={`h-3 w-full ${skelBg} rounded-full animate-pulse`} />
-                    <div className={`h-3 w-3/4 ${skelBg} rounded-full animate-pulse`} />
+                <div key={i} className={`${cardBg} rounded-[26px] border ${cardBorder} p-5`}>
+                  <div className="space-y-3">
+                    <div className={`h-4 w-32 animate-pulse rounded-full ${skelBg}`} />
+                    <div className={`h-3 w-full animate-pulse rounded-full ${skelBg}`} />
+                    <div className={`h-3 w-3/4 animate-pulse rounded-full ${skelBg}`} />
                   </div>
                 </div>
               ))}
@@ -381,18 +391,18 @@ function WorkshopDetail() {
             <motion.div
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
-              className={`${cardBg} rounded-3xl border ${cardBorder} p-10 text-center`}
+              className={`${cardBg} rounded-[26px] border ${cardBorder} p-10 text-center`}
             >
-              <div className={`w-12 h-12 ${d ? 'bg-white/[0.05]' : 'bg-gray-50'} rounded-2xl flex items-center justify-center mx-auto mb-3`}>
-                <BookOpen className={`w-5 h-5 ${d ? 'text-white/20' : 'text-gray-300'}`} />
+              <div className={`mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl ${d ? 'bg-white/[0.05]' : 'bg-[#1a3d2b]/[0.04]'}`}>
+                <BookOpen className={`h-5 w-5 ${d ? 'text-white/20' : 'text-[#1a3d2b]/25'}`} />
               </div>
-              <p className={`text-sm font-semibold mb-3 ${subClr}`}>Workshop niet gevonden</p>
+              <p className={`mb-4 text-sm font-semibold ${subClr}`}>Workshop niet gevonden</p>
               <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
+                whileHover={{ scale: 1.04 }}
+                whileTap={{ scale: 0.96 }}
                 onClick={() => navigate('/workshops')}
-                className={`text-xs font-bold px-3 py-1.5 rounded-lg transition-colors ${
-                  d ? 'text-[#d4e84a] bg-[#d4e84a]/10 hover:bg-[#d4e84a]/20' : 'text-[#1a3d2b] bg-[#eaf3de] hover:bg-[#d4e84a]'
+                className={`rounded-xl px-3.5 py-2 text-xs font-bold transition-colors ${
+                  d ? 'bg-[#d4e84a]/10 text-[#d4e84a] hover:bg-[#d4e84a]/20' : 'bg-[#1a3d2b] text-[#d4e84a] hover:bg-[#16331f]'
                 }`}
               >
                 Terug naar overzicht
@@ -401,235 +411,190 @@ function WorkshopDetail() {
           )}
 
           {!loading && workshop && (
-            <>
-              {/* Ingeschreven badge */}
+            <motion.div variants={stack} initial="hidden" animate="visible" className="flex flex-col gap-5">
+
+              {/* Ingeschreven status */}
               <AnimatePresence>
                 {ingeschreven && (
                   <motion.div
                     initial={{ opacity: 0, y: -8 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -8 }}
-                    className="flex items-center gap-2 bg-[#1a3d2b] text-[#d4e84a] px-4 py-3 rounded-2xl text-sm font-bold"
+                    className="flex items-center gap-2.5 rounded-2xl bg-[#1a3d2b] px-4 py-3 text-sm font-bold text-[#d4e84a]"
                   >
-                    <CheckCircle className="w-4 h-4" />
+                    <CheckCircle className="h-4 w-4 shrink-0" />
                     Je bent ingeschreven voor deze workshop
                   </motion.div>
                 )}
               </AnimatePresence>
 
-              {/* Info kaart */}
+              {/* Details — spec sheet (geen gradient-streep) */}
               <motion.div
-                initial={{ opacity: 0, y: 14 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ type: 'spring', stiffness: 350, damping: 30, delay: 0.1 }}
-                className={`${cardBg} rounded-3xl border ${cardBorder} overflow-hidden shadow-sm`}
+                variants={rise}
+                className={`${cardBg} ${cardShadow} rounded-[26px] border ${cardBorder} p-5`}
               >
-                <div className="h-0.5 bg-gradient-to-r from-[#1a3d2b] via-[#4a8c60] to-[#d4e84a]" />
-                <div className="p-5 flex flex-col gap-4">
+                <div className="flex items-center justify-between gap-4 py-3 pt-0">
+                  <span className={`flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider ${labelClr}`}>
+                    <CalendarDays className="h-3.5 w-3.5 opacity-70" />
+                    Datum
+                  </span>
+                  <span className={`text-right text-sm font-semibold capitalize ${titleClr}`}>
+                    {formatDatum(workshop.start_date.split(' ')[0])}
+                  </span>
+                </div>
+                <div className={`border-t ${hairline}`} />
 
-                  <div className="flex items-center gap-3">
-                    <div className={`${iconBg} p-2.5 rounded-xl shrink-0`}>
-                      <CalendarDays className={`w-4 h-4 ${iconClr}`} />
-                    </div>
-                    <div>
-                      <p className={`text-xs ${subClr}`}>Datum</p>
-                      <p className={`text-sm font-semibold capitalize ${titleClr}`}>
-                        {formatDatum(workshop.start_date.split(' ')[0])}
-                      </p>
-                    </div>
+                <div className="flex items-center justify-between gap-4 py-3">
+                  <span className={`flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider ${labelClr}`}>
+                    <Clock className="h-3.5 w-3.5 opacity-70" />
+                    Tijd
+                  </span>
+                  <span className={`text-right text-sm font-semibold tabular-nums ${titleClr}`}>
+                    {workshop.start_date.split(' ')[1]} - {workshop.end_date.split(' ')[1]}
+                  </span>
+                </div>
+                <div className={`border-t ${hairline}`} />
+
+                <div className="flex items-center justify-between gap-4 py-3">
+                  <span className={`flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider ${labelClr}`}>
+                    <MapPin className="h-3.5 w-3.5 opacity-70" />
+                    Locatie
+                  </span>
+                  <span className={`text-right text-sm font-semibold ${titleClr}`}>{workshop.location}</span>
+                </div>
+                <div className={`border-t ${hairline}`} />
+
+                <div className="flex items-center justify-between gap-4 pt-3">
+                  <span className={`flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider ${labelClr}`}>
+                    <Users className="h-3.5 w-3.5 opacity-70" />
+                    Plekken
+                  </span>
+                  <span className={`text-right text-sm font-semibold tabular-nums ${workshop.is_full ? 'text-red-500' : titleClr}`}>
+                    {workshop.is_full ? 'Volgeboekt' : `${workshop.spots_left} van ${workshop.capacity} vrij`}
+                  </span>
+                </div>
+
+                {/* Bezetting */}
+                <div className="mt-3 flex items-center gap-3">
+                  <div className={`h-1.5 flex-1 overflow-hidden rounded-full ${barBg}`}>
+                    <motion.div
+                      initial={{ width: 0 }}
+                      whileInView={{ width: `${Math.round((workshop.registered / workshop.capacity) * 100)}%` }}
+                      viewport={{ once: true, amount: 0.6 }}
+                      transition={{ duration: 0.9, delay: 0.2, ease: EASE }}
+                      className={`h-full rounded-full ${workshop.is_full ? 'bg-red-400' : (d ? 'bg-[#d4e84a]' : 'bg-[#1a3d2b]')}`}
+                    />
                   </div>
-
-                  <div className="flex items-center gap-3">
-                    <div className={`${iconBg} p-2.5 rounded-xl shrink-0`}>
-                      <Clock className={`w-4 h-4 ${iconClr}`} />
-                    </div>
-                    <div>
-                      <p className={`text-xs ${subClr}`}>Tijd</p>
-                      <p className={`text-sm font-semibold ${titleClr}`}>
-                        {workshop.start_date.split(' ')[1]} – {workshop.end_date.split(' ')[1]}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-3">
-                    <div className={`${iconBg} p-2.5 rounded-xl shrink-0`}>
-                      <MapPin className={`w-4 h-4 ${iconClr}`} />
-                    </div>
-                    <div>
-                      <p className={`text-xs ${subClr}`}>Locatie</p>
-                      <p className={`text-sm font-semibold ${titleClr}`}>{workshop.location}</p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-3">
-                    <div className={`p-2.5 rounded-xl shrink-0 ${workshop.is_full ? 'bg-red-50' : iconBg}`}>
-                      <Users className={`w-4 h-4 ${workshop.is_full ? 'text-red-400' : iconClr}`} />
-                    </div>
-                    <div className="flex-1">
-                      <p className={`text-xs ${subClr}`}>Beschikbare plekken</p>
-                      <p className={`text-sm font-semibold ${workshop.is_full ? 'text-red-500' : titleClr}`}>
-                        {workshop.is_full
-                          ? 'Vol — geen plekken meer beschikbaar'
-                          : `${workshop.spots_left} van ${workshop.capacity} plekken vrij`}
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Voortgangsbalk */}
-                  <div className="flex items-center gap-2.5">
-                    <div className={`flex-1 ${barBg} rounded-full h-1.5 overflow-hidden`}>
-                      <motion.div
-                        initial={{ width: 0 }}
-                        animate={{ width: `${Math.round((workshop.registered / workshop.capacity) * 100)}%` }}
-                        transition={{ duration: 0.9, delay: 0.3, ease: [0.4, 0, 0.2, 1] }}
-                        className={`h-full rounded-full ${workshop.is_full ? 'bg-gradient-to-r from-red-300 to-red-400' : 'bg-gradient-to-r from-[#1a3d2b] to-[#4a8c60]'}`}
-                      />
-                    </div>
-                    <span className={`text-xs font-bold shrink-0 ${workshop.is_full ? 'text-red-400' : titleClr}`}>
-                      {workshop.registered}/{workshop.capacity}
-                    </span>
-                  </div>
-
+                  <span className={`shrink-0 text-xs font-bold tabular-nums ${workshop.is_full ? 'text-red-400' : titleClr}`}>
+                    {workshop.registered}<span className={subClr}>/{workshop.capacity}</span>
+                  </span>
                 </div>
               </motion.div>
 
-              {/* Beschrijving */}
-              <motion.div
-                initial={{ opacity: 0, y: 14 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ type: 'spring', stiffness: 350, damping: 30, delay: 0.18 }}
-                className={`${cardBg} rounded-3xl border ${cardBorder} overflow-hidden shadow-sm`}
-              >
-                <div className="h-0.5 bg-gradient-to-r from-[#1a3d2b] via-[#4a8c60] to-[#d4e84a]" />
-                <div className="p-5">
-                  <h2 className={`text-sm font-bold mb-3 ${titleClr}`}>Over deze workshop</h2>
-                  <p className={`text-sm leading-relaxed ${subClr}`}>{workshop.description}</p>
-                </div>
-              </motion.div>
+              {/* Beschrijving — editorial blok (geen kaart) */}
+              <motion.section variants={rise} className="px-1">
+                <h2 className={`flex items-center gap-2.5 text-base font-bold tracking-[-0.01em] ${titleClr}`}>
+                  <span className="h-4 w-1 rounded-full bg-[#d4e84a]" />
+                  <BookOpen className={`h-4 w-4 ${headIcon}`} />
+                  Over deze workshop
+                </h2>
+                <p className={`mt-3 max-w-prose text-[15px] leading-relaxed ${bodyClr}`}>{workshop.description}</p>
+              </motion.section>
 
-              {/* Waarschuwingen */}
+              {/* Waarschuwingen — de enige bewust gekleurde uitzondering */}
               {workshop.important_notes && (
                 <motion.div
-                  initial={{ opacity: 0, y: 14 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ type: 'spring', stiffness: 350, damping: 30, delay: 0.24 }}
-                  className={`rounded-3xl border overflow-hidden shadow-sm ${d ? 'bg-amber-950/30 border-amber-500/25' : 'bg-amber-50 border-amber-200'}`}
+                  variants={rise}
+                  className={`overflow-hidden rounded-[26px] border ${d ? 'border-amber-500/25 bg-amber-950/25' : 'border-amber-200 bg-amber-50'}`}
                 >
-                  <div className="h-0.5 bg-gradient-to-r from-amber-400 via-orange-400 to-yellow-300" />
-                  <div className="p-5">
-                    <h2 className={`text-sm font-bold mb-3 flex items-center gap-2 ${d ? 'text-amber-300' : 'text-amber-700'}`}>
-                      <AlertTriangle className="w-3.5 h-3.5" />
-                      Belangrijke informatie
-                    </h2>
-                    <p className={`text-sm leading-relaxed ${d ? 'text-amber-200/70' : 'text-amber-700/75'}`}>{workshop.important_notes}</p>
+                  <div className="flex gap-4 p-5">
+                    <span className={`mt-0.5 h-auto w-1 shrink-0 rounded-full ${d ? 'bg-amber-400/70' : 'bg-amber-400'}`} />
+                    <div>
+                      <h2 className={`flex items-center gap-2 text-base font-bold ${d ? 'text-amber-300' : 'text-amber-700'}`}>
+                        <AlertTriangle className="h-4 w-4" />
+                        Belangrijke informatie
+                      </h2>
+                      <p className={`mt-2 text-[15px] leading-relaxed ${d ? 'text-amber-200/75' : 'text-amber-800/80'}`}>{workshop.important_notes}</p>
+                    </div>
                   </div>
                 </motion.div>
               )}
 
-              {/* Benodigdheden */}
+              {/* Benodigdheden — editorial blok */}
               {workshop.requirements && (Array.isArray(workshop.requirements) ? workshop.requirements.length > 0 : true) && (
-                <motion.div
-                  initial={{ opacity: 0, y: 14 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ type: 'spring', stiffness: 350, damping: 30, delay: 0.3 }}
-                  className={`${cardBg} rounded-3xl border ${cardBorder} overflow-hidden shadow-sm`}
-                >
-                  <div className="h-0.5 bg-gradient-to-r from-[#1a3d2b] via-[#4a8c60] to-[#d4e84a]" />
-                  <div className="p-5">
-                    <h2 className={`text-sm font-bold mb-3 flex items-center gap-2 ${titleClr}`}>
-                      <ClipboardList className="w-3.5 h-3.5" />
-                      Benodigdheden
-                    </h2>
-                    {Array.isArray(workshop.requirements) ? (
-                      <ul className="flex flex-col gap-2">
-                        {workshop.requirements.map((item, i) => (
-                          <li key={i} className={`flex items-start gap-2.5 text-sm ${subClr}`}>
-                            <span className={`w-1.5 h-1.5 rounded-full mt-1.5 shrink-0 ${d ? 'bg-[#d4e84a]/50' : 'bg-[#1a3d2b]/40'}`} />
-                            {item}
-                          </li>
-                        ))}
-                      </ul>
-                    ) : (
-                      <p className={`text-sm leading-relaxed ${subClr}`}>{workshop.requirements}</p>
-                    )}
-                  </div>
-                </motion.div>
+                <motion.section variants={rise} className="px-1">
+                  <h2 className={`flex items-center gap-2.5 text-base font-bold tracking-[-0.01em] ${titleClr}`}>
+                    <span className="h-4 w-1 rounded-full bg-[#d4e84a]" />
+                    <ClipboardList className={`h-4 w-4 ${headIcon}`} />
+                    Benodigdheden
+                  </h2>
+                  {Array.isArray(workshop.requirements) ? (
+                    <ul className="mt-3 flex flex-col gap-2.5">
+                      {workshop.requirements.map((item, i) => (
+                        <li key={i} className={`flex items-start gap-3 text-[15px] leading-relaxed ${bodyClr}`}>
+                          <span className={`mt-2 h-1.5 w-1.5 shrink-0 rounded-full ${d ? 'bg-[#d4e84a]/60' : 'bg-[#1a3d2b]/40'}`} />
+                          {item}
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className={`mt-3 max-w-prose text-[15px] leading-relaxed ${bodyClr}`}>{workshop.requirements}</p>
+                  )}
+                </motion.section>
               )}
 
-              {/* Dieetwensen & allergenen */}
+              {/* Dieetwensen & allergenen — editorial blok */}
               {(workshop.dietary_info || workshop.allergens) && (
-                <motion.div
-                  initial={{ opacity: 0, y: 14 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ type: 'spring', stiffness: 350, damping: 30, delay: 0.36 }}
-                  className={`${cardBg} rounded-3xl border ${cardBorder} overflow-hidden shadow-sm`}
-                >
-                  <div className="h-0.5 bg-gradient-to-r from-[#1a3d2b] via-[#4a8c60] to-[#d4e84a]" />
-                  <div className="p-5">
-                    <h2 className={`text-sm font-bold mb-3 flex items-center gap-2 ${titleClr}`}>
-                      <Leaf className="w-3.5 h-3.5" />
-                      Dieetwensen & allergenen
-                    </h2>
-                    {(() => {
-                      const info = workshop.dietary_info || workshop.allergens
-                      return Array.isArray(info) ? (
-                        <div className="flex flex-wrap gap-2">
-                          {info.map((item, i) => (
-                            <span key={i} className={`text-xs font-semibold px-2.5 py-1 rounded-full ${d ? 'bg-[#d4e84a]/12 text-[#d4e84a]/80' : 'bg-[#eaf3de] text-[#1a3d2b]'}`}>
-                              {item}
-                            </span>
-                          ))}
-                        </div>
-                      ) : (
-                        <p className={`text-sm leading-relaxed ${subClr}`}>{info}</p>
-                      )
-                    })()}
-                  </div>
-                </motion.div>
+                <motion.section variants={rise} className="px-1">
+                  <h2 className={`flex items-center gap-2.5 text-base font-bold tracking-[-0.01em] ${titleClr}`}>
+                    <span className="h-4 w-1 rounded-full bg-[#d4e84a]" />
+                    <Leaf className={`h-4 w-4 ${headIcon}`} />
+                    Dieetwensen &amp; allergenen
+                  </h2>
+                  {(() => {
+                    const info = workshop.dietary_info || workshop.allergens
+                    return Array.isArray(info) ? (
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        {info.map((item, i) => (
+                          <span key={i} className={`rounded-full px-3 py-1 text-xs font-semibold ${d ? 'bg-[#d4e84a]/12 text-[#d4e84a]/80' : 'bg-[#eaf3de] text-[#2c5a3d]'}`}>
+                            {item}
+                          </span>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className={`mt-3 max-w-prose text-[15px] leading-relaxed ${bodyClr}`}>{info}</p>
+                    )
+                  })()}
+                </motion.section>
               )}
 
-              {/* Aanwezigheid & presentatie */}
+              {/* Aanwezigheid & presentatie — interactieve kaart */}
               {ingeschreven && (
                 <motion.div
-                  initial={{ opacity: 0, y: 14 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ type: 'spring', stiffness: 350, damping: 30, delay: 0.48 }}
-                  className={`${cardBg} rounded-3xl border ${cardBorder} overflow-hidden shadow-sm`}
+                  variants={rise}
+                  className={`${cardBg} ${cardShadow} rounded-[26px] border ${cardBorder} p-5`}
                 >
-                  <div className="h-0.5 bg-gradient-to-r from-[#1a3d2b] via-[#4a8c60] to-[#d4e84a]" />
-                  <div className="p-5 flex flex-col gap-3">
-                    <h2 className={`text-sm font-bold flex items-center gap-2 ${titleClr}`}>
-                      <ScanLine className="w-3.5 h-3.5" />
-                      Aanwezigheid
-                    </h2>
+                  <h2 className={`mb-4 flex items-center gap-2.5 text-base font-bold tracking-[-0.01em] ${titleClr}`}>
+                    <span className="h-4 w-1 rounded-full bg-[#d4e84a]" />
+                    <ScanLine className={`h-4 w-4 ${headIcon}`} />
+                    Aanwezigheid
+                  </h2>
 
+                  <div className="flex flex-col gap-3">
                     {aanwezigheidGeregistreerd ? (
-                      <div className="flex items-center gap-2 bg-[#1a3d2b] text-[#d4e84a] px-4 py-3 rounded-2xl text-sm font-bold">
-                        <CheckCircle className="w-4 h-4 shrink-0" />
+                      <div className="flex items-center gap-2.5 rounded-2xl bg-[#1a3d2b] px-4 py-3 text-sm font-bold text-[#d4e84a]">
+                        <CheckCircle className="h-4 w-4 shrink-0" />
                         Aanwezigheid geregistreerd
                       </div>
                     ) : (
                       <motion.button
-                        whileHover={{ scale: aanwezigheidLoading ? 1 : 1.02 }}
+                        whileHover={{ scale: aanwezigheidLoading ? 1 : 1.015 }}
                         whileTap={{ scale: aanwezigheidLoading ? 1 : 0.98 }}
                         onClick={handleAanwezigheidRegistreren}
                         disabled={aanwezigheidLoading}
-                        className="w-full rounded-2xl py-3.5 text-sm font-bold flex items-center justify-center gap-2 disabled:opacity-60 bg-[#d4e84a] text-[#1a3d2b] hover:bg-[#c8dc3e] transition-colors"
+                        className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#d4e84a] py-3.5 text-sm font-bold text-[#1a3d2b] transition-colors hover:bg-[#c8dc3e] disabled:opacity-60"
                       >
-                        {aanwezigheidLoading ? (
-                          <>
-                            <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
-                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
-                            </svg>
-                            Registreren...
-                          </>
-                        ) : (
-                          <>
-                            <ScanLine className="w-4 h-4" />
-                            Aanwezigheid registreren
-                          </>
-                        )}
+                        {aanwezigheidLoading ? <><SpinnerIcon />Registreren...</> : <><ScanLine className="h-4 w-4" />Aanwezigheid registreren</>}
                       </motion.button>
                     )}
 
@@ -638,11 +603,11 @@ function WorkshopDetail() {
                         href={workshop.presentation_url || workshop.slides_url || workshop.presentation}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className={`w-full rounded-2xl py-3.5 text-sm font-bold flex items-center justify-center gap-2 transition-colors ${
+                        className={`flex w-full items-center justify-center gap-2 rounded-2xl py-3.5 text-sm font-bold transition-colors ${
                           d ? 'bg-white/[0.07] text-white hover:bg-white/[0.12]' : 'bg-[#eaf3de] text-[#1a3d2b] hover:bg-[#d4e84a]/40'
                         }`}
                       >
-                        <Download className="w-4 h-4" />
+                        <Download className="h-4 w-4" />
                         Presentatie downloaden
                       </a>
                     )}
@@ -650,290 +615,250 @@ function WorkshopDetail() {
                 </motion.div>
               )}
 
-              {/* Enquête / feedback */}
+              {/* Enquête / feedback — interactieve kaart */}
               {ingeschreven && (vragenlijstLoading || vragenlijst.length > 0) && (
                 <motion.div
-                  initial={{ opacity: 0, y: 14 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ type: 'spring', stiffness: 350, damping: 30, delay: 0.54 }}
-                  className={`${cardBg} rounded-3xl border ${cardBorder} overflow-hidden shadow-sm`}
+                  variants={rise}
+                  className={`${cardBg} ${cardShadow} rounded-[26px] border ${cardBorder} p-5`}
                 >
-                  <div className="h-0.5 bg-gradient-to-r from-[#1a3d2b] via-[#4a8c60] to-[#d4e84a]" />
-                  <div className="p-5">
-                    <h2 className={`text-sm font-bold mb-3 flex items-center gap-2 ${titleClr}`}>
-                      <MessageSquare className="w-3.5 h-3.5" />
-                      Enquête
-                    </h2>
+                  <h2 className={`mb-4 flex items-center gap-2.5 text-base font-bold tracking-[-0.01em] ${titleClr}`}>
+                    <span className="h-4 w-1 rounded-full bg-[#d4e84a]" />
+                    <MessageSquare className={`h-4 w-4 ${headIcon}`} />
+                    Enquête
+                  </h2>
 
-                    {vragenlijstLoading ? (
-                      <div className="space-y-3">
-                        {[1, 2, 3].map(i => (
-                          <div key={i} className={`${skelBg} rounded-2xl h-16 animate-pulse`} />
-                        ))}
+                  {vragenlijstLoading ? (
+                    <div className="space-y-3">
+                      {[1, 2, 3].map(i => (
+                        <div key={i} className={`h-16 animate-pulse rounded-2xl ${skelBg}`} />
+                      ))}
+                    </div>
+                  ) : feedbackVerzonden ? (
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.97 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ type: 'spring', stiffness: 300, damping: 26 }}
+                      className="flex flex-col items-center py-6 text-center"
+                    >
+                      <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#1a3d2b]">
+                        <CheckCircle className="h-6 w-6 text-[#d4e84a]" />
                       </div>
-                    ) : feedbackVerzonden ? (
-                      <motion.div
-                        initial={{ opacity: 0, scale: 0.96 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        transition={{ type: 'spring', stiffness: 300, damping: 24 }}
-                        className="flex flex-col items-center text-center py-6"
-                      >
-                        <div className="w-12 h-12 rounded-2xl bg-[#1a3d2b] flex items-center justify-center mb-3">
-                          <CheckCircle className="w-6 h-6 text-[#d4e84a]" />
-                        </div>
-                        <p className={`text-sm font-bold ${titleClr}`}>Bedankt voor je feedback!</p>
-                        <p className={`text-xs mt-1 ${subClr}`}>Je enquête is succesvol verstuurd.</p>
-                      </motion.div>
-                    ) : (
-                      <form onSubmit={handleFeedbackVersturen} className="flex flex-col gap-5">
-                        {vragenlijst.map((vraag, i) => {
-                          const type = vraag.type || 'text'
-                          const huidig = antwoorden[vraag.id]
-                          return (
-                            <div key={vraag.id} className="flex flex-col gap-2">
-                              <label className={`text-sm font-semibold ${titleClr}`}>
-                                {i + 1}. {vraag.question || vraag.label}
-                                {vraag.required && <span className="text-red-400 ml-1">*</span>}
-                              </label>
+                      <p className={`text-sm font-bold ${titleClr}`}>Bedankt voor je feedback!</p>
+                      <p className={`mt-1 text-xs ${subClr}`}>Je enquête is succesvol verstuurd.</p>
+                    </motion.div>
+                  ) : (
+                    <form onSubmit={handleFeedbackVersturen} className="flex flex-col gap-5">
+                      {vragenlijst.map((vraag, i) => {
+                        const type = vraag.type || 'text'
+                        const huidig = antwoorden[vraag.id]
+                        return (
+                          <div key={vraag.id} className="flex flex-col gap-2">
+                            <label className={`text-sm font-semibold ${titleClr}`}>
+                              <span className={`mr-1 tabular-nums ${subClr}`}>{i + 1}.</span>
+                              {vraag.question || vraag.label}
+                              {vraag.required && <span className="ml-1 text-red-400">*</span>}
+                            </label>
 
-                              {type === 'rating' ? (
-                                <div className="flex items-center gap-1.5">
-                                  {[1, 2, 3, 4, 5].map(score => {
-                                    const actief = (huidig || 0) >= score
-                                    return (
-                                      <motion.button
-                                        key={score}
-                                        type="button"
-                                        whileHover={{ scale: 1.15 }}
-                                        whileTap={{ scale: 0.9 }}
-                                        onClick={() => setAntwoord(vraag.id, score)}
-                                        className="p-0.5"
-                                        aria-label={`${score} sterren`}
-                                      >
-                                        <Star
-                                          className={`w-7 h-7 transition-colors ${
-                                            actief
-                                              ? 'fill-[#d4e84a] text-[#d4e84a]'
-                                              : d ? 'text-white/15' : 'text-gray-200'
-                                          }`}
-                                        />
-                                      </motion.button>
-                                    )
-                                  })}
-                                </div>
-                              ) : type === 'choice' && Array.isArray(vraag.options) ? (
-                                <div className="flex flex-wrap gap-2">
-                                  {vraag.options.map((optie, oi) => {
-                                    const waarde = optie.value ?? optie
-                                    const tekst = optie.label ?? optie
-                                    const gekozen = huidig === waarde
-                                    return (
-                                      <motion.button
-                                        key={oi}
-                                        type="button"
-                                        whileTap={{ scale: 0.95 }}
-                                        onClick={() => setAntwoord(vraag.id, waarde)}
-                                        className={`px-3.5 py-2 rounded-xl text-xs font-semibold border-2 transition-all duration-150 ${
-                                          gekozen
-                                            ? d ? 'border-[#d4e84a]/50 bg-[#d4e84a]/10 text-[#d4e84a]' : 'border-[#1a3d2b] bg-[#eaf3de] text-[#1a3d2b]'
-                                            : d ? 'border-white/[0.08] text-white/55 hover:border-white/20' : 'border-gray-100 text-gray-500 hover:border-[#1a3d2b]/30'
+                            {type === 'rating' ? (
+                              <div className="flex items-center gap-1.5">
+                                {[1, 2, 3, 4, 5].map(score => {
+                                  const actief = (huidig || 0) >= score
+                                  return (
+                                    <motion.button
+                                      key={score}
+                                      type="button"
+                                      whileHover={{ scale: 1.12 }}
+                                      whileTap={{ scale: 0.9 }}
+                                      onClick={() => setAntwoord(vraag.id, score)}
+                                      className="p-0.5"
+                                      aria-label={`${score} sterren`}
+                                    >
+                                      <Star
+                                        className={`h-7 w-7 transition-colors ${
+                                          actief ? 'fill-[#d4e84a] text-[#d4e84a]' : (d ? 'text-white/15' : 'text-[#1a3d2b]/15')
                                         }`}
-                                      >
-                                        {tekst}
-                                      </motion.button>
-                                    )
-                                  })}
-                                </div>
-                              ) : (
-                                <textarea
-                                  value={huidig || ''}
-                                  onChange={e => setAntwoord(vraag.id, e.target.value)}
-                                  rows={3}
-                                  placeholder="Je antwoord..."
-                                  className={`w-full rounded-2xl px-4 py-3 text-sm outline-none resize-none transition-colors border-2 ${
-                                    d
-                                      ? 'bg-white/[0.05] border-white/[0.07] text-white placeholder:text-white/25 focus:border-[#d4e84a]/40'
-                                      : 'bg-[#f6faf2] border-gray-100 text-[#1a3d2b] placeholder:text-gray-300 focus:border-[#1a3d2b]/40'
-                                  }`}
-                                />
-                              )}
-                            </div>
-                          )
-                        })}
+                                      />
+                                    </motion.button>
+                                  )
+                                })}
+                              </div>
+                            ) : type === 'choice' && Array.isArray(vraag.options) ? (
+                              <div className="flex flex-wrap gap-2">
+                                {vraag.options.map((optie, oi) => {
+                                  const waarde = optie.value ?? optie
+                                  const tekst = optie.label ?? optie
+                                  const gekozen = huidig === waarde
+                                  return (
+                                    <motion.button
+                                      key={oi}
+                                      type="button"
+                                      whileTap={{ scale: 0.95 }}
+                                      onClick={() => setAntwoord(vraag.id, waarde)}
+                                      className={`rounded-xl border px-3.5 py-2 text-xs font-semibold transition-all duration-150 ${
+                                        gekozen
+                                          ? (d ? 'border-[#d4e84a]/50 bg-[#d4e84a]/10 text-[#d4e84a]' : 'border-[#1a3d2b] bg-[#eaf3de] text-[#1a3d2b]')
+                                          : (d ? 'border-white/[0.08] text-white/55 hover:border-white/20' : 'border-[#1a3d2b]/10 text-[#1a3d2b]/55 hover:border-[#1a3d2b]/30')
+                                      }`}
+                                    >
+                                      {tekst}
+                                    </motion.button>
+                                  )
+                                })}
+                              </div>
+                            ) : (
+                              <textarea
+                                value={huidig || ''}
+                                onChange={e => setAntwoord(vraag.id, e.target.value)}
+                                rows={3}
+                                placeholder="Je antwoord..."
+                                className={`w-full resize-none rounded-2xl border px-4 py-3 text-sm outline-none transition-colors ${
+                                  d
+                                    ? 'border-white/[0.08] bg-white/[0.05] text-white placeholder:text-white/25 focus:border-[#d4e84a]/40'
+                                    : 'border-[#1a3d2b]/10 bg-[#f6faf2] text-[#1a3d2b] placeholder:text-[#1a3d2b]/30 focus:border-[#1a3d2b]/40'
+                                }`}
+                              />
+                            )}
+                          </div>
+                        )
+                      })}
 
+                      <motion.button
+                        whileHover={{ scale: feedbackLoading ? 1 : 1.015 }}
+                        whileTap={{ scale: feedbackLoading ? 1 : 0.98 }}
+                        type="submit"
+                        disabled={feedbackLoading}
+                        className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#1a3d2b] py-3.5 text-sm font-bold text-[#d4e84a] transition-colors hover:bg-[#16331f] disabled:opacity-60"
+                      >
+                        {feedbackLoading ? <><SpinnerIcon />Versturen...</> : <><Send className="h-4 w-4" />Enquête versturen</>}
+                      </motion.button>
+                    </form>
+                  )}
+                </motion.div>
+              )}
+
+              {/* Sessie-selectie — interactieve kaart */}
+              {workshop.registration_mode === 'session' && workshop.sessions?.length > 0 && !ingeschreven && (
+                <motion.div
+                  variants={rise}
+                  className={`${cardBg} ${cardShadow} rounded-[26px] border ${cardBorder} p-5`}
+                >
+                  <h2 className={`mb-4 flex items-center gap-2.5 text-base font-bold tracking-[-0.01em] ${titleClr}`}>
+                    <span className="h-4 w-1 rounded-full bg-[#d4e84a]" />
+                    <Tag className={`h-4 w-4 ${headIcon}`} />
+                    Kies een sessie
+                  </h2>
+                  <div className="flex flex-col gap-2">
+                    {workshop.sessions.map((sessie) => {
+                      const isGekozen = geselecteerdeSessie === sessie.id
+                      return (
                         <motion.button
-                          whileHover={{ scale: feedbackLoading ? 1 : 1.02 }}
-                          whileTap={{ scale: feedbackLoading ? 1 : 0.98 }}
-                          type="submit"
-                          disabled={feedbackLoading}
-                          className="w-full rounded-2xl py-3.5 text-sm font-bold flex items-center justify-center gap-2 disabled:opacity-60 bg-[#1a3d2b] text-[#d4e84a] hover:bg-[#16331f] transition-colors"
+                          key={sessie.id}
+                          whileHover={{ scale: sessie.is_full ? 1 : 1.01 }}
+                          whileTap={{ scale: sessie.is_full ? 1 : 0.98 }}
+                          disabled={sessie.is_full}
+                          onClick={() => setGeselecteerdeSessie(isGekozen ? null : sessie.id)}
+                          className={`w-full rounded-2xl border px-4 py-3 text-left transition-all duration-150
+                            ${sessie.is_full
+                              ? (d ? 'cursor-not-allowed border-white/[0.05] bg-white/[0.03] opacity-50' : 'cursor-not-allowed border-[#1a3d2b]/10 bg-[#1a3d2b]/[0.03] opacity-50')
+                              : isGekozen
+                                ? (d ? 'border-[#d4e84a]/50 bg-[#d4e84a]/10' : 'border-[#1a3d2b] bg-[#eaf3de]')
+                                : (d ? 'border-white/[0.08] hover:border-white/20 hover:bg-white/[0.06]' : 'border-[#1a3d2b]/10 hover:border-[#1a3d2b]/30 hover:bg-[#1a3d2b]/[0.03]')
+                            }`}
                         >
-                          {feedbackLoading ? (
-                            <>
-                              <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
-                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
-                              </svg>
-                              Versturen...
-                            </>
-                          ) : (
-                            <>
-                              <Send className="w-4 h-4" />
-                              Enquête versturen
-                            </>
-                          )}
+                          <div className="flex items-center justify-between gap-3">
+                            <div>
+                              <p className={`text-sm font-semibold tabular-nums ${titleClr}`}>
+                                {sessie.date} · {sessie.start_time} - {sessie.end_time}
+                              </p>
+                              <p className={`mt-0.5 text-xs ${subClr}`}>{sessie.location}</p>
+                            </div>
+                            <div className="flex shrink-0 items-center gap-2">
+                              {sessie.is_full ? (
+                                <span className="rounded-full bg-red-50 px-2 py-0.5 text-xs font-bold text-red-400">vol</span>
+                              ) : (
+                                <span className={`text-xs tabular-nums ${subClr}`}>{sessie.spots_left} vrij</span>
+                              )}
+                              {isGekozen && <CheckCircle className={`h-4 w-4 ${d ? 'text-[#d4e84a]' : 'text-[#1a3d2b]'}`} />}
+                            </div>
+                          </div>
                         </motion.button>
-                      </form>
-                    )}
+                      )
+                    })}
                   </div>
                 </motion.div>
               )}
 
-              {/* Sessie-selectie */}
-              {workshop.registration_mode === 'session' && workshop.sessions?.length > 0 && !ingeschreven && (
-                <motion.div
-                  initial={{ opacity: 0, y: 14 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ type: 'spring', stiffness: 350, damping: 30, delay: 0.26 }}
-                  className={`${cardBg} rounded-3xl border ${cardBorder} overflow-hidden shadow-sm`}
-                >
-                  <div className="h-0.5 bg-gradient-to-r from-[#1a3d2b] via-[#4a8c60] to-[#d4e84a]" />
-                  <div className="p-5">
-                    <h2 className={`text-sm font-bold mb-3 flex items-center gap-2 ${titleClr}`}>
-                      <Tag className="w-3.5 h-3.5" />
-                      Kies een sessie
-                    </h2>
-                    <div className="flex flex-col gap-2">
-                      {workshop.sessions.map((sessie) => {
-                        const isGekozen = geselecteerdeSessie === sessie.id
+              {/* FAQ — flush accordion op de sheet */}
+              {(faqLoading || faq.length > 0) && (
+                <motion.section variants={rise} className="px-1">
+                  <h2 className={`mb-2 flex items-center gap-2.5 text-base font-bold tracking-[-0.01em] ${titleClr}`}>
+                    <span className="h-4 w-1 rounded-full bg-[#d4e84a]" />
+                    <HelpCircle className={`h-4 w-4 ${headIcon}`} />
+                    Veelgestelde vragen
+                  </h2>
+                  {faqLoading ? (
+                    <div className="mt-3 space-y-2">
+                      {[1, 2, 3].map(i => (
+                        <div key={i} className={`h-12 animate-pulse rounded-2xl ${skelBg}`} />
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="flex flex-col">
+                      {faq.map((item) => {
+                        const isOpen = openFaqId === item.id
                         return (
-                          <motion.button
-                            key={sessie.id}
-                            whileHover={{ scale: sessie.is_full ? 1 : 1.01 }}
-                            whileTap={{ scale: sessie.is_full ? 1 : 0.98 }}
-                            disabled={sessie.is_full}
-                            onClick={() => setGeselecteerdeSessie(isGekozen ? null : sessie.id)}
-                            className={`w-full text-left px-4 py-3 rounded-2xl border-2 transition-all duration-150
-                              ${sessie.is_full
-                                ? d ? 'border-white/[0.05] bg-white/[0.03] opacity-50 cursor-not-allowed' : 'border-gray-100 bg-gray-50 opacity-50 cursor-not-allowed'
-                                : isGekozen
-                                  ? d ? 'border-[#d4e84a]/50 bg-[#d4e84a]/10' : 'border-[#1a3d2b] bg-[#eaf3de]'
-                                  : d ? 'border-white/[0.07] hover:border-white/20 hover:bg-white/[0.06]' : 'border-gray-100 hover:border-[#1a3d2b]/30 hover:bg-gray-50'
-                              }`}
-                          >
-                            <div className="flex items-center justify-between">
-                              <div>
-                                <p className={`text-sm font-semibold ${titleClr}`}>
-                                  {sessie.date} &middot; {sessie.start_time} – {sessie.end_time}
-                                </p>
-                                <p className={`text-xs mt-0.5 ${subClr}`}>{sessie.location}</p>
-                              </div>
-                              <div className="flex items-center gap-2 shrink-0">
-                                {sessie.is_full ? (
-                                  <span className="text-xs font-bold text-red-400 bg-red-50 px-2 py-0.5 rounded-full">vol</span>
-                                ) : (
-                                  <span className={`text-xs ${subClr}`}>{sessie.spots_left} vrij</span>
-                                )}
-                                {isGekozen && <CheckCircle className={`w-4 h-4 ${d ? 'text-[#d4e84a]' : 'text-[#1a3d2b]'}`} />}
-                              </div>
-                            </div>
-                          </motion.button>
+                          <div key={item.id} className={`border-b ${hairline}`}>
+                            <button
+                              onClick={() => setOpenFaqId(isOpen ? null : item.id)}
+                              className="flex w-full items-center justify-between gap-3 py-4 text-left"
+                            >
+                              <span className={`text-sm font-semibold ${isOpen ? titleClr : bodyClr}`}>{item.question}</span>
+                              <motion.div
+                                animate={{ rotate: isOpen ? 180 : 0 }}
+                                transition={{ duration: 0.2, ease: EASE }}
+                                className="shrink-0"
+                              >
+                                <ChevronDown className={`h-4 w-4 ${isOpen ? 'text-[#d4e84a]' : subClr}`} />
+                              </motion.div>
+                            </button>
+                            <AnimatePresence initial={false}>
+                              {isOpen && (
+                                <motion.div
+                                  key="answer"
+                                  initial={{ opacity: 0, height: 0 }}
+                                  animate={{ opacity: 1, height: 'auto' }}
+                                  exit={{ opacity: 0, height: 0 }}
+                                  transition={{ duration: 0.24, ease: EASE }}
+                                  className="overflow-hidden"
+                                >
+                                  <p className={`pb-4 text-[15px] leading-relaxed ${bodyClr}`}>{item.answer}</p>
+                                </motion.div>
+                              )}
+                            </AnimatePresence>
+                          </div>
                         )
                       })}
                     </div>
-                  </div>
-                </motion.div>
+                  )}
+                </motion.section>
               )}
 
-              {/* FAQ */}
-              {(faqLoading || faq.length > 0) && (
-                <motion.div
-                  initial={{ opacity: 0, y: 14 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ type: 'spring', stiffness: 350, damping: 30, delay: 0.42 }}
-                  className={`${cardBg} rounded-3xl border ${cardBorder} overflow-hidden shadow-sm`}
-                >
-                  <div className="h-0.5 bg-gradient-to-r from-[#1a3d2b] via-[#4a8c60] to-[#d4e84a]" />
-                  <div className="p-5">
-                    <h2 className={`text-sm font-bold mb-3 flex items-center gap-2 ${titleClr}`}>
-                      <HelpCircle className="w-3.5 h-3.5" />
-                      Veelgestelde vragen
-                    </h2>
-                    {faqLoading ? (
-                      <div className="space-y-2">
-                        {[1, 2, 3].map(i => (
-                          <div key={i} className={`${skelBg} rounded-2xl h-12 animate-pulse`} />
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="flex flex-col">
-                        {faq.map((item, i) => {
-                          const isOpen = openFaqId === item.id
-                          return (
-                            <div key={item.id} className={i > 0 ? `border-t ${d ? 'border-white/[0.07]' : 'border-gray-100'}` : ''}>
-                              <button
-                                onClick={() => setOpenFaqId(isOpen ? null : item.id)}
-                                className={`w-full text-left py-3.5 px-1 flex items-center justify-between gap-3 rounded-xl transition-colors ${d ? 'hover:bg-white/[0.04]' : 'hover:bg-gray-50'}`}
-                              >
-                                <span className={`text-sm font-semibold ${titleClr}`}>{item.question}</span>
-                                <motion.div
-                                  animate={{ rotate: isOpen ? 180 : 0 }}
-                                  transition={{ duration: 0.2 }}
-                                  className="shrink-0"
-                                >
-                                  <ChevronDown className={`w-4 h-4 ${subClr}`} />
-                                </motion.div>
-                              </button>
-                              <AnimatePresence initial={false}>
-                                {isOpen && (
-                                  <motion.div
-                                    key="answer"
-                                    initial={{ opacity: 0, height: 0 }}
-                                    animate={{ opacity: 1, height: 'auto' }}
-                                    exit={{ opacity: 0, height: 0 }}
-                                    transition={{ duration: 0.22, ease: [0.4, 0, 0.2, 1] }}
-                                    className="overflow-hidden"
-                                  >
-                                    <p className={`text-sm leading-relaxed pb-3.5 px-1 ${subClr}`}>{item.answer}</p>
-                                  </motion.div>
-                                )}
-                              </AnimatePresence>
-                            </div>
-                          )
-                        })}
-                      </div>
-                    )}
-                  </div>
-                </motion.div>
-              )}
-
-              {/* Actie knoppen */}
-              <motion.div
-                initial={{ opacity: 0, y: 14 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ type: 'spring', stiffness: 350, damping: 30, delay: 0.34 }}
-                className="flex flex-col gap-2"
-              >
+              {/* Actie — primaire CTA */}
+              <motion.div variants={rise} className="flex flex-col gap-2 pt-1">
                 {!ingeschreven ? (
                   <motion.button
-                    whileHover={{ scale: registratieLoading || workshop.is_full ? 1 : 1.02 }}
+                    whileHover={{ scale: registratieLoading || workshop.is_full ? 1 : 1.015 }}
                     whileTap={{ scale: registratieLoading || workshop.is_full ? 1 : 0.98 }}
                     onClick={handleInschrijven}
                     disabled={registratieLoading || workshop.is_full}
-                    className={`w-full rounded-2xl py-4 text-sm font-bold transition-colors flex items-center justify-center gap-2
+                    className={`flex w-full items-center justify-center gap-2 rounded-2xl py-4 text-[15px] font-bold transition-colors
                       ${workshop.is_full
-                        ? d ? 'bg-white/[0.05] text-white/25 cursor-not-allowed' : 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                        : 'bg-[#d4e84a] text-[#1a3d2b] hover:bg-[#c8dc3e]'
+                        ? (d ? 'cursor-not-allowed bg-white/[0.05] text-white/25' : 'cursor-not-allowed bg-[#1a3d2b]/[0.06] text-[#1a3d2b]/30')
+                        : 'bg-[#d4e84a] text-[#1a3d2b] hover:bg-[#c8dc3e] shadow-[0_10px_30px_-12px_rgba(212,232,74,0.6)]'
                       } disabled:opacity-60`}
                   >
                     {registratieLoading ? (
-                      <>
-                        <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
-                        </svg>
-                        Inschrijven...
-                      </>
+                      <><SpinnerIcon />Inschrijven...</>
                     ) : workshop.is_full ? (
                       'Workshop is vol'
                     ) : (
@@ -942,28 +867,18 @@ function WorkshopDetail() {
                   </motion.button>
                 ) : (
                   <motion.button
-                    whileHover={{ scale: registratieLoading ? 1 : 1.02 }}
+                    whileHover={{ scale: registratieLoading ? 1 : 1.01 }}
                     whileTap={{ scale: registratieLoading ? 1 : 0.98 }}
                     onClick={handleUitschrijven}
                     disabled={registratieLoading}
-                    className={`w-full rounded-2xl py-4 text-sm font-bold transition-colors flex items-center justify-center gap-2 disabled:opacity-60
-                      ${d ? 'bg-white/[0.07] text-white/40 hover:bg-red-900/30 hover:text-red-400' : 'bg-gray-100 text-gray-500 hover:bg-red-50 hover:text-red-500'}`}
+                    className={`flex w-full items-center justify-center gap-2 rounded-2xl py-4 text-[15px] font-bold transition-colors disabled:opacity-60
+                      ${d ? 'bg-white/[0.07] text-white/40 hover:bg-red-900/30 hover:text-red-400' : 'bg-[#1a3d2b]/[0.06] text-[#1a3d2b]/50 hover:bg-red-50 hover:text-red-500'}`}
                   >
-                    {registratieLoading ? (
-                      <>
-                        <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
-                        </svg>
-                        Uitschrijven...
-                      </>
-                    ) : (
-                      'Uitschrijven'
-                    )}
+                    {registratieLoading ? <><SpinnerIcon />Uitschrijven...</> : 'Uitschrijven'}
                   </motion.button>
                 )}
               </motion.div>
-            </>
+            </motion.div>
           )}
         </div>
       </div>

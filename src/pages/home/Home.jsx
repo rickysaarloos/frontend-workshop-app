@@ -246,6 +246,7 @@ function Home() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ type: 'spring', stiffness: 200, damping: 38, delay: 0.15 }}
+          className="max-w-2xl mx-auto"
         >
           <motion.p
             initial={{ opacity: 0, x: -12 }}
@@ -272,8 +273,9 @@ function Home() {
 
       {/* Content */}
       <div
-        className={`flex-1 ${contentBg} rounded-t-[2.5rem] px-5 pt-7 pb-10 flex flex-col gap-4 transition-colors duration-300`}
+        className={`flex-1 ${contentBg} rounded-t-[2.5rem] px-5 pt-7 pb-10 transition-colors duration-300`}
       >
+        <div className="max-w-2xl mx-auto flex flex-col gap-4">
 
         {/* Aankomend event banner */}
         {loading ? (
@@ -569,7 +571,7 @@ function Home() {
                           {(tijdStart || tijdEind) && (
                             <div className={`flex items-center gap-1.5 text-xs ${subClr}`}>
                               <Clock className="w-3 h-3 shrink-0" />
-                              <span>{tijdStart}{tijdEind ? ` – ${tijdEind}` : ''}</span>
+                              <span>{tijdStart}{tijdEind ? ` - ${tijdEind}` : ''}</span>
                             </div>
                           )}
                           {workshop.location && (
@@ -600,6 +602,7 @@ function Home() {
             </>
           )}
         </motion.div>
+        </div>
       </div>
       <Footer />
     </div>
