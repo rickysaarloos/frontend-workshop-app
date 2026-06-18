@@ -219,7 +219,7 @@ export default function EventDetail() {
   const cardBorder = d ? 'border-white/[0.07]' : 'border-gray-100'
   const skelBg     = d ? 'bg-white/[0.07]'    : 'bg-gray-100'
   const titleClr   = d ? 'text-white'          : 'text-[#1a3d2b]'
-  const subClr     = d ? 'text-white/45'       : 'text-gray-400'
+  const subClr     = d ? 'text-white/70'       : 'text-gray-500'
   const iconBg     = d ? 'bg-[#d4e84a]/12'     : 'bg-gradient-to-br from-[#eaf3de] to-[#d4e84a]/30'
   const iconClr    = d ? 'text-[#d4e84a]'      : 'text-[#1a3d2b]'
   const barBg      = d ? 'bg-white/10'         : 'bg-gray-100'
@@ -241,7 +241,8 @@ export default function EventDetail() {
             whileHover={{ scale: 1.1, x: -2 }}
             whileTap={{ scale: 0.85 }}
             onClick={() => navigate(-1)}
-            className="text-white/40 hover:text-white transition-colors p-1.5 rounded-xl hover:bg-white/10"
+            className="text-white/60 hover:text-white transition-colors p-1.5 rounded-xl hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4e84a]"
+            aria-label="Terug"
           >
             <ChevronLeft className="w-5 h-5" />
           </motion.button>
@@ -260,7 +261,7 @@ export default function EventDetail() {
           whileHover={{ scale: 1.08 }}
           whileTap={{ scale: 0.88 }}
           onClick={toggleDark}
-          className="w-8 h-8 flex items-center justify-center rounded-xl hover:bg-white/10 transition-colors text-white/40 hover:text-white/70"
+          className="w-8 h-8 flex items-center justify-center rounded-xl hover:bg-white/10 transition-colors text-white/60 hover:text-white/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4e84a]"
           aria-label="Wissel kleurmodus"
         >
           <AnimatePresence mode="wait">
@@ -365,7 +366,7 @@ export default function EventDetail() {
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => navigate('/events')}
-                className={`text-xs font-bold px-3 py-1.5 rounded-lg transition-colors ${
+                className={`text-xs font-bold px-3 py-1.5 rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4e84a] ${
                   d ? 'text-[#d4e84a] bg-[#d4e84a]/10 hover:bg-[#d4e84a]/20' : 'text-[#1a3d2b] bg-[#eaf3de] hover:bg-[#d4e84a]'
                 }`}
               >
@@ -499,7 +500,7 @@ export default function EventDetail() {
                       {event.days.map((dag, i) => (
                         <div key={i} className={`flex justify-between items-center text-sm py-2 border-b ${rowBorder} last:border-0`}>
                           <span className={`font-semibold capitalize ${titleClr}`}>{formatDatumKort(dag.date)}</span>
-                          <span className={`text-xs px-2.5 py-1 rounded-lg ${d ? 'text-white/45 bg-white/[0.06]' : 'text-gray-400 bg-gray-50'}`}>
+                          <span className={`text-xs px-2.5 py-1 rounded-lg ${d ? 'text-white/70 bg-white/[0.06]' : 'text-gray-500 bg-gray-50'}`}>
                             {dag.start_time} – {dag.end_time}
                           </span>
                         </div>
@@ -568,7 +569,7 @@ export default function EventDetail() {
                                         whileHover={{ scale: 1.12 }}
                                         whileTap={{ scale: 0.9 }}
                                         onClick={() => setAntwoord(vraag.id, score)}
-                                        className="p-0.5"
+                                        className="p-0.5 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4e84a]"
                                         aria-label={`${score} sterren`}
                                       >
                                         <Star
@@ -592,10 +593,10 @@ export default function EventDetail() {
                                         type="button"
                                         whileTap={{ scale: 0.95 }}
                                         onClick={() => setAntwoord(vraag.id, waarde)}
-                                        className={`rounded-xl border px-3.5 py-2 text-xs font-semibold transition-all duration-150 ${
+                                        className={`rounded-xl border px-3.5 py-2 text-xs font-semibold transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4e84a] ${
                                           gekozen
                                             ? (d ? 'border-[#d4e84a]/50 bg-[#d4e84a]/10 text-[#d4e84a]' : 'border-[#1a3d2b] bg-[#eaf3de] text-[#1a3d2b]')
-                                            : (d ? 'border-white/[0.08] text-white/55 hover:border-white/20' : 'border-[#1a3d2b]/10 text-[#1a3d2b]/55 hover:border-[#1a3d2b]/30')
+                                            : (d ? 'border-white/[0.08] text-white/70 hover:border-white/20' : 'border-[#1a3d2b]/10 text-[#1a3d2b]/70 hover:border-[#1a3d2b]/30')
                                         }`}
                                       >
                                         {tekst}
@@ -609,10 +610,10 @@ export default function EventDetail() {
                                   onChange={e => setAntwoord(vraag.id, e.target.value)}
                                   rows={3}
                                   placeholder="Je antwoord..."
-                                  className={`w-full resize-none rounded-2xl border px-4 py-3 text-sm outline-none transition-colors ${
+                                  className={`w-full resize-none rounded-2xl border px-4 py-3 text-sm outline-none transition-colors focus-visible:ring-2 focus-visible:ring-[#d4e84a] ${
                                     d
-                                      ? 'border-white/[0.08] bg-white/[0.05] text-white placeholder:text-white/25 focus:border-[#d4e84a]/40'
-                                      : 'border-[#1a3d2b]/10 bg-[#f6faf2] text-[#1a3d2b] placeholder:text-[#1a3d2b]/30 focus:border-[#1a3d2b]/40'
+                                      ? 'border-white/[0.08] bg-white/[0.05] text-white placeholder:text-white/40 focus:border-[#d4e84a]/40'
+                                      : 'border-[#1a3d2b]/10 bg-[#f6faf2] text-[#1a3d2b] placeholder:text-[#1a3d2b]/40 focus:border-[#1a3d2b]/40'
                                   }`}
                                 />
                               )}
@@ -625,7 +626,7 @@ export default function EventDetail() {
                           whileTap={{ scale: feedbackLoading ? 1 : 0.98 }}
                           type="submit"
                           disabled={feedbackLoading}
-                          className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#1a3d2b] py-3.5 text-sm font-bold text-[#d4e84a] transition-colors hover:bg-[#16331f] disabled:opacity-60"
+                          className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#1a3d2b] py-3.5 text-sm font-bold text-[#d4e84a] transition-colors hover:bg-[#16331f] disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4e84a] focus-visible:ring-offset-2"
                         >
                           {feedbackLoading ? (
                             <>
@@ -659,9 +660,9 @@ export default function EventDetail() {
                   whileTap={{ scale: registreerLoading ? 1 : 0.98 }}
                   onClick={handleRegistreer}
                   disabled={registreerLoading || (isFull && !ingeschreven)}
-                  className={`w-full rounded-2xl py-4 text-sm font-bold flex items-center justify-center gap-2 transition-colors
+                  className={`w-full rounded-2xl py-4 text-sm font-bold flex items-center justify-center gap-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4e84a] focus-visible:ring-offset-2
                     ${ingeschreven
-                      ? d ? 'bg-white/[0.07] text-white/40 hover:bg-red-900/30 hover:text-red-400' : 'bg-gray-100 text-gray-500 hover:bg-red-50 hover:text-red-500'
+                      ? d ? 'bg-white/[0.07] text-white/70 hover:bg-red-900/30 hover:text-red-400' : 'bg-gray-100 text-gray-600 hover:bg-red-50 hover:text-red-500'
                       : isFull
                       ? d ? 'bg-white/[0.05] text-white/25 cursor-not-allowed' : 'bg-gray-100 text-gray-400 cursor-not-allowed'
                       : 'bg-[#d4e84a] text-[#1a3d2b] hover:bg-[#c8dc3e]'

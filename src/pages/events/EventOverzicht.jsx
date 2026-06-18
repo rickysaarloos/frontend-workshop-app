@@ -34,10 +34,10 @@ function EventCard({ event, navigate, formatDatum, getDagenTot, dark }) {
   const cardBord  = d ? 'border-white/[0.07]' : 'border-gray-100'
   const catBg     = d ? 'bg-[#d4e84a]/12 text-[#d4e84a]' : 'bg-[#eaf3de] text-[#1a3d2b]'
   const titleClr  = d ? 'text-white'          : 'text-[#1a3d2b]'
-  const subClr    = d ? 'text-white/45'       : 'text-gray-400'
+  const subClr    = d ? 'text-white/70'       : 'text-gray-500'
   const metaBg    = d ? 'bg-white/[0.06]'     : 'bg-gray-50'
-  const metaClr   = d ? 'text-white/55'       : 'text-gray-500'
-  const metaIcon  = d ? 'text-white/30'       : 'text-gray-400'
+  const metaClr   = d ? 'text-white/70'       : 'text-gray-500'
+  const metaIcon  = d ? 'text-white/60'       : 'text-gray-500'
   const countClr  = isVoorbij ? (d ? 'text-white/20' : 'text-gray-300') : (d ? 'text-white' : 'text-[#1a3d2b]')
  
   return (
@@ -46,7 +46,10 @@ function EventCard({ event, navigate, formatDatum, getDagenTot, dark }) {
       whileHover={{ y: -3, boxShadow: d ? '0 16px 36px rgba(0,0,0,0.4)' : '0 16px 36px rgba(26,61,43,0.13)' }}
       whileTap={{ scale: 0.99 }}
       onClick={() => navigate(`/events/${event.id}`)}
-      className={`${cardBg} rounded-3xl border ${cardBord} overflow-hidden cursor-pointer`}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigate(`/events/${event.id}`) } }}
+      className={`${cardBg} rounded-3xl border ${cardBord} overflow-hidden cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4e84a]`}
     >
       <div className={`h-0.5 w-full ${isVoorbij ? (d ? 'bg-white/10' : 'bg-gradient-to-r from-gray-200 to-gray-300') : 'bg-gradient-to-r from-[#1a3d2b] via-[#4a8c60] to-[#d4e84a]'}`} />
  
@@ -89,7 +92,7 @@ function EventCard({ event, navigate, formatDatum, getDagenTot, dark }) {
             <p className={`text-lg font-bold ${countClr}`}>
               {isVoorbij ? '–' : dagenTot}
             </p>
-            <p className={`text-xs ${d ? 'text-white/30' : 'text-gray-400'}`}>
+            <p className={`text-xs ${d ? 'text-white/60' : 'text-gray-500'}`}>
               {isVoorbij ? 'voorbij' : 'dagen'}
             </p>
           </div>
@@ -207,7 +210,7 @@ function EventOverzicht() {
   const cardBg     = d ? 'bg-[#1c1c1e]'       : 'bg-white'
   const cardBorder = d ? 'border-white/[0.07]' : 'border-gray-100'
   const skelBg     = d ? 'bg-white/[0.07]'    : 'bg-gray-100'
-  const labelClr   = d ? 'text-white/30'       : 'text-gray-400'
+  const labelClr   = d ? 'text-white/60'       : 'text-gray-500'
  
   return (
     <div className="min-h-[100dvh] bg-[#1a3d2b] flex flex-col">
@@ -225,7 +228,8 @@ function EventOverzicht() {
             whileHover={{ scale: 1.1, x: -2 }}
             whileTap={{ scale: 0.85 }}
             onClick={() => navigate('/home')}
-            className="text-white/40 hover:text-white transition-colors p-1.5 rounded-xl hover:bg-white/10"
+            className="text-white/60 hover:text-white transition-colors p-1.5 rounded-xl hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4e84a]"
+            aria-label="Terug naar home"
           >
             <ChevronLeft className="w-5 h-5" />
           </motion.button>
@@ -244,7 +248,7 @@ function EventOverzicht() {
           whileHover={{ scale: 1.08 }}
           whileTap={{ scale: 0.88 }}
           onClick={toggleDark}
-          className="w-8 h-8 flex items-center justify-center rounded-xl hover:bg-white/10 transition-colors text-white/40 hover:text-white/70"
+          className="w-8 h-8 flex items-center justify-center rounded-xl hover:bg-white/10 transition-colors text-white/60 hover:text-white/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4e84a]"
           aria-label="Wissel kleurmodus"
         >
           <AnimatePresence mode="wait">
@@ -329,9 +333,9 @@ function EventOverzicht() {
               value={zoekterm}
               onChange={(e) => setZoekterm(e.target.value)}
               placeholder="Zoek een event..."
-              className={`w-full rounded-2xl pl-10 pr-4 py-3 text-sm outline-none transition-all shadow-sm border ${
+              className={`w-full rounded-2xl pl-10 pr-4 py-3 text-sm outline-none transition-all shadow-sm border focus-visible:ring-2 focus-visible:ring-[#d4e84a] ${
                 d
-                  ? 'bg-[#1c1c1e] border-white/[0.07] text-white placeholder:text-white/20 focus:border-white/20'
+                  ? 'bg-[#1c1c1e] border-white/[0.07] text-white placeholder:text-white/40 focus:border-white/20'
                   : 'bg-white border-gray-100 text-[#1a3d2b] focus:border-[#1a3d2b]'
               }`}
             />
@@ -344,12 +348,12 @@ function EventOverzicht() {
                 key={cat}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => setActieveCategorie(cat)}
-                className={`shrink-0 text-xs px-3 py-1.5 rounded-xl font-semibold transition-all ${
+                className={`shrink-0 text-xs px-3 py-1.5 rounded-xl font-semibold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4e84a] ${
                   actieveCategorie === cat
                     ? 'bg-[#1a3d2b] text-[#d4e84a]'
                     : d
-                    ? 'bg-[#1c1c1e] border border-white/[0.07] text-white/45'
-                    : 'bg-white text-gray-400 border border-gray-100'
+                    ? 'bg-[#1c1c1e] border border-white/[0.07] text-white/70'
+                    : 'bg-white text-gray-500 border border-gray-100'
                 }`}
               >
                 {cat}
@@ -424,12 +428,12 @@ function EventOverzicht() {
                     >
                       <Calendar className={`w-5 h-5 ${d ? 'text-white/20' : 'text-gray-300'}`} />
                     </motion.div>
-                    <p className={`text-sm font-semibold mb-3 ${d ? 'text-white/40' : 'text-gray-400'}`}>Geen events gevonden</p>
+                    <p className={`text-sm font-semibold mb-3 ${d ? 'text-white/70' : 'text-gray-500'}`}>Geen events gevonden</p>
                     <motion.button
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
                       onClick={() => { setZoekterm(''); setActieveCategorie('Alle') }}
-                      className={`text-xs font-bold px-3 py-1.5 rounded-lg transition-colors ${
+                      className={`text-xs font-bold px-3 py-1.5 rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4e84a] ${
                         d
                           ? 'text-[#d4e84a] bg-[#d4e84a]/10 hover:bg-[#d4e84a]/20'
                           : 'text-[#1a3d2b] bg-[#eaf3de] hover:bg-[#d4e84a]'

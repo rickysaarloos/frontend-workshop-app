@@ -49,8 +49,8 @@ function WorkshopCard({ workshop, navigate, formatDatum, dark }) {
   const cardBorder = d ? 'border-white/[0.08]'  : 'border-black/[0.06]'
   const hairline   = d ? 'border-white/[0.07]'  : 'border-[#1a3d2b]/[0.07]'
   const titleClr   = d ? 'text-white'           : 'text-[#1a3d2b]'
-  const subClr     = d ? 'text-white/40'        : 'text-[#1a3d2b]/45'
-  const metaClr    = d ? 'text-white/55'        : 'text-[#1a3d2b]/65'
+  const subClr     = d ? 'text-white/70'        : 'text-[#1a3d2b]/70'
+  const metaClr    = d ? 'text-white/70'        : 'text-[#1a3d2b]/70'
   const cardShadow = d ? 'shadow-[0_2px_20px_rgba(0,0,0,0.30)]' : 'shadow-[0_1px_2px_rgba(26,61,43,0.04),0_14px_30px_-18px_rgba(26,61,43,0.20)]'
   const barTrack   = d ? 'bg-white/10'          : 'bg-[#1a3d2b]/[0.08]'
   const barFill    = isVol ? 'bg-red-400' : (d ? 'bg-[#d4e84a]' : 'bg-[#1a3d2b]')
@@ -66,7 +66,10 @@ function WorkshopCard({ workshop, navigate, formatDatum, dark }) {
       whileTap={{ scale: 0.995 }}
       transition={{ type: 'spring', stiffness: 400, damping: 30 }}
       onClick={() => navigate(`/workshops/${workshop.id}`)}
-      className={`group ${cardBg} border ${cardBorder} ${cardShadow} cursor-pointer rounded-[26px] p-5 transition-shadow duration-300`}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigate(`/workshops/${workshop.id}`) } }}
+      className={`group ${cardBg} border ${cardBorder} ${cardShadow} cursor-pointer rounded-[26px] p-5 transition-shadow duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4e84a]`}
     >
       <div className="flex items-start gap-3.5">
         <div className={`mt-0.5 grid h-10 w-10 shrink-0 place-items-center rounded-2xl ${iconTile}`}>
@@ -130,7 +133,7 @@ function WorkshopCard({ workshop, navigate, formatDatum, dark }) {
                 </span>
               )}
               {workshop.requirements && (Array.isArray(workshop.requirements) ? workshop.requirements.length > 0 : true) && (
-                <span className={`inline-flex items-center gap-1 rounded-lg px-2 py-0.5 text-[10px] font-semibold ${d ? 'bg-white/[0.06] text-white/45' : 'bg-[#1a3d2b]/[0.05] text-[#1a3d2b]/55'}`}>
+                <span className={`inline-flex items-center gap-1 rounded-lg px-2 py-0.5 text-[10px] font-semibold ${d ? 'bg-white/[0.06] text-white/70' : 'bg-[#1a3d2b]/[0.05] text-[#1a3d2b]/65'}`}>
                   <ClipboardList className="h-2.5 w-2.5" />
                   Benodigdheden
                 </span>
@@ -249,10 +252,10 @@ function WorkshopOverzicht() {
   const cardBorder  = d ? 'border-white/[0.08]' : 'border-black/[0.06]'
   const hairline    = d ? 'border-white/[0.07]' : 'border-[#1a3d2b]/[0.07]'
   const skelBg      = d ? 'bg-white/[0.07]'     : 'bg-black/[0.05]'
-  const labelClr    = d ? 'text-white/35'       : 'text-[#1a3d2b]/45'
+  const labelClr    = d ? 'text-white/60'       : 'text-[#1a3d2b]/60'
   const calTitleClr = d ? 'text-white'          : 'text-[#1a3d2b]'
   const cardShadow  = d ? 'shadow-[0_2px_24px_rgba(0,0,0,0.30)]' : 'shadow-[0_1px_2px_rgba(26,61,43,0.04),0_18px_40px_-24px_rgba(26,61,43,0.22)]'
-  const navBtn      = d ? 'text-white/35 hover:bg-white/10 hover:text-white' : 'text-[#1a3d2b]/35 hover:bg-[#1a3d2b]/[0.06] hover:text-[#1a3d2b]'
+  const navBtn      = d ? 'text-white/60 hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4e84a]' : 'text-[#1a3d2b]/60 hover:bg-[#1a3d2b]/[0.06] hover:text-[#1a3d2b] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1a3d2b]'
 
   return (
     <div className="min-h-[100dvh] bg-[#1a3d2b] flex flex-col">
@@ -270,7 +273,8 @@ function WorkshopOverzicht() {
             whileHover={{ x: -2 }}
             whileTap={{ scale: 0.88 }}
             onClick={() => navigate('/home')}
-            className="rounded-xl p-1.5 text-white/40 transition-colors hover:bg-white/10 hover:text-white"
+            className="rounded-xl p-1.5 text-white/60 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4e84a]"
+            aria-label="Terug naar home"
           >
             <ChevronLeft className="h-5 w-5" />
           </motion.button>
@@ -289,7 +293,7 @@ function WorkshopOverzicht() {
           whileHover={{ scale: 1.06 }}
           whileTap={{ scale: 0.9 }}
           onClick={toggleDark}
-          className="flex h-8 w-8 items-center justify-center rounded-xl text-white/40 transition-colors hover:bg-white/10 hover:text-white/70"
+          className="flex h-8 w-8 items-center justify-center rounded-xl text-white/60 transition-colors hover:bg-white/10 hover:text-white/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4e84a]"
           aria-label="Wissel kleurmodus"
         >
           <AnimatePresence mode="wait">
@@ -424,7 +428,7 @@ function WorkshopOverzicht() {
                       whileTap={{ scale: 0.86 }}
                       transition={{ type: 'spring', stiffness: 500, damping: 28 }}
                       onClick={() => setGeselecteerdeDag(isGeselecteerd ? null : dag)}
-                      className={`relative mx-auto flex h-9 w-9 flex-col items-center justify-center rounded-xl text-[13px] tabular-nums transition-colors duration-150
+                      className={`relative mx-auto flex h-9 w-9 flex-col items-center justify-center rounded-xl text-[13px] tabular-nums transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4e84a]
                         ${isGeselecteerd
                           ? 'bg-[#1a3d2b] font-bold text-[#d4e84a] shadow-sm shadow-[#1a3d2b]/25'
                           : isVandaag
@@ -470,7 +474,7 @@ function WorkshopOverzicht() {
                     exit={{ opacity: 0, y: -4 }}
                     whileTap={{ scale: 0.97 }}
                     onClick={() => setGeselecteerdeDag(null)}
-                    className={`mt-1 text-left text-xs font-bold underline-offset-2 hover:underline ${d ? 'text-[#d4e84a]' : 'text-[#1a3d2b]'}`}
+                    className={`mt-1 rounded text-left text-xs font-bold underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4e84a] ${d ? 'text-[#d4e84a]' : 'text-[#1a3d2b]'}`}
                   >
                     ✕ Filter wissen
                   </motion.button>
@@ -546,12 +550,12 @@ function WorkshopOverzicht() {
                       <div className={`mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl ${d ? 'bg-white/[0.05]' : 'bg-[#1a3d2b]/[0.04]'}`}>
                         <BookOpen className={`h-5 w-5 ${d ? 'text-white/20' : 'text-[#1a3d2b]/25'}`} />
                       </div>
-                      <p className={`mb-4 text-sm font-semibold ${d ? 'text-white/40' : 'text-[#1a3d2b]/45'}`}>Geen workshops op deze dag</p>
+                      <p className={`mb-4 text-sm font-semibold ${d ? 'text-white/70' : 'text-[#1a3d2b]/70'}`}>Geen workshops op deze dag</p>
                       <motion.button
                         whileHover={{ scale: 1.04 }}
                         whileTap={{ scale: 0.96 }}
                         onClick={() => setGeselecteerdeDag(null)}
-                        className={`rounded-xl px-3.5 py-2 text-xs font-bold transition-colors ${
+                        className={`rounded-xl px-3.5 py-2 text-xs font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4e84a] ${
                           d
                             ? 'bg-[#d4e84a]/10 text-[#d4e84a] hover:bg-[#d4e84a]/20'
                             : 'bg-[#1a3d2b] text-[#d4e84a] hover:bg-[#16331f]'

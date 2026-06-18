@@ -113,15 +113,20 @@ function Home() {
     }
   }
 
+  // Maakt een klikbaar (niet-knop) element toetsenbord-toegankelijk: Enter en Space.
+  const onCardKey = (fn) => (e) => {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fn() }
+  }
+
   // Kleur-tokens voor dark/light mode
   const d = dark
   const contentBg   = d ? 'bg-[#111111]'         : 'bg-[#e4e8e2]'
   const cardBg      = d ? 'bg-[#1c1c1e]'         : 'bg-white'
   const cardBorder  = d ? 'border-white/[0.07]'   : 'border-gray-100'
   const divider     = d ? 'border-white/[0.05]'   : 'border-gray-50'
-  const labelClr    = d ? 'text-white/30'         : 'text-gray-400'
+  const labelClr    = d ? 'text-white/60'         : 'text-gray-500'
   const titleClr    = d ? 'text-white'            : 'text-[#1a3d2b]'
-  const subClr      = d ? 'text-white/45'         : 'text-gray-400'
+  const subClr      = d ? 'text-white/70'         : 'text-gray-500'
   const arrowClr    = d ? 'text-white/20'         : 'text-gray-300'
   const skelBg      = d ? 'bg-white/[0.07]'       : 'bg-gray-100'
   const emptyBg     = d ? 'bg-white/[0.05]'       : 'bg-gray-50'
@@ -131,9 +136,10 @@ function Home() {
   const shellBg     = d ? 'bg-white/[0.025]'      : 'bg-black/[0.018]'
   const shellBorder = d ? 'border-white/[0.07]'   : 'border-black/[0.05]'
   const innerShadow = d ? 'shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]' : 'shadow-sm'
-  const emptyBtn    = d
+  const emptyBtn    = (d
     ? 'text-[#d4e84a] bg-[#d4e84a]/10 hover:bg-[#d4e84a]/20'
-    : 'text-[#1a3d2b] bg-[#eaf3de] hover:bg-[#d4e84a]'
+    : 'text-[#1a3d2b] bg-[#eaf3de] hover:bg-[#d4e84a]')
+    + ' focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4e84a]'
   const navHover    = d ? '#242424' : '#f8faf7'
   const navIcons    = [
     { kleur: d ? 'bg-[#d4e84a]/12' : 'bg-[#d4e84a]',  iconKleur: d ? 'text-[#d4e84a]'  : 'text-[#1a3d2b]' },
@@ -186,7 +192,7 @@ function Home() {
             whileHover={{ scale: 1.08 }}
             whileTap={{ scale: 0.88 }}
             onClick={toggleDark}
-            className="w-8 h-8 flex items-center justify-center rounded-xl hover:bg-white/10 transition-colors text-white/40 hover:text-white/70"
+            className="w-8 h-8 flex items-center justify-center rounded-xl hover:bg-white/10 transition-colors text-white/60 hover:text-white/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4e84a]"
             aria-label="Wissel kleurmodus"
           >
             <AnimatePresence mode="wait">
@@ -218,7 +224,7 @@ function Home() {
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.92 }}
             onClick={handleUitloggen}
-            className="flex items-center gap-1.5 text-xs text-white/40 hover:text-white/70 transition-colors px-3 py-1.5 rounded-xl hover:bg-white/10"
+            className="flex items-center gap-1.5 text-xs text-white/60 hover:text-white/90 transition-colors px-3 py-1.5 rounded-xl hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4e84a]"
           >
             <LogOut className="w-3.5 h-3.5" />
             Uitloggen
@@ -265,7 +271,7 @@ function Home() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.44 }}
-            className="text-white/40 text-sm mt-3"
+            className="text-white/70 text-sm mt-3"
           >
             Wat wil je doen vandaag?
           </motion.p>
@@ -289,7 +295,10 @@ function Home() {
             whileHover={{ y: -3, boxShadow: '0 20px 48px rgba(26,61,43,0.32)' }}
             whileTap={{ scale: 0.98 }}
             onClick={() => navigate(`/events/${aankomendEvent.id}`)}
-            className="bg-[#1a3d2b] rounded-3xl p-6 cursor-pointer relative overflow-hidden"
+            role="button"
+            tabIndex={0}
+            onKeyDown={onCardKey(() => navigate(`/events/${aankomendEvent.id}`))}
+            className="bg-[#1a3d2b] rounded-3xl p-6 cursor-pointer relative overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4e84a]"
           >
             {!shouldReduce && (
               <>
@@ -342,7 +351,10 @@ function Home() {
             whileHover={{ y: -3, boxShadow: '0 12px 28px rgba(212,232,74,0.35)' }}
             whileTap={{ scale: 0.96 }}
             onClick={() => navigate('/workshops')}
-            className="col-span-1 bg-[#d4e84a] rounded-2xl p-4 cursor-pointer flex flex-col justify-between min-h-[120px]"
+            role="button"
+            tabIndex={0}
+            onKeyDown={onCardKey(() => navigate('/workshops'))}
+            className="col-span-1 bg-[#d4e84a] rounded-2xl p-4 cursor-pointer flex flex-col justify-between min-h-[120px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1a3d2b]"
           >
             <BookOpen className="w-5 h-5 text-[#1a3d2b]" />
             <div>
@@ -359,7 +371,10 @@ function Home() {
             whileHover={{ y: -3, boxShadow: d ? '0 12px 28px rgba(212,232,74,0.1)' : '0 12px 28px rgba(26,61,43,0.1)' }}
             whileTap={{ scale: 0.96 }}
             onClick={() => navigate('/events')}
-            className={`col-span-1 ${cardBg} rounded-2xl p-4 cursor-pointer flex flex-col justify-between min-h-[120px] border ${cardBorder} transition-colors duration-300`}
+            role="button"
+            tabIndex={0}
+            onKeyDown={onCardKey(() => navigate('/events'))}
+            className={`col-span-1 ${cardBg} rounded-2xl p-4 cursor-pointer flex flex-col justify-between min-h-[120px] border ${cardBorder} transition-colors duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4e84a]`}
           >
             <CalendarDays className={`w-5 h-5 ${titleClr}`} />
             <div>
@@ -372,12 +387,15 @@ function Home() {
             whileHover={{ y: -3, boxShadow: '0 12px 28px rgba(26,61,43,0.22)' }}
             whileTap={{ scale: 0.96 }}
             onClick={() => navigate('/profiel')}
-            className="col-span-1 bg-[#1a3d2b] rounded-2xl p-4 cursor-pointer flex flex-col justify-between min-h-[120px]"
+            role="button"
+            tabIndex={0}
+            onKeyDown={onCardKey(() => navigate('/profiel'))}
+            className="col-span-1 bg-[#1a3d2b] rounded-2xl p-4 cursor-pointer flex flex-col justify-between min-h-[120px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4e84a]"
           >
             <User className="w-5 h-5 text-[#d4e84a]" />
             <div>
               <p className="text-white text-xs font-bold leading-tight">Mijn profiel</p>
-              <ArrowRight className="w-3.5 h-3.5 text-white/30 mt-1" />
+              <ArrowRight className="w-3.5 h-3.5 text-white/60 mt-1" />
             </div>
           </motion.div>
         </motion.div>
@@ -408,7 +426,10 @@ function Home() {
               whileHover={{ x: 4, backgroundColor: navHover }}
               whileTap={{ scale: 0.99 }}
               onClick={() => navigate(path)}
-              className={`flex items-center gap-4 px-5 py-4 cursor-pointer transition-colors duration-150 ${index !== arr.length - 1 ? `border-b ${divider}` : ''}`}
+              role="button"
+              tabIndex={0}
+              onKeyDown={onCardKey(() => navigate(path))}
+              className={`flex items-center gap-4 px-5 py-4 cursor-pointer transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#d4e84a] ${index !== arr.length - 1 ? `border-b ${divider}` : ''}`}
             >
               <div className={`${navIcons[index].kleur} p-2.5 rounded-xl shrink-0`}>
                 <Icon className={`w-4 h-4 ${navIcons[index].iconKleur}`} />
@@ -446,7 +467,7 @@ function Home() {
                 type="button"
                 onClick={handleStuurlinkAanmaken}
                 disabled={stuurlinkLoading}
-                className="w-full bg-[#1a3d2b] text-[#d4e84a] rounded-2xl py-3.5 text-sm font-bold flex items-center justify-center gap-2 disabled:opacity-60 transition-shadow"
+                className="w-full bg-[#1a3d2b] text-[#d4e84a] rounded-2xl py-3.5 text-sm font-bold flex items-center justify-center gap-2 disabled:opacity-60 transition-shadow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4e84a] focus-visible:ring-offset-2"
               >
                 {stuurlinkLoading ? <><SpinnerIcon />Aanmaken...</> : <><UserPlus className="w-4 h-4" />Nieuwe stuurlink</>}
               </motion.button>
@@ -472,7 +493,7 @@ function Home() {
                       whileTap={{ scale: 0.96 }}
                       type="button"
                       onClick={() => handleKopieer(gegenereerdeLink.url)}
-                      className="w-full bg-[#d4e84a] text-[#1a3d2b] rounded-xl py-2.5 text-xs font-bold flex items-center justify-center gap-2 hover:bg-[#c8dc3e] transition-colors"
+                      className="w-full bg-[#d4e84a] text-[#1a3d2b] rounded-xl py-2.5 text-xs font-bold flex items-center justify-center gap-2 hover:bg-[#c8dc3e] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1a3d2b]"
                     >
                       <Copy className="w-3.5 h-3.5" />
                       Kopieer link
@@ -493,7 +514,7 @@ function Home() {
         >
           <p className={`text-xs font-bold ${labelClr} uppercase tracking-widest`}>Jouw workshops</p>
           {!loading && ingeschrevenWorkshops.length > 0 && (
-            <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${d ? 'bg-white/8 text-white/35' : 'bg-gray-100 text-gray-400'}`}>
+            <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${d ? 'bg-white/8 text-white/60' : 'bg-gray-100 text-gray-500'}`}>
               {ingeschrevenWorkshops.length}
             </span>
           )}
@@ -549,7 +570,10 @@ function Home() {
                     whileHover={{ y: -2, boxShadow: d ? '0 8px 24px rgba(0,0,0,0.3)' : '0 8px 24px rgba(26,61,43,0.12)' }}
                     whileTap={{ scale: 0.99 }}
                     onClick={() => navigate(`/workshops/${workshop.id}`)}
-                    className={`${cardBg} rounded-2xl border ${cardBorder} overflow-hidden cursor-pointer shadow-sm transition-colors duration-300`}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={onCardKey(() => navigate(`/workshops/${workshop.id}`))}
+                    className={`${cardBg} rounded-2xl border ${cardBorder} overflow-hidden cursor-pointer shadow-sm transition-colors duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4e84a]`}
                   >
                     <div className="h-[3px] bg-gradient-to-r from-[#1a3d2b] via-[#4a8c60] to-[#d4e84a]" />
                     <div className="px-4 py-4 flex items-center gap-4">

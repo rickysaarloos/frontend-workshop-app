@@ -255,11 +255,11 @@ function WorkshopDetail() {
   const skelBg     = d ? 'bg-white/[0.07]'     : 'bg-black/[0.05]'
   const titleClr   = d ? 'text-white'          : 'text-[#1a3d2b]'
   const bodyClr    = d ? 'text-white/60'       : 'text-[#1a3d2b]/70'
-  const subClr     = d ? 'text-white/40'       : 'text-[#1a3d2b]/45'
-  const labelClr   = d ? 'text-white/35'       : 'text-[#1a3d2b]/45'
+  const subClr     = d ? 'text-white/70'       : 'text-[#1a3d2b]/70'
+  const labelClr   = d ? 'text-white/60'       : 'text-[#1a3d2b]/60'
   const cardShadow = d ? 'shadow-[0_2px_24px_rgba(0,0,0,0.30)]' : 'shadow-[0_1px_2px_rgba(26,61,43,0.04),0_18px_40px_-24px_rgba(26,61,43,0.22)]'
   const barBg      = d ? 'bg-white/10'         : 'bg-[#1a3d2b]/[0.08]'
-  const headIcon   = d ? 'text-white/45'       : 'text-[#1a3d2b]/55'
+  const headIcon   = d ? 'text-white/70'       : 'text-[#1a3d2b]/65'
 
   // Rustige, getierde motion — respecteert useReducedMotion
   const stack = { hidden: {}, visible: { transition: { staggerChildren: 0.06, delayChildren: 0.05 } } }
@@ -283,7 +283,8 @@ function WorkshopDetail() {
             whileHover={{ x: -2 }}
             whileTap={{ scale: 0.85 }}
             onClick={() => navigate('/workshops')}
-            className="rounded-xl p-1.5 text-white/40 transition-colors hover:bg-white/10 hover:text-white"
+            className="rounded-xl p-1.5 text-white/60 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4e84a]"
+            aria-label="Terug naar workshops"
           >
             <ChevronLeft className="h-5 w-5" />
           </motion.button>
@@ -302,7 +303,7 @@ function WorkshopDetail() {
           whileHover={{ scale: 1.06 }}
           whileTap={{ scale: 0.9 }}
           onClick={toggleDark}
-          className="flex h-8 w-8 items-center justify-center rounded-xl text-white/40 transition-colors hover:bg-white/10 hover:text-white/70"
+          className="flex h-8 w-8 items-center justify-center rounded-xl text-white/60 transition-colors hover:bg-white/10 hover:text-white/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4e84a]"
           aria-label="Wissel kleurmodus"
         >
           <AnimatePresence mode="wait">
@@ -401,7 +402,7 @@ function WorkshopDetail() {
                 whileHover={{ scale: 1.04 }}
                 whileTap={{ scale: 0.96 }}
                 onClick={() => navigate('/workshops')}
-                className={`rounded-xl px-3.5 py-2 text-xs font-bold transition-colors ${
+                className={`rounded-xl px-3.5 py-2 text-xs font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4e84a] ${
                   d ? 'bg-[#d4e84a]/10 text-[#d4e84a] hover:bg-[#d4e84a]/20' : 'bg-[#1a3d2b] text-[#d4e84a] hover:bg-[#16331f]'
                 }`}
               >
@@ -670,7 +671,7 @@ function WorkshopDetail() {
                                       whileHover={{ scale: 1.12 }}
                                       whileTap={{ scale: 0.9 }}
                                       onClick={() => setAntwoord(vraag.id, score)}
-                                      className="p-0.5"
+                                      className="p-0.5 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4e84a]"
                                       aria-label={`${score} sterren`}
                                     >
                                       <Star
@@ -694,10 +695,10 @@ function WorkshopDetail() {
                                       type="button"
                                       whileTap={{ scale: 0.95 }}
                                       onClick={() => setAntwoord(vraag.id, waarde)}
-                                      className={`rounded-xl border px-3.5 py-2 text-xs font-semibold transition-all duration-150 ${
+                                      className={`rounded-xl border px-3.5 py-2 text-xs font-semibold transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4e84a] ${
                                         gekozen
                                           ? (d ? 'border-[#d4e84a]/50 bg-[#d4e84a]/10 text-[#d4e84a]' : 'border-[#1a3d2b] bg-[#eaf3de] text-[#1a3d2b]')
-                                          : (d ? 'border-white/[0.08] text-white/55 hover:border-white/20' : 'border-[#1a3d2b]/10 text-[#1a3d2b]/55 hover:border-[#1a3d2b]/30')
+                                          : (d ? 'border-white/[0.08] text-white/70 hover:border-white/20' : 'border-[#1a3d2b]/10 text-[#1a3d2b]/70 hover:border-[#1a3d2b]/30')
                                       }`}
                                     >
                                       {tekst}
@@ -711,10 +712,10 @@ function WorkshopDetail() {
                                 onChange={e => setAntwoord(vraag.id, e.target.value)}
                                 rows={3}
                                 placeholder="Je antwoord..."
-                                className={`w-full resize-none rounded-2xl border px-4 py-3 text-sm outline-none transition-colors ${
+                                className={`w-full resize-none rounded-2xl border px-4 py-3 text-sm outline-none transition-colors focus-visible:ring-2 focus-visible:ring-[#d4e84a] ${
                                   d
-                                    ? 'border-white/[0.08] bg-white/[0.05] text-white placeholder:text-white/25 focus:border-[#d4e84a]/40'
-                                    : 'border-[#1a3d2b]/10 bg-[#f6faf2] text-[#1a3d2b] placeholder:text-[#1a3d2b]/30 focus:border-[#1a3d2b]/40'
+                                    ? 'border-white/[0.08] bg-white/[0.05] text-white placeholder:text-white/40 focus:border-[#d4e84a]/40'
+                                    : 'border-[#1a3d2b]/10 bg-[#f6faf2] text-[#1a3d2b] placeholder:text-[#1a3d2b]/40 focus:border-[#1a3d2b]/40'
                                 }`}
                               />
                             )}
@@ -727,7 +728,7 @@ function WorkshopDetail() {
                         whileTap={{ scale: feedbackLoading ? 1 : 0.98 }}
                         type="submit"
                         disabled={feedbackLoading}
-                        className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#1a3d2b] py-3.5 text-sm font-bold text-[#d4e84a] transition-colors hover:bg-[#16331f] disabled:opacity-60"
+                        className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#1a3d2b] py-3.5 text-sm font-bold text-[#d4e84a] transition-colors hover:bg-[#16331f] disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4e84a] focus-visible:ring-offset-2"
                       >
                         {feedbackLoading ? <><SpinnerIcon />Versturen...</> : <><Send className="h-4 w-4" />Enquête versturen</>}
                       </motion.button>
@@ -757,7 +758,7 @@ function WorkshopDetail() {
                           whileTap={{ scale: sessie.is_full ? 1 : 0.98 }}
                           disabled={sessie.is_full}
                           onClick={() => setGeselecteerdeSessie(isGekozen ? null : sessie.id)}
-                          className={`w-full rounded-2xl border px-4 py-3 text-left transition-all duration-150
+                          className={`w-full rounded-2xl border px-4 py-3 text-left transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4e84a]
                             ${sessie.is_full
                               ? (d ? 'cursor-not-allowed border-white/[0.05] bg-white/[0.03] opacity-50' : 'cursor-not-allowed border-[#1a3d2b]/10 bg-[#1a3d2b]/[0.03] opacity-50')
                               : isGekozen
@@ -810,7 +811,7 @@ function WorkshopDetail() {
                           <div key={item.id} className={`border-b ${hairline}`}>
                             <button
                               onClick={() => setOpenFaqId(isOpen ? null : item.id)}
-                              className="flex w-full items-center justify-between gap-3 py-4 text-left"
+                              className="flex w-full items-center justify-between gap-3 rounded-lg py-4 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4e84a]"
                             >
                               <span className={`text-sm font-semibold ${isOpen ? titleClr : bodyClr}`}>{item.question}</span>
                               <motion.div
@@ -851,7 +852,7 @@ function WorkshopDetail() {
                     whileTap={{ scale: registratieLoading || workshop.is_full ? 1 : 0.98 }}
                     onClick={handleInschrijven}
                     disabled={registratieLoading || workshop.is_full}
-                    className={`flex w-full items-center justify-center gap-2 rounded-2xl py-4 text-[15px] font-bold transition-colors
+                    className={`flex w-full items-center justify-center gap-2 rounded-2xl py-4 text-[15px] font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4e84a] focus-visible:ring-offset-2
                       ${workshop.is_full
                         ? (d ? 'cursor-not-allowed bg-white/[0.05] text-white/25' : 'cursor-not-allowed bg-[#1a3d2b]/[0.06] text-[#1a3d2b]/30')
                         : 'bg-[#d4e84a] text-[#1a3d2b] hover:bg-[#c8dc3e] shadow-[0_10px_30px_-12px_rgba(212,232,74,0.6)]'
@@ -871,8 +872,8 @@ function WorkshopDetail() {
                     whileTap={{ scale: registratieLoading ? 1 : 0.98 }}
                     onClick={handleUitschrijven}
                     disabled={registratieLoading}
-                    className={`flex w-full items-center justify-center gap-2 rounded-2xl py-4 text-[15px] font-bold transition-colors disabled:opacity-60
-                      ${d ? 'bg-white/[0.07] text-white/40 hover:bg-red-900/30 hover:text-red-400' : 'bg-[#1a3d2b]/[0.06] text-[#1a3d2b]/50 hover:bg-red-50 hover:text-red-500'}`}
+                    className={`flex w-full items-center justify-center gap-2 rounded-2xl py-4 text-[15px] font-bold transition-colors disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4e84a] focus-visible:ring-offset-2
+                      ${d ? 'bg-white/[0.07] text-white/70 hover:bg-red-900/30 hover:text-red-400' : 'bg-[#1a3d2b]/[0.06] text-[#1a3d2b]/65 hover:bg-red-50 hover:text-red-500'}`}
                   >
                     {registratieLoading ? <><SpinnerIcon />Uitschrijven...</> : 'Uitschrijven'}
                   </motion.button>
