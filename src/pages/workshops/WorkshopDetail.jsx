@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { motion, AnimatePresence, useReducedMotion } from 'motion/react'
-import { ChevronLeft, CalendarDays, Clock, Users, CheckCircle, MapPin, BookOpen, User, Tag, Moon, Sun, AlertTriangle, ClipboardList, Leaf, HelpCircle, ChevronDown } from 'lucide-react'
+import { ChevronLeft, CalendarDays, Clock, Users, CheckCircle, MapPin, BookOpen, User, Tag, Moon, Sun, AlertTriangle, ClipboardList, Leaf, HelpCircle, ChevronDown, Download, ScanLine, MessageSquare, Star, Send } from 'lucide-react'
 import { toast, Toaster } from 'sonner'
 import Footer from '../../components/Footer'
 
@@ -19,6 +19,13 @@ function WorkshopDetail() {
   const [faq, setFaq] = useState([])
   const [faqLoading, setFaqLoading] = useState(false)
   const [openFaqId, setOpenFaqId] = useState(null)
+  const [aanwezigheidGeregistreerd, setAanwezigheidGeregistreerd] = useState(false)
+  const [aanwezigheidLoading, setAanwezigheidLoading] = useState(false)
+  const [vragenlijst, setVragenlijst] = useState([])
+  const [vragenlijstLoading, setVragenlijstLoading] = useState(false)
+  const [antwoorden, setAntwoorden] = useState({})
+  const [feedbackLoading, setFeedbackLoading] = useState(false)
+  const [feedbackVerzonden, setFeedbackVerzonden] = useState(false)
   const [dark, setDark] = useState(() => localStorage.getItem('theme') === 'dark')
   const shouldReduce = useReducedMotion()
 
@@ -38,7 +45,29 @@ function WorkshopDetail() {
     }
     fetchWorkshop()
     fetchFaq()
+    fetchVragenlijst()
   }, [id])
+
+  async function fetchVragenlijst() {
+    setVragenlijstLoading(true)
+    try {
+      const token = localStorage.getItem('token')
+      const response = await fetch(`${API_URL}/api/workshops/${id}/vragenlijst`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Accept: 'application/json',
+        },
+      })
+      const data = await response.json()
+      if (!response.ok) throw new Error(data.message)
+      setVragenlijst(data.data || [])
+      setFeedbackVerzonden(data.feedback_submitted || data.data?.feedback_submitted || false)
+    } catch (error) {
+      console.error('Vragenlijst ophalen mislukt:', error)
+    } finally {
+      setVragenlijstLoading(false)
+    }
+  }
 
   async function fetchFaq() {
     setFaqLoading(true)
@@ -74,6 +103,7 @@ function WorkshopDetail() {
       if (!response.ok) throw new Error(data.message)
       setWorkshop(data.data)
       setIngeschreven(data.data.is_registered)
+      setAanwezigheidGeregistreerd(data.data.is_attended || false)
     } catch (error) {
       toast.error('Workshop ophalen mislukt')
       console.error(error)
@@ -110,6 +140,71 @@ function WorkshopDetail() {
       toast.error(error.message || 'Inschrijven mislukt')
     } finally {
       setRegistratieLoading(false)
+    }
+  }
+
+  async function handleAanwezigheidRegistreren() {
+    setAanwezigheidLoading(true)
+    try {
+      const token = localStorage.getItem('token')
+      const response = await fetch(`${API_URL}/api/workshops/${id}/aanwezigheid`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+        },
+      })
+      const data = await response.json()
+      if (!response.ok) throw new Error(data.message)
+      toast.success(data.message || 'Aanwezigheid geregistreerd!')
+      setAanwezigheidGeregistreerd(true)
+      await fetchWorkshop()
+    } catch (error) {
+      toast.error(error.message || 'Registratie mislukt')
+    } finally {
+      setAanwezigheidLoading(false)
+    }
+  }
+
+  function setAntwoord(vraagId, waarde) {
+    setAntwoorden(prev => ({ ...prev, [vraagId]: waarde }))
+  }
+
+  async function handleFeedbackVersturen(e) {
+    e.preventDefault()
+
+    const onbeantwoord = vragenlijst.filter(
+      v => v.required && (antwoorden[v.id] === undefined || antwoorden[v.id] === '')
+    )
+    if (onbeantwoord.length > 0) {
+      toast.error('Beantwoord eerst alle verplichte vragen')
+      return
+    }
+
+    setFeedbackLoading(true)
+    try {
+      const token = localStorage.getItem('token')
+      const answers = vragenlijst
+        .filter(v => antwoorden[v.id] !== undefined && antwoorden[v.id] !== '')
+        .map(v => ({ question_id: v.id, answer: antwoorden[v.id] }))
+      const response = await fetch(`${API_URL}/api/workshops/${id}/feedback`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ answers }),
+      })
+      const data = await response.json()
+      if (!response.ok) throw new Error(data.message)
+      toast.success(data.message || 'Bedankt voor je feedback!')
+      setFeedbackVerzonden(true)
+    } catch (error) {
+      toast.error(error.message || 'Enquête versturen mislukt')
+    } finally {
+      setFeedbackLoading(false)
     }
   }
 
@@ -489,6 +584,207 @@ function WorkshopDetail() {
                         <p className={`text-sm leading-relaxed ${subClr}`}>{info}</p>
                       )
                     })()}
+                  </div>
+                </motion.div>
+              )}
+
+              {/* Aanwezigheid & presentatie */}
+              {ingeschreven && (
+                <motion.div
+                  initial={{ opacity: 0, y: 14 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ type: 'spring', stiffness: 350, damping: 30, delay: 0.48 }}
+                  className={`${cardBg} rounded-3xl border ${cardBorder} overflow-hidden shadow-sm`}
+                >
+                  <div className="h-0.5 bg-gradient-to-r from-[#1a3d2b] via-[#4a8c60] to-[#d4e84a]" />
+                  <div className="p-5 flex flex-col gap-3">
+                    <h2 className={`text-sm font-bold flex items-center gap-2 ${titleClr}`}>
+                      <ScanLine className="w-3.5 h-3.5" />
+                      Aanwezigheid
+                    </h2>
+
+                    {aanwezigheidGeregistreerd ? (
+                      <div className="flex items-center gap-2 bg-[#1a3d2b] text-[#d4e84a] px-4 py-3 rounded-2xl text-sm font-bold">
+                        <CheckCircle className="w-4 h-4 shrink-0" />
+                        Aanwezigheid geregistreerd
+                      </div>
+                    ) : (
+                      <motion.button
+                        whileHover={{ scale: aanwezigheidLoading ? 1 : 1.02 }}
+                        whileTap={{ scale: aanwezigheidLoading ? 1 : 0.98 }}
+                        onClick={handleAanwezigheidRegistreren}
+                        disabled={aanwezigheidLoading}
+                        className="w-full rounded-2xl py-3.5 text-sm font-bold flex items-center justify-center gap-2 disabled:opacity-60 bg-[#d4e84a] text-[#1a3d2b] hover:bg-[#c8dc3e] transition-colors"
+                      >
+                        {aanwezigheidLoading ? (
+                          <>
+                            <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                            </svg>
+                            Registreren...
+                          </>
+                        ) : (
+                          <>
+                            <ScanLine className="w-4 h-4" />
+                            Aanwezigheid registreren
+                          </>
+                        )}
+                      </motion.button>
+                    )}
+
+                    {aanwezigheidGeregistreerd && (workshop.presentation_url || workshop.slides_url || workshop.presentation) && (
+                      <a
+                        href={workshop.presentation_url || workshop.slides_url || workshop.presentation}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={`w-full rounded-2xl py-3.5 text-sm font-bold flex items-center justify-center gap-2 transition-colors ${
+                          d ? 'bg-white/[0.07] text-white hover:bg-white/[0.12]' : 'bg-[#eaf3de] text-[#1a3d2b] hover:bg-[#d4e84a]/40'
+                        }`}
+                      >
+                        <Download className="w-4 h-4" />
+                        Presentatie downloaden
+                      </a>
+                    )}
+                  </div>
+                </motion.div>
+              )}
+
+              {/* Enquête / feedback */}
+              {ingeschreven && (vragenlijstLoading || vragenlijst.length > 0) && (
+                <motion.div
+                  initial={{ opacity: 0, y: 14 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ type: 'spring', stiffness: 350, damping: 30, delay: 0.54 }}
+                  className={`${cardBg} rounded-3xl border ${cardBorder} overflow-hidden shadow-sm`}
+                >
+                  <div className="h-0.5 bg-gradient-to-r from-[#1a3d2b] via-[#4a8c60] to-[#d4e84a]" />
+                  <div className="p-5">
+                    <h2 className={`text-sm font-bold mb-3 flex items-center gap-2 ${titleClr}`}>
+                      <MessageSquare className="w-3.5 h-3.5" />
+                      Enquête
+                    </h2>
+
+                    {vragenlijstLoading ? (
+                      <div className="space-y-3">
+                        {[1, 2, 3].map(i => (
+                          <div key={i} className={`${skelBg} rounded-2xl h-16 animate-pulse`} />
+                        ))}
+                      </div>
+                    ) : feedbackVerzonden ? (
+                      <motion.div
+                        initial={{ opacity: 0, scale: 0.96 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ type: 'spring', stiffness: 300, damping: 24 }}
+                        className="flex flex-col items-center text-center py-6"
+                      >
+                        <div className="w-12 h-12 rounded-2xl bg-[#1a3d2b] flex items-center justify-center mb-3">
+                          <CheckCircle className="w-6 h-6 text-[#d4e84a]" />
+                        </div>
+                        <p className={`text-sm font-bold ${titleClr}`}>Bedankt voor je feedback!</p>
+                        <p className={`text-xs mt-1 ${subClr}`}>Je enquête is succesvol verstuurd.</p>
+                      </motion.div>
+                    ) : (
+                      <form onSubmit={handleFeedbackVersturen} className="flex flex-col gap-5">
+                        {vragenlijst.map((vraag, i) => {
+                          const type = vraag.type || 'text'
+                          const huidig = antwoorden[vraag.id]
+                          return (
+                            <div key={vraag.id} className="flex flex-col gap-2">
+                              <label className={`text-sm font-semibold ${titleClr}`}>
+                                {i + 1}. {vraag.question || vraag.label}
+                                {vraag.required && <span className="text-red-400 ml-1">*</span>}
+                              </label>
+
+                              {type === 'rating' ? (
+                                <div className="flex items-center gap-1.5">
+                                  {[1, 2, 3, 4, 5].map(score => {
+                                    const actief = (huidig || 0) >= score
+                                    return (
+                                      <motion.button
+                                        key={score}
+                                        type="button"
+                                        whileHover={{ scale: 1.15 }}
+                                        whileTap={{ scale: 0.9 }}
+                                        onClick={() => setAntwoord(vraag.id, score)}
+                                        className="p-0.5"
+                                        aria-label={`${score} sterren`}
+                                      >
+                                        <Star
+                                          className={`w-7 h-7 transition-colors ${
+                                            actief
+                                              ? 'fill-[#d4e84a] text-[#d4e84a]'
+                                              : d ? 'text-white/15' : 'text-gray-200'
+                                          }`}
+                                        />
+                                      </motion.button>
+                                    )
+                                  })}
+                                </div>
+                              ) : type === 'choice' && Array.isArray(vraag.options) ? (
+                                <div className="flex flex-wrap gap-2">
+                                  {vraag.options.map((optie, oi) => {
+                                    const waarde = optie.value ?? optie
+                                    const tekst = optie.label ?? optie
+                                    const gekozen = huidig === waarde
+                                    return (
+                                      <motion.button
+                                        key={oi}
+                                        type="button"
+                                        whileTap={{ scale: 0.95 }}
+                                        onClick={() => setAntwoord(vraag.id, waarde)}
+                                        className={`px-3.5 py-2 rounded-xl text-xs font-semibold border-2 transition-all duration-150 ${
+                                          gekozen
+                                            ? d ? 'border-[#d4e84a]/50 bg-[#d4e84a]/10 text-[#d4e84a]' : 'border-[#1a3d2b] bg-[#eaf3de] text-[#1a3d2b]'
+                                            : d ? 'border-white/[0.08] text-white/55 hover:border-white/20' : 'border-gray-100 text-gray-500 hover:border-[#1a3d2b]/30'
+                                        }`}
+                                      >
+                                        {tekst}
+                                      </motion.button>
+                                    )
+                                  })}
+                                </div>
+                              ) : (
+                                <textarea
+                                  value={huidig || ''}
+                                  onChange={e => setAntwoord(vraag.id, e.target.value)}
+                                  rows={3}
+                                  placeholder="Je antwoord..."
+                                  className={`w-full rounded-2xl px-4 py-3 text-sm outline-none resize-none transition-colors border-2 ${
+                                    d
+                                      ? 'bg-white/[0.05] border-white/[0.07] text-white placeholder:text-white/25 focus:border-[#d4e84a]/40'
+                                      : 'bg-[#f6faf2] border-gray-100 text-[#1a3d2b] placeholder:text-gray-300 focus:border-[#1a3d2b]/40'
+                                  }`}
+                                />
+                              )}
+                            </div>
+                          )
+                        })}
+
+                        <motion.button
+                          whileHover={{ scale: feedbackLoading ? 1 : 1.02 }}
+                          whileTap={{ scale: feedbackLoading ? 1 : 0.98 }}
+                          type="submit"
+                          disabled={feedbackLoading}
+                          className="w-full rounded-2xl py-3.5 text-sm font-bold flex items-center justify-center gap-2 disabled:opacity-60 bg-[#1a3d2b] text-[#d4e84a] hover:bg-[#16331f] transition-colors"
+                        >
+                          {feedbackLoading ? (
+                            <>
+                              <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                              </svg>
+                              Versturen...
+                            </>
+                          ) : (
+                            <>
+                              <Send className="w-4 h-4" />
+                              Enquête versturen
+                            </>
+                          )}
+                        </motion.button>
+                      </form>
+                    )}
                   </div>
                 </motion.div>
               )}
