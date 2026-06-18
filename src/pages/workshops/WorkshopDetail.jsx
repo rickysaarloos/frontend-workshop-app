@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { motion, AnimatePresence, useReducedMotion } from 'motion/react'
-import { ChevronLeft, CalendarDays, Clock, Users, CheckCircle, MapPin, BookOpen, User, Tag, Moon, Sun, AlertTriangle, ClipboardList, Leaf } from 'lucide-react'
+import { ChevronLeft, CalendarDays, Clock, Users, CheckCircle, MapPin, BookOpen, User, Tag, Moon, Sun, AlertTriangle, ClipboardList, Leaf, HelpCircle, ChevronDown } from 'lucide-react'
 import { toast, Toaster } from 'sonner'
 import Footer from '../../components/Footer'
 
@@ -16,6 +16,9 @@ function WorkshopDetail() {
   const [ingeschreven, setIngeschreven] = useState(false)
   const [registratieLoading, setRegistratieLoading] = useState(false)
   const [geselecteerdeSessie, setGeselecteerdeSessie] = useState(null)
+  const [faq, setFaq] = useState([])
+  const [faqLoading, setFaqLoading] = useState(false)
+  const [openFaqId, setOpenFaqId] = useState(null)
   const [dark, setDark] = useState(() => localStorage.getItem('theme') === 'dark')
   const shouldReduce = useReducedMotion()
 
@@ -34,7 +37,28 @@ function WorkshopDetail() {
       return
     }
     fetchWorkshop()
+    fetchFaq()
   }, [id])
+
+  async function fetchFaq() {
+    setFaqLoading(true)
+    try {
+      const token = localStorage.getItem('token')
+      const response = await fetch(`${API_URL}/api/workshops/${id}/faq`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Accept: 'application/json',
+        },
+      })
+      const data = await response.json()
+      if (!response.ok) throw new Error(data.message)
+      setFaq(data.data || [])
+    } catch (error) {
+      console.error('FAQ ophalen mislukt:', error)
+    } finally {
+      setFaqLoading(false)
+    }
+  }
 
   async function fetchWorkshop() {
     setLoading(true)
@@ -521,6 +545,68 @@ function WorkshopDetail() {
                         )
                       })}
                     </div>
+                  </div>
+                </motion.div>
+              )}
+
+              {/* FAQ */}
+              {(faqLoading || faq.length > 0) && (
+                <motion.div
+                  initial={{ opacity: 0, y: 14 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ type: 'spring', stiffness: 350, damping: 30, delay: 0.42 }}
+                  className={`${cardBg} rounded-3xl border ${cardBorder} overflow-hidden shadow-sm`}
+                >
+                  <div className="h-0.5 bg-gradient-to-r from-[#1a3d2b] via-[#4a8c60] to-[#d4e84a]" />
+                  <div className="p-5">
+                    <h2 className={`text-sm font-bold mb-3 flex items-center gap-2 ${titleClr}`}>
+                      <HelpCircle className="w-3.5 h-3.5" />
+                      Veelgestelde vragen
+                    </h2>
+                    {faqLoading ? (
+                      <div className="space-y-2">
+                        {[1, 2, 3].map(i => (
+                          <div key={i} className={`${skelBg} rounded-2xl h-12 animate-pulse`} />
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="flex flex-col">
+                        {faq.map((item, i) => {
+                          const isOpen = openFaqId === item.id
+                          return (
+                            <div key={item.id} className={i > 0 ? `border-t ${d ? 'border-white/[0.07]' : 'border-gray-100'}` : ''}>
+                              <button
+                                onClick={() => setOpenFaqId(isOpen ? null : item.id)}
+                                className={`w-full text-left py-3.5 px-1 flex items-center justify-between gap-3 rounded-xl transition-colors ${d ? 'hover:bg-white/[0.04]' : 'hover:bg-gray-50'}`}
+                              >
+                                <span className={`text-sm font-semibold ${titleClr}`}>{item.question}</span>
+                                <motion.div
+                                  animate={{ rotate: isOpen ? 180 : 0 }}
+                                  transition={{ duration: 0.2 }}
+                                  className="shrink-0"
+                                >
+                                  <ChevronDown className={`w-4 h-4 ${subClr}`} />
+                                </motion.div>
+                              </button>
+                              <AnimatePresence initial={false}>
+                                {isOpen && (
+                                  <motion.div
+                                    key="answer"
+                                    initial={{ opacity: 0, height: 0 }}
+                                    animate={{ opacity: 1, height: 'auto' }}
+                                    exit={{ opacity: 0, height: 0 }}
+                                    transition={{ duration: 0.22, ease: [0.4, 0, 0.2, 1] }}
+                                    className="overflow-hidden"
+                                  >
+                                    <p className={`text-sm leading-relaxed pb-3.5 px-1 ${subClr}`}>{item.answer}</p>
+                                  </motion.div>
+                                )}
+                              </AnimatePresence>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    )}
                   </div>
                 </motion.div>
               )}
