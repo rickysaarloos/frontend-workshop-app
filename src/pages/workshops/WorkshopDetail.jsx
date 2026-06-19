@@ -63,7 +63,7 @@ function WorkshopDetail() {
     setVragenlijstLoading(true)
     try {
       const token = localStorage.getItem('token')
-      const response = await fetch(`${API_URL}/api/workshops/${id}/vragenlijst`, {
+      const response = await fetch(`${API_URL}/api/workshops/${id}/questionnaire`, {
         headers: {
           Authorization: `Bearer ${token}`,
           Accept: 'application/json',
@@ -158,7 +158,7 @@ function WorkshopDetail() {
     setAanwezigheidLoading(true)
     try {
       const token = localStorage.getItem('token')
-      const response = await fetch(`${API_URL}/api/workshops/${id}/aanwezigheid`, {
+      const response = await fetch(`${API_URL}/api/workshops/${id}/attendance`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`,
@@ -247,25 +247,55 @@ function WorkshopDetail() {
     })
   }
 
+  // --- Design tokens (uitgelijnd op Home.jsx, een palet voor de hele app) ---
   const d = dark
-  const contentBg  = d ? 'bg-[#111111]'        : 'bg-[#e4e8e2]'
-  const cardBg     = d ? 'bg-[#1c1c1e]'        : 'bg-white'
-  const cardBorder = d ? 'border-white/[0.08]' : 'border-black/[0.06]'
-  const hairline   = d ? 'border-white/[0.07]' : 'border-[#1a3d2b]/[0.07]'
-  const skelBg     = d ? 'bg-white/[0.07]'     : 'bg-black/[0.05]'
-  const titleClr   = d ? 'text-white'          : 'text-[#1a3d2b]'
-  const bodyClr    = d ? 'text-white/60'       : 'text-[#1a3d2b]/70'
-  const subClr     = d ? 'text-white/70'       : 'text-[#1a3d2b]/70'
-  const labelClr   = d ? 'text-white/60'       : 'text-[#1a3d2b]/60'
-  const cardShadow = d ? 'shadow-[0_2px_24px_rgba(0,0,0,0.30)]' : 'shadow-[0_1px_2px_rgba(26,61,43,0.04),0_18px_40px_-24px_rgba(26,61,43,0.22)]'
-  const barBg      = d ? 'bg-white/10'         : 'bg-[#1a3d2b]/[0.08]'
-  const headIcon   = d ? 'text-white/70'       : 'text-[#1a3d2b]/65'
+  const contentBg   = d ? 'bg-[#111111]'        : 'bg-[#e4e8e2]'
+  const cardBg      = d ? 'bg-[#1c1c1e]'        : 'bg-white'
+  const shellBg     = d ? 'bg-white/[0.025]'    : 'bg-black/[0.018]'
+  const shellBorder = d ? 'border-white/[0.07]' : 'border-black/[0.05]'
+  const innerShadow = d ? 'shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]' : 'shadow-sm'
+  const hairline    = d ? 'border-white/[0.07]' : 'border-[#1a3d2b]/[0.07]'
+  const skelBg      = d ? 'bg-white/[0.07]'     : 'bg-black/[0.05]'
+  const titleClr    = d ? 'text-white'          : 'text-[#1a3d2b]'
+  const bodyClr     = d ? 'text-white/60'       : 'text-[#1a3d2b]/70'
+  const subClr      = d ? 'text-white/70'       : 'text-[#1a3d2b]/70'
+  const labelClr    = d ? 'text-white/55'       : 'text-[#1a3d2b]/55'
+  const tileBg      = d ? 'bg-white/[0.04]'     : 'bg-[#f6faf2]'
+  const barTrack    = d ? 'bg-white/10'         : 'bg-[#1a3d2b]/[0.08]'
+  const chipBg      = d ? 'bg-[#d4e84a]/12'     : 'bg-[#eaf3de]'
+  const chipIcon    = d ? 'text-[#d4e84a]'      : 'text-[#1a3d2b]'
 
-  // Rustige, getierde motion — respecteert useReducedMotion
+  // Rustige, doelgerichte motion, respecteert useReducedMotion
   const stack = { hidden: {}, visible: { transition: { staggerChildren: 0.06, delayChildren: 0.05 } } }
   const rise = shouldReduce
     ? { hidden: { opacity: 0 }, visible: { opacity: 1, transition: { duration: 0.3 } } }
     : { hidden: { opacity: 0, y: 8 }, visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: EASE } } }
+
+  // Double-bezel card (outer shell + inner core), gedeeld met Home en Profiel
+  const Card = ({ children, className = '' }) => (
+    <div className={`${shellBg} border ${shellBorder} p-[5px] rounded-[32px] ${className}`}>
+      <div className={`${cardBg} rounded-[27px] overflow-hidden ${innerShadow} transition-colors duration-300`}>
+        {children}
+      </div>
+    </div>
+  )
+
+  // Consistente sectiekop met getint icoon-chip (sluit aan op de chips van Home)
+  const SectionHeader = ({ icon: Icon, children }) => (
+    <h2 className={`flex items-center gap-2.5 text-base font-bold tracking-[-0.01em] ${titleClr}`}>
+      <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-xl ${chipBg}`}>
+        <Icon className={`h-4 w-4 ${chipIcon}`} />
+      </span>
+      {children}
+    </h2>
+  )
+
+  // Bezetting
+  const bezet = workshop ? (workshop.registered ?? 0) : 0
+  const totaal = workshop ? (workshop.capacity ?? 0) : 0
+  const bezetPct = totaal > 0 ? Math.min(100, Math.round((bezet / totaal) * 100)) : 0
+  // Vloer de zichtbare breedte zodat een lage bezetting niet als een streepje wegvalt
+  const bezetBarWidth = bezet > 0 ? Math.max(bezetPct, 5) : 0
 
   return (
     <div className="min-h-[100dvh] bg-[#1a3d2b] flex flex-col">
@@ -354,11 +384,11 @@ function WorkshopDetail() {
             </div>
           ) : workshop ? (
             <>
-              <h1 className="mb-3 text-[2rem] font-black leading-[1.02] tracking-[-0.03em] text-white md:text-[2.6rem]">
+              <h1 className="mb-4 text-[2rem] font-black leading-[1.02] tracking-[-0.03em] text-white md:text-[2.6rem]">
                 {workshop.title}
               </h1>
               {workshop.teacher && (
-                <span className="inline-flex items-center gap-2 text-sm font-medium text-white/55">
+                <span className="inline-flex items-center gap-2 rounded-full bg-white/[0.07] px-3 py-1.5 text-sm font-medium text-white/80 ring-1 ring-inset ring-white/10">
                   <User className="h-4 w-4 text-[#d4e84a]" />
                   {workshop.teacher}
                 </span>
@@ -376,38 +406,38 @@ function WorkshopDetail() {
           {loading && (
             <div className="flex flex-col gap-5">
               {[1, 2, 3].map((i) => (
-                <div key={i} className={`${cardBg} rounded-[26px] border ${cardBorder} p-5`}>
-                  <div className="space-y-3">
+                <Card key={i}>
+                  <div className="space-y-3 p-5">
                     <div className={`h-4 w-32 animate-pulse rounded-full ${skelBg}`} />
                     <div className={`h-3 w-full animate-pulse rounded-full ${skelBg}`} />
                     <div className={`h-3 w-3/4 animate-pulse rounded-full ${skelBg}`} />
                   </div>
-                </div>
+                </Card>
               ))}
             </div>
           )}
 
           {/* Niet gevonden */}
           {!loading && !workshop && (
-            <motion.div
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              className={`${cardBg} rounded-[26px] border ${cardBorder} p-10 text-center`}
-            >
-              <div className={`mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl ${d ? 'bg-white/[0.05]' : 'bg-[#1a3d2b]/[0.04]'}`}>
-                <BookOpen className={`h-5 w-5 ${d ? 'text-white/20' : 'text-[#1a3d2b]/25'}`} />
-              </div>
-              <p className={`mb-4 text-sm font-semibold ${subClr}`}>Workshop niet gevonden</p>
-              <motion.button
-                whileHover={{ scale: 1.04 }}
-                whileTap={{ scale: 0.96 }}
-                onClick={() => navigate('/workshops')}
-                className={`rounded-xl px-3.5 py-2 text-xs font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4e84a] ${
-                  d ? 'bg-[#d4e84a]/10 text-[#d4e84a] hover:bg-[#d4e84a]/20' : 'bg-[#1a3d2b] text-[#d4e84a] hover:bg-[#16331f]'
-                }`}
-              >
-                Terug naar overzicht
-              </motion.button>
+            <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
+              <Card>
+                <div className="p-10 text-center">
+                  <div className={`mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl ${d ? 'bg-white/[0.05]' : 'bg-[#1a3d2b]/[0.04]'}`}>
+                    <BookOpen className={`h-5 w-5 ${d ? 'text-white/20' : 'text-[#1a3d2b]/25'}`} />
+                  </div>
+                  <p className={`mb-4 text-sm font-semibold ${subClr}`}>Workshop niet gevonden</p>
+                  <motion.button
+                    whileHover={{ scale: 1.04 }}
+                    whileTap={{ scale: 0.96 }}
+                    onClick={() => navigate('/workshops')}
+                    className={`rounded-xl px-3.5 py-2 text-xs font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4e84a] ${
+                      d ? 'bg-[#d4e84a]/10 text-[#d4e84a] hover:bg-[#d4e84a]/20' : 'bg-[#1a3d2b] text-[#d4e84a] hover:bg-[#16331f]'
+                    }`}
+                  >
+                    Terug naar overzicht
+                  </motion.button>
+                </div>
+              </Card>
             </motion.div>
           )}
 
@@ -429,80 +459,79 @@ function WorkshopDetail() {
                 )}
               </AnimatePresence>
 
-              {/* Details — spec sheet (geen gradient-streep) */}
-              <motion.div
-                variants={rise}
-                className={`${cardBg} ${cardShadow} rounded-[26px] border ${cardBorder} p-5`}
-              >
-                <div className="flex items-center justify-between gap-4 py-3 pt-0">
-                  <span className={`flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider ${labelClr}`}>
-                    <CalendarDays className="h-3.5 w-3.5 opacity-70" />
-                    Datum
-                  </span>
-                  <span className={`text-right text-sm font-semibold capitalize ${titleClr}`}>
-                    {formatDatum(workshop.start_date.split(' ')[0])}
-                  </span>
-                </div>
-                <div className={`border-t ${hairline}`} />
+              {/* Details, stat-tegels + bezettingsbalk */}
+              <motion.div variants={rise}>
+                <Card>
+                  <div className="p-5">
+                    <div className="grid grid-cols-2 gap-2.5">
+                      <div className={`flex flex-col gap-2 rounded-2xl ${tileBg} p-3.5`}>
+                        <CalendarDays className={`h-4 w-4 ${chipIcon}`} />
+                        <div>
+                          <p className={`text-[10px] font-semibold uppercase tracking-wider ${labelClr}`}>Datum</p>
+                          <p className={`mt-0.5 text-sm font-bold capitalize leading-snug ${titleClr}`}>
+                            {formatDatum(workshop.start_date.split(' ')[0])}
+                          </p>
+                        </div>
+                      </div>
 
-                <div className="flex items-center justify-between gap-4 py-3">
-                  <span className={`flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider ${labelClr}`}>
-                    <Clock className="h-3.5 w-3.5 opacity-70" />
-                    Tijd
-                  </span>
-                  <span className={`text-right text-sm font-semibold tabular-nums ${titleClr}`}>
-                    {workshop.start_date.split(' ')[1]} - {workshop.end_date.split(' ')[1]}
-                  </span>
-                </div>
-                <div className={`border-t ${hairline}`} />
+                      <div className={`flex flex-col gap-2 rounded-2xl ${tileBg} p-3.5`}>
+                        <Clock className={`h-4 w-4 ${chipIcon}`} />
+                        <div>
+                          <p className={`text-[10px] font-semibold uppercase tracking-wider ${labelClr}`}>Tijd</p>
+                          <p className={`mt-0.5 text-sm font-bold tabular-nums leading-snug ${titleClr}`}>
+                            {workshop.start_date.split(' ')[1]} - {workshop.end_date.split(' ')[1]}
+                          </p>
+                        </div>
+                      </div>
 
-                <div className="flex items-center justify-between gap-4 py-3">
-                  <span className={`flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider ${labelClr}`}>
-                    <MapPin className="h-3.5 w-3.5 opacity-70" />
-                    Locatie
-                  </span>
-                  <span className={`text-right text-sm font-semibold ${titleClr}`}>{workshop.location}</span>
-                </div>
-                <div className={`border-t ${hairline}`} />
+                      <div className={`flex flex-col gap-2 rounded-2xl ${tileBg} p-3.5`}>
+                        <MapPin className={`h-4 w-4 ${chipIcon}`} />
+                        <div>
+                          <p className={`text-[10px] font-semibold uppercase tracking-wider ${labelClr}`}>Locatie</p>
+                          <p className={`mt-0.5 text-sm font-bold leading-snug ${titleClr}`}>{workshop.location}</p>
+                        </div>
+                      </div>
 
-                <div className="flex items-center justify-between gap-4 pt-3">
-                  <span className={`flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider ${labelClr}`}>
-                    <Users className="h-3.5 w-3.5 opacity-70" />
-                    Plekken
-                  </span>
-                  <span className={`text-right text-sm font-semibold tabular-nums ${workshop.is_full ? 'text-red-500' : titleClr}`}>
-                    {workshop.is_full ? 'Volgeboekt' : `${workshop.spots_left} van ${workshop.capacity} vrij`}
-                  </span>
-                </div>
+                      <div className={`flex flex-col gap-2 rounded-2xl ${tileBg} p-3.5`}>
+                        <Users className={`h-4 w-4 ${chipIcon}`} />
+                        <div>
+                          <p className={`text-[10px] font-semibold uppercase tracking-wider ${labelClr}`}>Plekken</p>
+                          <p className={`mt-0.5 text-sm font-bold tabular-nums leading-snug ${workshop.is_full ? 'text-red-500' : titleClr}`}>
+                            {workshop.is_full ? 'Volgeboekt' : `${workshop.spots_left} vrij`}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
 
-                {/* Bezetting */}
-                <div className="mt-3 flex items-center gap-3">
-                  <div className={`h-1.5 flex-1 overflow-hidden rounded-full ${barBg}`}>
-                    <motion.div
-                      initial={{ width: 0 }}
-                      whileInView={{ width: `${Math.round((workshop.registered / workshop.capacity) * 100)}%` }}
-                      viewport={{ once: true, amount: 0.6 }}
-                      transition={{ duration: 0.9, delay: 0.2, ease: EASE }}
-                      className={`h-full rounded-full ${workshop.is_full ? 'bg-red-400' : (d ? 'bg-[#d4e84a]' : 'bg-[#1a3d2b]')}`}
-                    />
+                    {/* Bezettingsbalk */}
+                    <div className="mt-4">
+                      <div className="mb-2 flex items-end justify-between">
+                        <span className={`text-xs font-semibold ${labelClr}`}>Bezetting</span>
+                        <span className={`text-xs font-bold tabular-nums ${workshop.is_full ? 'text-red-400' : titleClr}`}>
+                          {bezet}<span className={subClr}>/{totaal}</span>
+                        </span>
+                      </div>
+                      <div className={`h-2.5 w-full overflow-hidden rounded-full ${barTrack}`}>
+                        <motion.div
+                          initial={{ width: 0 }}
+                          whileInView={{ width: `${bezetBarWidth}%` }}
+                          viewport={{ once: true, amount: 0.6 }}
+                          transition={{ duration: 0.9, delay: 0.15, ease: EASE }}
+                          className={`h-full rounded-full ${workshop.is_full ? 'bg-red-400' : (d ? 'bg-[#d4e84a]' : 'bg-[#1a3d2b]')}`}
+                        />
+                      </div>
+                    </div>
                   </div>
-                  <span className={`shrink-0 text-xs font-bold tabular-nums ${workshop.is_full ? 'text-red-400' : titleClr}`}>
-                    {workshop.registered}<span className={subClr}>/{workshop.capacity}</span>
-                  </span>
-                </div>
+                </Card>
               </motion.div>
 
-              {/* Beschrijving — editorial blok (geen kaart) */}
+              {/* Beschrijving, editorial blok (geen kaart) */}
               <motion.section variants={rise} className="px-1">
-                <h2 className={`flex items-center gap-2.5 text-base font-bold tracking-[-0.01em] ${titleClr}`}>
-                  <span className="h-4 w-1 rounded-full bg-[#d4e84a]" />
-                  <BookOpen className={`h-4 w-4 ${headIcon}`} />
-                  Over deze workshop
-                </h2>
+                <SectionHeader icon={BookOpen}>Over deze workshop</SectionHeader>
                 <p className={`mt-3 max-w-prose text-[15px] leading-relaxed ${bodyClr}`}>{workshop.description}</p>
               </motion.section>
 
-              {/* Waarschuwingen — de enige bewust gekleurde uitzondering */}
+              {/* Waarschuwingen, de enige bewust gekleurde uitzondering */}
               {workshop.important_notes && (
                 <motion.div
                   variants={rise}
@@ -521,14 +550,10 @@ function WorkshopDetail() {
                 </motion.div>
               )}
 
-              {/* Benodigdheden — editorial blok */}
+              {/* Benodigdheden, editorial blok */}
               {workshop.requirements && (Array.isArray(workshop.requirements) ? workshop.requirements.length > 0 : true) && (
                 <motion.section variants={rise} className="px-1">
-                  <h2 className={`flex items-center gap-2.5 text-base font-bold tracking-[-0.01em] ${titleClr}`}>
-                    <span className="h-4 w-1 rounded-full bg-[#d4e84a]" />
-                    <ClipboardList className={`h-4 w-4 ${headIcon}`} />
-                    Benodigdheden
-                  </h2>
+                  <SectionHeader icon={ClipboardList}>Benodigdheden</SectionHeader>
                   {Array.isArray(workshop.requirements) ? (
                     <ul className="mt-3 flex flex-col gap-2.5">
                       {workshop.requirements.map((item, i) => (
@@ -544,14 +569,10 @@ function WorkshopDetail() {
                 </motion.section>
               )}
 
-              {/* Dieetwensen & allergenen — editorial blok */}
+              {/* Dieetwensen & allergenen, editorial blok */}
               {(workshop.dietary_info || workshop.allergens) && (
                 <motion.section variants={rise} className="px-1">
-                  <h2 className={`flex items-center gap-2.5 text-base font-bold tracking-[-0.01em] ${titleClr}`}>
-                    <span className="h-4 w-1 rounded-full bg-[#d4e84a]" />
-                    <Leaf className={`h-4 w-4 ${headIcon}`} />
-                    Dieetwensen &amp; allergenen
-                  </h2>
+                  <SectionHeader icon={Leaf}>Dieetwensen &amp; allergenen</SectionHeader>
                   {(() => {
                     const info = workshop.dietary_info || workshop.allergens
                     return Array.isArray(info) ? (
@@ -569,234 +590,229 @@ function WorkshopDetail() {
                 </motion.section>
               )}
 
-              {/* Aanwezigheid & presentatie — interactieve kaart */}
+              {/* Aanwezigheid & presentatie, interactieve kaart */}
               {ingeschreven && (
-                <motion.div
-                  variants={rise}
-                  className={`${cardBg} ${cardShadow} rounded-[26px] border ${cardBorder} p-5`}
-                >
-                  <h2 className={`mb-4 flex items-center gap-2.5 text-base font-bold tracking-[-0.01em] ${titleClr}`}>
-                    <span className="h-4 w-1 rounded-full bg-[#d4e84a]" />
-                    <ScanLine className={`h-4 w-4 ${headIcon}`} />
-                    Aanwezigheid
-                  </h2>
-
-                  <div className="flex flex-col gap-3">
-                    {aanwezigheidGeregistreerd ? (
-                      <div className="flex items-center gap-2.5 rounded-2xl bg-[#1a3d2b] px-4 py-3 text-sm font-bold text-[#d4e84a]">
-                        <CheckCircle className="h-4 w-4 shrink-0" />
-                        Aanwezigheid geregistreerd
+                <motion.div variants={rise}>
+                  <Card>
+                    <div className="p-5">
+                      <div className="mb-4">
+                        <SectionHeader icon={ScanLine}>Aanwezigheid</SectionHeader>
                       </div>
-                    ) : (
-                      <motion.button
-                        whileHover={{ scale: aanwezigheidLoading ? 1 : 1.015 }}
-                        whileTap={{ scale: aanwezigheidLoading ? 1 : 0.98 }}
-                        onClick={handleAanwezigheidRegistreren}
-                        disabled={aanwezigheidLoading}
-                        className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#d4e84a] py-3.5 text-sm font-bold text-[#1a3d2b] transition-colors hover:bg-[#c8dc3e] disabled:opacity-60"
-                      >
-                        {aanwezigheidLoading ? <><SpinnerIcon />Registreren...</> : <><ScanLine className="h-4 w-4" />Aanwezigheid registreren</>}
-                      </motion.button>
-                    )}
 
-                    {aanwezigheidGeregistreerd && (workshop.presentation_url || workshop.slides_url || workshop.presentation) && (
-                      <a
-                        href={workshop.presentation_url || workshop.slides_url || workshop.presentation}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className={`flex w-full items-center justify-center gap-2 rounded-2xl py-3.5 text-sm font-bold transition-colors ${
-                          d ? 'bg-white/[0.07] text-white hover:bg-white/[0.12]' : 'bg-[#eaf3de] text-[#1a3d2b] hover:bg-[#d4e84a]/40'
-                        }`}
-                      >
-                        <Download className="h-4 w-4" />
-                        Presentatie downloaden
-                      </a>
-                    )}
-                  </div>
-                </motion.div>
-              )}
-
-              {/* Enquête / feedback — interactieve kaart */}
-              {ingeschreven && (vragenlijstLoading || vragenlijst.length > 0) && (
-                <motion.div
-                  variants={rise}
-                  className={`${cardBg} ${cardShadow} rounded-[26px] border ${cardBorder} p-5`}
-                >
-                  <h2 className={`mb-4 flex items-center gap-2.5 text-base font-bold tracking-[-0.01em] ${titleClr}`}>
-                    <span className="h-4 w-1 rounded-full bg-[#d4e84a]" />
-                    <MessageSquare className={`h-4 w-4 ${headIcon}`} />
-                    Enquête
-                  </h2>
-
-                  {vragenlijstLoading ? (
-                    <div className="space-y-3">
-                      {[1, 2, 3].map(i => (
-                        <div key={i} className={`h-16 animate-pulse rounded-2xl ${skelBg}`} />
-                      ))}
-                    </div>
-                  ) : feedbackVerzonden ? (
-                    <motion.div
-                      initial={{ opacity: 0, scale: 0.97 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      transition={{ type: 'spring', stiffness: 300, damping: 26 }}
-                      className="flex flex-col items-center py-6 text-center"
-                    >
-                      <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#1a3d2b]">
-                        <CheckCircle className="h-6 w-6 text-[#d4e84a]" />
-                      </div>
-                      <p className={`text-sm font-bold ${titleClr}`}>Bedankt voor je feedback!</p>
-                      <p className={`mt-1 text-xs ${subClr}`}>Je enquête is succesvol verstuurd.</p>
-                    </motion.div>
-                  ) : (
-                    <form onSubmit={handleFeedbackVersturen} className="flex flex-col gap-5">
-                      {vragenlijst.map((vraag, i) => {
-                        const type = vraag.type || 'text'
-                        const huidig = antwoorden[vraag.id]
-                        return (
-                          <div key={vraag.id} className="flex flex-col gap-2">
-                            <label className={`text-sm font-semibold ${titleClr}`}>
-                              <span className={`mr-1 tabular-nums ${subClr}`}>{i + 1}.</span>
-                              {vraag.question || vraag.label}
-                              {vraag.required && <span className="ml-1 text-red-400">*</span>}
-                            </label>
-
-                            {type === 'rating' ? (
-                              <div className="flex items-center gap-1.5">
-                                {[1, 2, 3, 4, 5].map(score => {
-                                  const actief = (huidig || 0) >= score
-                                  return (
-                                    <motion.button
-                                      key={score}
-                                      type="button"
-                                      whileHover={{ scale: 1.12 }}
-                                      whileTap={{ scale: 0.9 }}
-                                      onClick={() => setAntwoord(vraag.id, score)}
-                                      className="p-0.5 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4e84a]"
-                                      aria-label={`${score} sterren`}
-                                    >
-                                      <Star
-                                        className={`h-7 w-7 transition-colors ${
-                                          actief ? 'fill-[#d4e84a] text-[#d4e84a]' : (d ? 'text-white/15' : 'text-[#1a3d2b]/15')
-                                        }`}
-                                      />
-                                    </motion.button>
-                                  )
-                                })}
-                              </div>
-                            ) : type === 'choice' && Array.isArray(vraag.options) ? (
-                              <div className="flex flex-wrap gap-2">
-                                {vraag.options.map((optie, oi) => {
-                                  const waarde = optie.value ?? optie
-                                  const tekst = optie.label ?? optie
-                                  const gekozen = huidig === waarde
-                                  return (
-                                    <motion.button
-                                      key={oi}
-                                      type="button"
-                                      whileTap={{ scale: 0.95 }}
-                                      onClick={() => setAntwoord(vraag.id, waarde)}
-                                      className={`rounded-xl border px-3.5 py-2 text-xs font-semibold transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4e84a] ${
-                                        gekozen
-                                          ? (d ? 'border-[#d4e84a]/50 bg-[#d4e84a]/10 text-[#d4e84a]' : 'border-[#1a3d2b] bg-[#eaf3de] text-[#1a3d2b]')
-                                          : (d ? 'border-white/[0.08] text-white/70 hover:border-white/20' : 'border-[#1a3d2b]/10 text-[#1a3d2b]/70 hover:border-[#1a3d2b]/30')
-                                      }`}
-                                    >
-                                      {tekst}
-                                    </motion.button>
-                                  )
-                                })}
-                              </div>
-                            ) : (
-                              <textarea
-                                value={huidig || ''}
-                                onChange={e => setAntwoord(vraag.id, e.target.value)}
-                                rows={3}
-                                placeholder="Je antwoord..."
-                                className={`w-full resize-none rounded-2xl border px-4 py-3 text-sm outline-none transition-colors focus-visible:ring-2 focus-visible:ring-[#d4e84a] ${
-                                  d
-                                    ? 'border-white/[0.08] bg-white/[0.05] text-white placeholder:text-white/40 focus:border-[#d4e84a]/40'
-                                    : 'border-[#1a3d2b]/10 bg-[#f6faf2] text-[#1a3d2b] placeholder:text-[#1a3d2b]/40 focus:border-[#1a3d2b]/40'
-                                }`}
-                              />
-                            )}
+                      <div className="flex flex-col gap-3">
+                        {aanwezigheidGeregistreerd ? (
+                          <div className="flex items-center gap-2.5 rounded-2xl bg-[#1a3d2b] px-4 py-3 text-sm font-bold text-[#d4e84a]">
+                            <CheckCircle className="h-4 w-4 shrink-0" />
+                            Aanwezigheid geregistreerd
                           </div>
-                        )
-                      })}
+                        ) : (
+                          <motion.button
+                            whileHover={{ scale: aanwezigheidLoading ? 1 : 1.015 }}
+                            whileTap={{ scale: aanwezigheidLoading ? 1 : 0.98 }}
+                            onClick={handleAanwezigheidRegistreren}
+                            disabled={aanwezigheidLoading}
+                            className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#d4e84a] py-3.5 text-sm font-bold text-[#1a3d2b] transition-colors hover:bg-[#c8dc3e] disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1a3d2b] focus-visible:ring-offset-2"
+                          >
+                            {aanwezigheidLoading ? <><SpinnerIcon />Registreren...</> : <><ScanLine className="h-4 w-4" />Aanwezigheid registreren</>}
+                          </motion.button>
+                        )}
 
-                      <motion.button
-                        whileHover={{ scale: feedbackLoading ? 1 : 1.015 }}
-                        whileTap={{ scale: feedbackLoading ? 1 : 0.98 }}
-                        type="submit"
-                        disabled={feedbackLoading}
-                        className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#1a3d2b] py-3.5 text-sm font-bold text-[#d4e84a] transition-colors hover:bg-[#16331f] disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4e84a] focus-visible:ring-offset-2"
-                      >
-                        {feedbackLoading ? <><SpinnerIcon />Versturen...</> : <><Send className="h-4 w-4" />Enquête versturen</>}
-                      </motion.button>
-                    </form>
-                  )}
-                </motion.div>
-              )}
-
-              {/* Sessie-selectie — interactieve kaart */}
-              {workshop.registration_mode === 'session' && workshop.sessions?.length > 0 && !ingeschreven && (
-                <motion.div
-                  variants={rise}
-                  className={`${cardBg} ${cardShadow} rounded-[26px] border ${cardBorder} p-5`}
-                >
-                  <h2 className={`mb-4 flex items-center gap-2.5 text-base font-bold tracking-[-0.01em] ${titleClr}`}>
-                    <span className="h-4 w-1 rounded-full bg-[#d4e84a]" />
-                    <Tag className={`h-4 w-4 ${headIcon}`} />
-                    Kies een sessie
-                  </h2>
-                  <div className="flex flex-col gap-2">
-                    {workshop.sessions.map((sessie) => {
-                      const isGekozen = geselecteerdeSessie === sessie.id
-                      return (
-                        <motion.button
-                          key={sessie.id}
-                          whileHover={{ scale: sessie.is_full ? 1 : 1.01 }}
-                          whileTap={{ scale: sessie.is_full ? 1 : 0.98 }}
-                          disabled={sessie.is_full}
-                          onClick={() => setGeselecteerdeSessie(isGekozen ? null : sessie.id)}
-                          className={`w-full rounded-2xl border px-4 py-3 text-left transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4e84a]
-                            ${sessie.is_full
-                              ? (d ? 'cursor-not-allowed border-white/[0.05] bg-white/[0.03] opacity-50' : 'cursor-not-allowed border-[#1a3d2b]/10 bg-[#1a3d2b]/[0.03] opacity-50')
-                              : isGekozen
-                                ? (d ? 'border-[#d4e84a]/50 bg-[#d4e84a]/10' : 'border-[#1a3d2b] bg-[#eaf3de]')
-                                : (d ? 'border-white/[0.08] hover:border-white/20 hover:bg-white/[0.06]' : 'border-[#1a3d2b]/10 hover:border-[#1a3d2b]/30 hover:bg-[#1a3d2b]/[0.03]')
+                        {aanwezigheidGeregistreerd && (workshop.presentation_url || workshop.slides_url || workshop.presentation) && (
+                          <a
+                            href={workshop.presentation_url || workshop.slides_url || workshop.presentation}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className={`flex w-full items-center justify-center gap-2 rounded-2xl py-3.5 text-sm font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4e84a] focus-visible:ring-offset-2 ${
+                              d ? 'bg-white/[0.07] text-white hover:bg-white/[0.12]' : 'bg-[#eaf3de] text-[#1a3d2b] hover:bg-[#d4e84a]/40'
                             }`}
-                        >
-                          <div className="flex items-center justify-between gap-3">
-                            <div>
-                              <p className={`text-sm font-semibold tabular-nums ${titleClr}`}>
-                                {sessie.date} · {sessie.start_time} - {sessie.end_time}
-                              </p>
-                              <p className={`mt-0.5 text-xs ${subClr}`}>{sessie.location}</p>
-                            </div>
-                            <div className="flex shrink-0 items-center gap-2">
-                              {sessie.is_full ? (
-                                <span className="rounded-full bg-red-50 px-2 py-0.5 text-xs font-bold text-red-400">vol</span>
-                              ) : (
-                                <span className={`text-xs tabular-nums ${subClr}`}>{sessie.spots_left} vrij</span>
-                              )}
-                              {isGekozen && <CheckCircle className={`h-4 w-4 ${d ? 'text-[#d4e84a]' : 'text-[#1a3d2b]'}`} />}
-                            </div>
-                          </div>
-                        </motion.button>
-                      )
-                    })}
-                  </div>
+                          >
+                            <Download className="h-4 w-4" />
+                            Presentatie downloaden
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                  </Card>
                 </motion.div>
               )}
 
-              {/* FAQ — flush accordion op de sheet */}
+              {/* Enquête / feedback, interactieve kaart */}
+              {ingeschreven && (vragenlijstLoading || vragenlijst.length > 0) && (
+                <motion.div variants={rise}>
+                  <Card>
+                    <div className="p-5">
+                      <div className="mb-4">
+                        <SectionHeader icon={MessageSquare}>Enquête</SectionHeader>
+                      </div>
+
+                      {vragenlijstLoading ? (
+                        <div className="space-y-3">
+                          {[1, 2, 3].map(i => (
+                            <div key={i} className={`h-16 animate-pulse rounded-2xl ${skelBg}`} />
+                          ))}
+                        </div>
+                      ) : feedbackVerzonden ? (
+                        <motion.div
+                          initial={{ opacity: 0, scale: 0.97 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          transition={{ type: 'spring', stiffness: 300, damping: 26 }}
+                          className="flex flex-col items-center py-6 text-center"
+                        >
+                          <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#1a3d2b]">
+                            <CheckCircle className="h-6 w-6 text-[#d4e84a]" />
+                          </div>
+                          <p className={`text-sm font-bold ${titleClr}`}>Bedankt voor je feedback!</p>
+                          <p className={`mt-1 text-xs ${subClr}`}>Je enquête is succesvol verstuurd.</p>
+                        </motion.div>
+                      ) : (
+                        <form onSubmit={handleFeedbackVersturen} className="flex flex-col gap-5">
+                          {vragenlijst.map((vraag, i) => {
+                            const type = vraag.type || 'text'
+                            const huidig = antwoorden[vraag.id]
+                            return (
+                              <div key={vraag.id} className="flex flex-col gap-2">
+                                <label className={`text-sm font-semibold ${titleClr}`}>
+                                  <span className={`mr-1 tabular-nums ${subClr}`}>{i + 1}.</span>
+                                  {vraag.question || vraag.label}
+                                  {vraag.required && <span className="ml-1 text-red-400">*</span>}
+                                </label>
+
+                                {type === 'rating' ? (
+                                  <div className="flex items-center gap-1.5">
+                                    {[1, 2, 3, 4, 5].map(score => {
+                                      const actief = (huidig || 0) >= score
+                                      return (
+                                        <motion.button
+                                          key={score}
+                                          type="button"
+                                          whileHover={{ scale: 1.12 }}
+                                          whileTap={{ scale: 0.9 }}
+                                          onClick={() => setAntwoord(vraag.id, score)}
+                                          className="p-0.5 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4e84a]"
+                                          aria-label={`${score} sterren`}
+                                        >
+                                          <Star
+                                            className={`h-7 w-7 transition-colors ${
+                                              actief ? 'fill-[#d4e84a] text-[#d4e84a]' : (d ? 'text-white/15' : 'text-[#1a3d2b]/15')
+                                            }`}
+                                          />
+                                        </motion.button>
+                                      )
+                                    })}
+                                  </div>
+                                ) : type === 'choice' && Array.isArray(vraag.options) ? (
+                                  <div className="flex flex-wrap gap-2">
+                                    {vraag.options.map((optie, oi) => {
+                                      const waarde = optie.value ?? optie
+                                      const tekst = optie.label ?? optie
+                                      const gekozen = huidig === waarde
+                                      return (
+                                        <motion.button
+                                          key={oi}
+                                          type="button"
+                                          whileTap={{ scale: 0.95 }}
+                                          onClick={() => setAntwoord(vraag.id, waarde)}
+                                          className={`rounded-xl border px-3.5 py-2 text-xs font-semibold transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4e84a] ${
+                                            gekozen
+                                              ? (d ? 'border-[#d4e84a]/50 bg-[#d4e84a]/10 text-[#d4e84a]' : 'border-[#1a3d2b] bg-[#eaf3de] text-[#1a3d2b]')
+                                              : (d ? 'border-white/[0.08] text-white/70 hover:border-white/20' : 'border-[#1a3d2b]/10 text-[#1a3d2b]/70 hover:border-[#1a3d2b]/30')
+                                          }`}
+                                        >
+                                          {tekst}
+                                        </motion.button>
+                                      )
+                                    })}
+                                  </div>
+                                ) : (
+                                  <textarea
+                                    value={huidig || ''}
+                                    onChange={e => setAntwoord(vraag.id, e.target.value)}
+                                    rows={3}
+                                    placeholder="Je antwoord..."
+                                    className={`w-full resize-none rounded-2xl border px-4 py-3 text-sm outline-none transition-colors focus-visible:ring-2 focus-visible:ring-[#d4e84a] ${
+                                      d
+                                        ? 'border-white/[0.08] bg-white/[0.05] text-white placeholder:text-white/40 focus:border-[#d4e84a]/40'
+                                        : 'border-[#1a3d2b]/10 bg-[#f6faf2] text-[#1a3d2b] placeholder:text-[#1a3d2b]/40 focus:border-[#1a3d2b]/40'
+                                    }`}
+                                  />
+                                )}
+                              </div>
+                            )
+                          })}
+
+                          <motion.button
+                            whileHover={{ scale: feedbackLoading ? 1 : 1.015 }}
+                            whileTap={{ scale: feedbackLoading ? 1 : 0.98 }}
+                            type="submit"
+                            disabled={feedbackLoading}
+                            className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#1a3d2b] py-3.5 text-sm font-bold text-[#d4e84a] transition-colors hover:bg-[#16331f] disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4e84a] focus-visible:ring-offset-2"
+                          >
+                            {feedbackLoading ? <><SpinnerIcon />Versturen...</> : <><Send className="h-4 w-4" />Enquête versturen</>}
+                          </motion.button>
+                        </form>
+                      )}
+                    </div>
+                  </Card>
+                </motion.div>
+              )}
+
+              {/* Sessie-selectie, interactieve kaart */}
+              {workshop.registration_mode === 'session' && workshop.sessions?.length > 0 && !ingeschreven && (
+                <motion.div variants={rise}>
+                  <Card>
+                    <div className="p-5">
+                      <div className="mb-4">
+                        <SectionHeader icon={Tag}>Kies een sessie</SectionHeader>
+                      </div>
+                      <div className="flex flex-col gap-2">
+                        {workshop.sessions.map((sessie) => {
+                          const isGekozen = geselecteerdeSessie === sessie.id
+                          return (
+                            <motion.button
+                              key={sessie.id}
+                              whileHover={{ scale: sessie.is_full ? 1 : 1.01 }}
+                              whileTap={{ scale: sessie.is_full ? 1 : 0.98 }}
+                              disabled={sessie.is_full}
+                              onClick={() => setGeselecteerdeSessie(isGekozen ? null : sessie.id)}
+                              className={`w-full rounded-2xl border px-4 py-3 text-left transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4e84a]
+                                ${sessie.is_full
+                                  ? (d ? 'cursor-not-allowed border-white/[0.05] bg-white/[0.03] opacity-50' : 'cursor-not-allowed border-[#1a3d2b]/10 bg-[#1a3d2b]/[0.03] opacity-50')
+                                  : isGekozen
+                                    ? (d ? 'border-[#d4e84a]/50 bg-[#d4e84a]/10' : 'border-[#1a3d2b] bg-[#eaf3de]')
+                                    : (d ? 'border-white/[0.08] hover:border-white/20 hover:bg-white/[0.06]' : 'border-[#1a3d2b]/10 hover:border-[#1a3d2b]/30 hover:bg-[#1a3d2b]/[0.03]')
+                                }`}
+                            >
+                              <div className="flex items-center justify-between gap-3">
+                                <div>
+                                  <p className={`text-sm font-semibold tabular-nums ${titleClr}`}>
+                                    {sessie.date} · {sessie.start_time} - {sessie.end_time}
+                                  </p>
+                                  <p className={`mt-0.5 text-xs ${subClr}`}>{sessie.location}</p>
+                                </div>
+                                <div className="flex shrink-0 items-center gap-2">
+                                  {sessie.is_full ? (
+                                    <span className="rounded-full bg-red-50 px-2 py-0.5 text-xs font-bold text-red-400">vol</span>
+                                  ) : (
+                                    <span className={`text-xs tabular-nums ${subClr}`}>{sessie.spots_left} vrij</span>
+                                  )}
+                                  {isGekozen && <CheckCircle className={`h-4 w-4 ${d ? 'text-[#d4e84a]' : 'text-[#1a3d2b]'}`} />}
+                                </div>
+                              </div>
+                            </motion.button>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  </Card>
+                </motion.div>
+              )}
+
+              {/* FAQ, flush accordion op de sheet */}
               {(faqLoading || faq.length > 0) && (
                 <motion.section variants={rise} className="px-1">
-                  <h2 className={`mb-2 flex items-center gap-2.5 text-base font-bold tracking-[-0.01em] ${titleClr}`}>
-                    <span className="h-4 w-1 rounded-full bg-[#d4e84a]" />
-                    <HelpCircle className={`h-4 w-4 ${headIcon}`} />
-                    Veelgestelde vragen
-                  </h2>
+                  <div className="mb-2">
+                    <SectionHeader icon={HelpCircle}>Veelgestelde vragen</SectionHeader>
+                  </div>
                   {faqLoading ? (
                     <div className="mt-3 space-y-2">
                       {[1, 2, 3].map(i => (
@@ -844,28 +860,33 @@ function WorkshopDetail() {
                 </motion.section>
               )}
 
-              {/* Actie — primaire CTA */}
+              {/* Actie, primaire CTA */}
               <motion.div variants={rise} className="flex flex-col gap-2 pt-1">
                 {!ingeschreven ? (
-                  <motion.button
-                    whileHover={{ scale: registratieLoading || workshop.is_full ? 1 : 1.015 }}
-                    whileTap={{ scale: registratieLoading || workshop.is_full ? 1 : 0.98 }}
-                    onClick={handleInschrijven}
-                    disabled={registratieLoading || workshop.is_full}
-                    className={`flex w-full items-center justify-center gap-2 rounded-2xl py-4 text-[15px] font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4e84a] focus-visible:ring-offset-2
-                      ${workshop.is_full
-                        ? (d ? 'cursor-not-allowed bg-white/[0.05] text-white/25' : 'cursor-not-allowed bg-[#1a3d2b]/[0.06] text-[#1a3d2b]/30')
-                        : 'bg-[#d4e84a] text-[#1a3d2b] hover:bg-[#c8dc3e] shadow-[0_10px_30px_-12px_rgba(212,232,74,0.6)]'
-                      } disabled:opacity-60`}
-                  >
-                    {registratieLoading ? (
-                      <><SpinnerIcon />Inschrijven...</>
-                    ) : workshop.is_full ? (
-                      'Workshop is vol'
-                    ) : (
-                      'Inschrijven'
+                  <>
+                    <motion.button
+                      whileHover={{ scale: registratieLoading || workshop.is_full ? 1 : 1.015 }}
+                      whileTap={{ scale: registratieLoading || workshop.is_full ? 1 : 0.98 }}
+                      onClick={handleInschrijven}
+                      disabled={registratieLoading || workshop.is_full}
+                      className={`flex w-full items-center justify-center gap-2 rounded-2xl py-4 text-[15px] font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4e84a] focus-visible:ring-offset-2
+                        ${workshop.is_full
+                          ? (d ? 'cursor-not-allowed bg-white/[0.05] text-white/40' : 'cursor-not-allowed bg-[#1a3d2b]/[0.06] text-[#1a3d2b]/45')
+                          : 'bg-[#d4e84a] text-[#1a3d2b] hover:bg-[#c8dc3e] shadow-[0_10px_30px_-12px_rgba(212,232,74,0.6)]'
+                        } disabled:opacity-60`}
+                    >
+                      {registratieLoading ? (
+                        <><SpinnerIcon />Inschrijven...</>
+                      ) : workshop.is_full ? (
+                        'Workshop is vol'
+                      ) : (
+                        'Inschrijven'
+                      )}
+                    </motion.button>
+                    {workshop.registration_mode === 'session' && workshop.sessions?.length > 0 && !geselecteerdeSessie && !workshop.is_full && (
+                      <p className={`text-center text-xs ${subClr}`}>Kies eerst een sessie hierboven</p>
                     )}
-                  </motion.button>
+                  </>
                 ) : (
                   <motion.button
                     whileHover={{ scale: registratieLoading ? 1 : 1.01 }}

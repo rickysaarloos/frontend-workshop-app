@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence, useReducedMotion } from 'motion/react'
-import { CalendarDays, BookOpen, User, LogOut, ArrowRight, MapPin, Moon, Sun, Clock, UserPlus, Copy } from 'lucide-react'
+import { CalendarDays, BookOpen, User, LogOut, ArrowRight, MapPin, Moon, Sun, Clock, UserPlus, Copy, Bell } from 'lucide-react'
 import { toast, Toaster } from 'sonner'
 import Footer from '../../components/Footer'
 
@@ -187,6 +187,17 @@ function Home() {
         </div>
 
         <div className="flex items-center gap-1">
+          {/* Meldingen */}
+          <motion.button
+            whileHover={{ scale: 1.08 }}
+            whileTap={{ scale: 0.88 }}
+            onClick={() => navigate('/meldingen')}
+            className="w-8 h-8 flex items-center justify-center rounded-xl hover:bg-white/10 transition-colors text-white/60 hover:text-white/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4e84a]"
+            aria-label="Meldingen"
+          >
+            <Bell className="w-4 h-4" />
+          </motion.button>
+
           {/* Dark mode toggle */}
           <motion.button
             whileHover={{ scale: 1.08 }}

@@ -149,7 +149,7 @@ export default function EventDetail() {
   async function fetchVragenlijst(token) {
     setVragenlijstLoading(true)
     try {
-      const res = await fetch(`${API_URL}/api/events/${id}/vragenlijst`, {
+      const res = await fetch(`${API_URL}/api/events/${id}/questionnaire`, {
         headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
       })
       const data = await res.json()

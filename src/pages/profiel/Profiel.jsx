@@ -230,8 +230,8 @@ function Profiel() {
     setContactenLoading(true)
     try {
       const [codeRes, contactenRes] = await Promise.all([
-        fetch(`${API_URL}/api/user/netwerkcode`, { headers }),
-        fetch(`${API_URL}/api/user/netwerk`, { headers }),
+        fetch(`${API_URL}/api/user/network-code`, { headers }),
+        fetch(`${API_URL}/api/user/network`, { headers }),
       ])
       const codeJson = await codeRes.json()
       const contactenJson = await contactenRes.json()
@@ -250,7 +250,7 @@ function Profiel() {
     setCodeToevoegenLoading(true)
     try {
       const token = localStorage.getItem('token')
-      const res = await fetch(`${API_URL}/api/netwerken`, {
+      const res = await fetch(`${API_URL}/api/networking`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}`, Accept: 'application/json', 'Content-Type': 'application/json' },
         body: JSON.stringify({ code: invulCode.trim() }),
@@ -259,7 +259,7 @@ function Profiel() {
       if (!res.ok) throw new Error(data.message || 'Toevoegen mislukt')
       toast.success(data.message || 'Contact toegevoegd!')
       setInvulCode('')
-      const contactenRes = await fetch(`${API_URL}/api/user/netwerk`, {
+      const contactenRes = await fetch(`${API_URL}/api/user/network`, {
         headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
       })
       if (contactenRes.ok) {
@@ -291,24 +291,24 @@ function Profiel() {
 
   const d = dark
 
-  // --- Design tokens ---
-  const contentBg    = d ? 'bg-[#0f0f11]'         : 'bg-[#eef3e8]'
-  const cardBg       = d ? 'bg-[#18181b]'          : 'bg-white'
-  const shellBg      = d ? 'bg-white/[0.03]'        : 'bg-black/[0.022]'
-  const shellBorder  = d ? 'border-white/[0.09]'    : 'border-black/[0.055]'
-  const innerShadow  = d ? 'shadow-[inset_0_1px_0_rgba(255,255,255,0.07)]' : 'shadow-[0_1px_4px_rgba(0,0,0,0.05)]'
-  const labelClr     = d ? 'text-white/35'          : 'text-[#4a6e52]'
+  // --- Design tokens (uitgelijnd op Home.jsx / WorkshopDetail.jsx — één palet voor de hele app) ---
+  const contentBg    = d ? 'bg-[#111111]'           : 'bg-[#e4e8e2]'
+  const cardBg       = d ? 'bg-[#1c1c1e]'           : 'bg-white'
+  const shellBg      = d ? 'bg-white/[0.025]'       : 'bg-black/[0.018]'
+  const shellBorder  = d ? 'border-white/[0.07]'    : 'border-black/[0.05]'
+  const innerShadow  = d ? 'shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]' : 'shadow-sm'
+  const labelClr     = d ? 'text-white/55'          : 'text-[#4a6e52]'
   const titleClr     = d ? 'text-white'             : 'text-[#1a3d2b]'
-  const subClr       = d ? 'text-white/45'          : 'text-gray-400'
+  const subClr       = d ? 'text-white/60'          : 'text-gray-500'
   const arrowClr     = d ? 'text-white/20'          : 'text-[#1a3d2b]/25'
   const inputBg      = d ? 'bg-white/[0.06]'        : 'bg-[#f6faf2]'
   const inputClr     = d ? 'text-white'             : 'text-[#1a3d2b]'
-  const skelBg       = d ? 'bg-white/[0.07]'        : 'bg-[#e4ede0]'
-  const itemHover    = d ? '#1e1e22'                : '#edf5e4'
-  const itemBg       = d ? 'bg-white/[0.04]'        : 'bg-[#f4f9ef]'
-  const tabInactive  = d ? 'text-white/35 hover:text-white/70' : 'text-gray-400 hover:text-[#1a3d2b]'
-  const tabBarBg     = d ? 'bg-[#18181b]'           : 'bg-white'
-  const tabBarBorder = d ? 'border-white/[0.09]'    : 'border-gray-100'
+  const skelBg       = d ? 'bg-white/[0.07]'        : 'bg-black/[0.05]'
+  const itemHover    = d ? '#242424'                : '#edf5e4'
+  const itemBg       = d ? 'bg-white/[0.04]'        : 'bg-[#f6faf2]'
+  const tabInactive  = d ? 'text-white/55 hover:text-white/80' : 'text-gray-500 hover:text-[#1a3d2b]'
+  const tabBarBg     = d ? 'bg-[#1c1c1e]'           : 'bg-white'
+  const tabBarBorder = d ? 'border-white/[0.07]'    : 'border-gray-100'
 
   const gradientTop = 'h-[2px] bg-gradient-to-r from-[#1a3d2b] via-[#4a8c60] to-[#d4e84a]'
 
@@ -358,7 +358,8 @@ function Profiel() {
             whileHover={{ scale: 1.1, x: -2 }}
             whileTap={{ scale: 0.85 }}
             onClick={() => navigate('/home')}
-            className="text-white/40 hover:text-white transition-colors p-1.5 rounded-xl hover:bg-white/10"
+            className="text-white/60 hover:text-white transition-colors p-1.5 rounded-xl hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4e84a]"
+            aria-label="Terug naar home"
           >
             <ChevronLeft className="w-5 h-5" />
           </motion.button>
@@ -378,7 +379,7 @@ function Profiel() {
             whileHover={{ scale: 1.08 }}
             whileTap={{ scale: 0.88 }}
             onClick={toggleDark}
-            className="w-8 h-8 flex items-center justify-center rounded-xl hover:bg-white/10 transition-colors text-white/40 hover:text-white/70"
+            className="w-8 h-8 flex items-center justify-center rounded-xl hover:bg-white/10 transition-colors text-white/60 hover:text-white/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4e84a]"
             aria-label="Wissel kleurmodus"
           >
             <AnimatePresence mode="wait">
@@ -410,7 +411,7 @@ function Profiel() {
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.92 }}
             onClick={handleUitloggen}
-            className="flex items-center gap-1.5 text-xs text-white/40 hover:text-white/70 transition-colors px-3 py-1.5 rounded-xl hover:bg-white/10"
+            className="flex items-center gap-1.5 text-xs text-white/60 hover:text-white/90 transition-colors px-3 py-1.5 rounded-xl hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4e84a]"
           >
             <LogOut className="w-3.5 h-3.5" />
             Uitloggen
@@ -529,7 +530,7 @@ function Profiel() {
             <button
               key={key}
               onClick={() => setActieveTab(key)}
-              className="relative flex-1 py-2.5 rounded-xl text-[10px] font-bold"
+              className="relative flex-1 py-2.5 rounded-xl text-[10px] font-bold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4e84a]"
             >
               {actieveTab === key && (
                 <motion.div
@@ -618,7 +619,7 @@ function Profiel() {
                         whileHover={{ scale: 1.04 }}
                         whileTap={{ scale: 0.96 }}
                         onClick={() => navigate('/workshops')}
-                        className={`text-xs font-bold px-4 py-2 rounded-xl transition-colors ${d ? 'text-[#d4e84a] bg-[#d4e84a]/10 hover:bg-[#d4e84a]/20' : 'text-[#1a3d2b] bg-[#d4e84a]/20 hover:bg-[#d4e84a]/35'}`}
+                        className={`text-xs font-bold px-4 py-2 rounded-xl transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4e84a] ${d ? 'text-[#d4e84a] bg-[#d4e84a]/10 hover:bg-[#d4e84a]/20' : 'text-[#1a3d2b] bg-[#d4e84a]/20 hover:bg-[#d4e84a]/35'}`}
                       >
                         Bekijk workshops
                       </motion.button>
@@ -690,7 +691,7 @@ function Profiel() {
                         whileHover={{ scale: 1.04 }}
                         whileTap={{ scale: 0.96 }}
                         onClick={() => navigate('/events')}
-                        className={`text-xs font-bold px-4 py-2 rounded-xl transition-colors ${d ? 'text-[#d4e84a] bg-[#d4e84a]/10 hover:bg-[#d4e84a]/20' : 'text-[#1a3d2b] bg-[#d4e84a]/20 hover:bg-[#d4e84a]/35'}`}
+                        className={`text-xs font-bold px-4 py-2 rounded-xl transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4e84a] ${d ? 'text-[#d4e84a] bg-[#d4e84a]/10 hover:bg-[#d4e84a]/20' : 'text-[#1a3d2b] bg-[#d4e84a]/20 hover:bg-[#d4e84a]/35'}`}
                       >
                         Bekijk events
                       </motion.button>
@@ -787,7 +788,7 @@ function Profiel() {
                       whileTap={{ scale: profielLoading ? 1 : 0.97 }}
                       type="submit"
                       disabled={profielLoading}
-                      className="bg-[#1a3d2b] text-[#d4e84a] rounded-2xl py-3.5 text-sm font-bold flex items-center justify-center gap-2 disabled:opacity-60 transition-shadow mt-1"
+                      className="bg-[#1a3d2b] text-[#d4e84a] rounded-2xl py-3.5 text-sm font-bold flex items-center justify-center gap-2 disabled:opacity-60 transition-shadow mt-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4e84a] focus-visible:ring-offset-2"
                     >
                       {profielLoading ? <><SpinnerIcon />Opslaan...</> : <><Save className="w-4 h-4" />Opslaan</>}
                     </motion.button>
@@ -857,7 +858,7 @@ function Profiel() {
                       whileTap={{ scale: wachtwoordLoading ? 1 : 0.97 }}
                       type="submit"
                       disabled={wachtwoordLoading}
-                      className="bg-[#1a3d2b] text-[#d4e84a] rounded-2xl py-3.5 text-sm font-bold flex items-center justify-center gap-2 disabled:opacity-60 transition-shadow mt-1"
+                      className="bg-[#1a3d2b] text-[#d4e84a] rounded-2xl py-3.5 text-sm font-bold flex items-center justify-center gap-2 disabled:opacity-60 transition-shadow mt-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4e84a] focus-visible:ring-offset-2"
                     >
                       {wachtwoordLoading ? <><SpinnerIcon />Opslaan...</> : <><Save className="w-4 h-4" />Wachtwoord wijzigen</>}
                     </motion.button>
@@ -870,7 +871,7 @@ function Profiel() {
                 whileHover={{ scale: 1.02, boxShadow: '0 8px 28px rgba(239,68,68,0.12)' }}
                 whileTap={{ scale: 0.97 }}
                 onClick={handleUitloggen}
-                className={`w-full rounded-3xl py-4 text-sm font-bold transition-all duration-200 flex items-center justify-center gap-2 border-2 ${d ? 'bg-red-950/30 border-red-900/30 text-red-400 hover:bg-red-950/50 hover:border-red-900/50' : 'bg-white border-red-100 text-red-400 hover:bg-red-50 hover:border-red-200'}`}
+                className={`w-full rounded-3xl py-4 text-sm font-bold transition-all duration-200 flex items-center justify-center gap-2 border-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400 focus-visible:ring-offset-2 ${d ? 'bg-red-950/30 border-red-900/30 text-red-400 hover:bg-red-950/50 hover:border-red-900/50' : 'bg-white border-red-100 text-red-400 hover:bg-red-50 hover:border-red-200'}`}
               >
                 <LogOut className="w-4 h-4" />
                 Uitloggen
@@ -913,7 +914,8 @@ function Profiel() {
                           whileTap={{ scale: 0.93 }}
                           type="button"
                           onClick={() => toggleDieet(optie)}
-                          className={`px-3.5 py-2 rounded-xl text-xs font-semibold border-2 transition-all duration-150 flex items-center gap-1.5 ${
+                          aria-pressed={actief}
+                          className={`px-3.5 py-2 rounded-xl text-xs font-semibold border-2 transition-all duration-150 flex items-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4e84a] focus-visible:ring-offset-2 ${
                             actief
                               ? 'bg-[#1a3d2b] text-[#d4e84a] border-[#1a3d2b]'
                               : d
@@ -947,7 +949,7 @@ function Profiel() {
                     type="button"
                     onClick={handleDieetOpslaan}
                     disabled={dieetLoading}
-                    className="w-full bg-[#d4e84a] text-[#1a3d2b] rounded-2xl py-3.5 text-sm font-bold flex items-center justify-center gap-2 disabled:opacity-60 hover:bg-[#c9df3a] transition-colors"
+                    className="w-full bg-[#d4e84a] text-[#1a3d2b] rounded-2xl py-3.5 text-sm font-bold flex items-center justify-center gap-2 disabled:opacity-60 hover:bg-[#c9df3a] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1a3d2b] focus-visible:ring-offset-2"
                   >
                     {dieetLoading ? <><SpinnerIcon />Opslaan...</> : <><Save className="w-4 h-4" />Dieetwensen opslaan</>}
                   </motion.button>
@@ -984,7 +986,7 @@ function Profiel() {
                     type="button"
                     onClick={handleStuurlinkAanmaken}
                     disabled={stuurlinkLoading}
-                    className="w-full bg-[#1a3d2b] text-[#d4e84a] rounded-2xl py-3.5 text-sm font-bold flex items-center justify-center gap-2 disabled:opacity-60 transition-shadow"
+                    className="w-full bg-[#1a3d2b] text-[#d4e84a] rounded-2xl py-3.5 text-sm font-bold flex items-center justify-center gap-2 disabled:opacity-60 transition-shadow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4e84a] focus-visible:ring-offset-2"
                   >
                     {stuurlinkLoading ? <><SpinnerIcon />Aanmaken...</> : <><UserPlus className="w-4 h-4" />Nieuwe uitnodigingslink</>}
                   </motion.button>
@@ -1010,7 +1012,7 @@ function Profiel() {
                           whileTap={{ scale: 0.96 }}
                           type="button"
                           onClick={() => handleKopieer(gegenereerdeLink.url)}
-                          className="w-full bg-[#d4e84a] text-[#1a3d2b] rounded-xl py-2.5 text-xs font-bold flex items-center justify-center gap-2 hover:bg-[#c9df3a] transition-colors"
+                          className="w-full bg-[#d4e84a] text-[#1a3d2b] rounded-xl py-2.5 text-xs font-bold flex items-center justify-center gap-2 hover:bg-[#c9df3a] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1a3d2b]"
                         >
                           <Copy className="w-3.5 h-3.5" />
                           Kopieer link
@@ -1070,7 +1072,7 @@ function Profiel() {
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.97 }}
                       onClick={() => handleKopieer(netwerkcode)}
-                      className="w-full bg-[#d4e84a] text-[#1a3d2b] rounded-2xl py-3.5 text-sm font-bold flex items-center justify-center gap-2 hover:bg-[#c9df3a] transition-colors"
+                      className="w-full bg-[#d4e84a] text-[#1a3d2b] rounded-2xl py-3.5 text-sm font-bold flex items-center justify-center gap-2 hover:bg-[#c9df3a] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1a3d2b] focus-visible:ring-offset-2"
                     >
                       <Copy className="w-4 h-4" />
                       Code kopiëren
@@ -1118,7 +1120,8 @@ function Profiel() {
                       whileTap={{ scale: codeToevoegenLoading ? 1 : 0.93 }}
                       onClick={handleCodeToevoegen}
                       disabled={codeToevoegenLoading || !invulCode.trim()}
-                      className="bg-[#1a3d2b] text-[#d4e84a] rounded-2xl px-5 py-3.5 text-sm font-bold flex items-center justify-center disabled:opacity-40 transition-opacity shrink-0"
+                      aria-label="Contact toevoegen"
+                      className="bg-[#1a3d2b] text-[#d4e84a] rounded-2xl px-5 py-3.5 text-sm font-bold flex items-center justify-center disabled:opacity-40 transition-opacity shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4e84a] focus-visible:ring-offset-2"
                     >
                       {codeToevoegenLoading ? <SpinnerIcon /> : <UserPlus className="w-4 h-4" />}
                     </motion.button>

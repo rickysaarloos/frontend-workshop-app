@@ -7,6 +7,7 @@ import WorkshopDetail from '@/pages/workshops/WorkshopDetail'
 import Profiel from '@/pages/profiel/Profiel'
 import Home from '@/pages/home/Home'
 import EventDetail from '@/pages/events/EventDetail'
+import Meldingen from '@/pages/meldingen/Meldingen'
 
 
 function App() {
@@ -22,6 +23,7 @@ function App() {
         <Route path="/profiel" element={<Profiel />} />
         <Route path="/home" element={<Home />} />
         <Route path="/events/:id" element={<EventDetail />} />
+        <Route path="/meldingen" element={<Meldingen />} />
       </Routes>
     </BrowserRouter>
   )
