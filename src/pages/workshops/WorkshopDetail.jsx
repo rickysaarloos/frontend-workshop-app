@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { motion, AnimatePresence, useReducedMotion } from 'motion/react'
-import { ChevronLeft, CalendarDays, Clock, Users, CheckCircle, MapPin, BookOpen, User, Tag, Moon, Sun, AlertTriangle, ClipboardList, Leaf, HelpCircle, ChevronDown, Download, ScanLine, MessageSquare, Star, Send } from 'lucide-react'
+import { ChevronLeft, CalendarDays, Clock, Users, CheckCircle, MapPin, BookOpen, User, Tag, Moon, Sun, AlertTriangle, ClipboardList, Leaf, HelpCircle, ChevronDown, Download, ScanLine, MessageSquare, Star, Send, ArrowLeftRight } from 'lucide-react'
 import { toast, Toaster } from 'sonner'
 import Footer from '../../components/Footer'
 
@@ -216,28 +216,6 @@ function WorkshopDetail() {
       toast.error(error.message || 'Enquête versturen mislukt')
     } finally {
       setFeedbackLoading(false)
-    }
-  }
-
-  async function handleUitschrijven() {
-    setRegistratieLoading(true)
-    try {
-      const token = localStorage.getItem('token')
-      const response = await fetch(`${API_URL}/api/workshops/${id}/unregister`, {
-        method: 'DELETE',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          Accept: 'application/json',
-        },
-      })
-      const data = await response.json()
-      if (!response.ok) throw new Error(data.message)
-      toast.success(data.message || 'Je bent uitgeschreven')
-      await fetchWorkshop()
-    } catch (error) {
-      toast.error(error.message || 'Uitschrijven mislukt')
-    } finally {
-      setRegistratieLoading(false)
     }
   }
 
@@ -867,14 +845,14 @@ function WorkshopDetail() {
                   </motion.button>
                 ) : (
                   <motion.button
-                    whileHover={{ scale: registratieLoading ? 1 : 1.01 }}
-                    whileTap={{ scale: registratieLoading ? 1 : 0.98 }}
-                    onClick={handleUitschrijven}
-                    disabled={registratieLoading}
-                    className={`flex w-full items-center justify-center gap-2 rounded-2xl py-4 text-[15px] font-bold transition-colors disabled:opacity-60
-                      ${d ? 'bg-white/[0.07] text-white/40 hover:bg-red-900/30 hover:text-red-400' : 'bg-[#1a3d2b]/[0.06] text-[#1a3d2b]/50 hover:bg-red-50 hover:text-red-500'}`}
+                    whileHover={{ scale: 1.01 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => navigate('/workshops')}
+                    className={`flex w-full items-center justify-center gap-2 rounded-2xl py-4 text-[15px] font-bold transition-colors
+                      ${d ? 'bg-white/[0.07] text-white/70 hover:bg-white/[0.12] hover:text-white' : 'bg-[#1a3d2b]/[0.06] text-[#1a3d2b]/70 hover:bg-[#1a3d2b]/[0.1] hover:text-[#1a3d2b]'}`}
                   >
-                    {registratieLoading ? <><SpinnerIcon />Uitschrijven...</> : 'Uitschrijven'}
+                    <ArrowLeftRight className="h-4 w-4" />
+                    Wissel van workshop
                   </motion.button>
                 )}
               </motion.div>
