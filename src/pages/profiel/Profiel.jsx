@@ -74,7 +74,7 @@ function Profiel() {
       const contentType = res.headers.get('content-type') || ''
       if (contentType.includes('application/json')) {
         const data = await res.json()
-        setQrUrl(data.data?.qr_url || data.data?.url || data.qr_url || data.url || null)
+        setQrUrl(data.data?.qr_code_url || data.qr_code_url || data.data?.qr_url || data.data?.url || data.qr_url || data.url || null)
       } else {
         const blob = await res.blob()
         setQrUrl(URL.createObjectURL(blob))
@@ -166,7 +166,7 @@ function Profiel() {
     setWachtwoordLoading(true)
     try {
       const token = localStorage.getItem('token')
-      const res = await fetch(`${API_URL}/api/user`, {
+      const res = await fetch(`${API_URL}/api/user/password`, {
         method: 'PATCH',
         headers: { Authorization: `Bearer ${token}`, Accept: 'application/json', 'Content-Type': 'application/json' },
         body: JSON.stringify({ current_password: huidigWachtwoord, password: nieuwWachtwoord, password_confirmation: wachtwoordHerhaal }),
@@ -235,8 +235,8 @@ function Profiel() {
       ])
       const codeJson = await codeRes.json()
       const contactenJson = await contactenRes.json()
-      if (codeRes.ok) setNetwerkcode(codeJson.code || codeJson.netwerkcode || codeJson.data?.code || null)
-      if (contactenRes.ok) setNetwerkContacten(contactenJson.data || contactenJson.contacts || [])
+      if (codeRes.ok) setNetwerkcode(codeJson.network_code || codeJson.code || codeJson.netwerkcode || codeJson.data?.network_code || codeJson.data?.code || null)
+      if (contactenRes.ok) setNetwerkContacten(Array.isArray(contactenJson) ? contactenJson : (contactenJson.data || contactenJson.contacts || []))
     } catch {
       toast.error('Netwerkgegevens ophalen mislukt')
     } finally {
@@ -264,7 +264,7 @@ function Profiel() {
       })
       if (contactenRes.ok) {
         const contactenJson = await contactenRes.json()
-        setNetwerkContacten(contactenJson.data || contactenJson.contacts || [])
+        setNetwerkContacten(Array.isArray(contactenJson) ? contactenJson : (contactenJson.data || contactenJson.contacts || []))
       }
     } catch (err) {
       toast.error(err.message)

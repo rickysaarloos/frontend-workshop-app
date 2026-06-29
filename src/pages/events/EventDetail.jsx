@@ -154,8 +154,11 @@ export default function EventDetail() {
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.message)
-      setVragenlijst(data.data || [])
-      setFeedbackVerzonden(data.feedback_submitted || data.data?.feedback_submitted || false)
+      const vragen = Array.isArray(data.questions) ? data.questions
+        : Array.isArray(data.data) ? data.data
+        : (data.data?.questions || [])
+      setVragenlijst(vragen)
+      setFeedbackVerzonden(data.feedback_submitted ?? data.data?.feedback_submitted ?? false)
     } catch (err) {
       console.error('Dagenquête ophalen mislukt:', err)
     } finally {
@@ -554,7 +557,7 @@ export default function EventDetail() {
                             <div key={vraag.id} className="flex flex-col gap-2">
                               <label className={`text-sm font-semibold ${titleClr}`}>
                                 <span className={`mr-1 ${subClr}`}>{i + 1}.</span>
-                                {vraag.question || vraag.label}
+                                {vraag.question_text || vraag.question || vraag.label}
                                 {vraag.required && <span className="ml-1 text-red-400">*</span>}
                               </label>
 
