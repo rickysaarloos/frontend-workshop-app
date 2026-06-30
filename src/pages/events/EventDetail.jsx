@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { motion, AnimatePresence } from 'motion/react'
-import { ChevronLeft, CalendarDays, Clock, MapPin, Users, CheckCircle, Calendar, Moon, Sun, MessageSquare, Send } from 'lucide-react'
+import { ChevronLeft, CalendarDays, Clock, MapPin, Users, CheckCircle, Calendar, Moon, Sun, MessageSquare, Send, ScanLine, Download } from 'lucide-react'
 import { toast, Toaster } from 'sonner'
 import Footer from '../../components/Footer'
  
@@ -68,6 +68,9 @@ export default function EventDetail() {
   const [loading, setLoading] = useState(true)
   const [ingeschreven, setIngeschreven] = useState(false)
   const [registreerLoading, setRegistreerLoading] = useState(false)
+  const [aanwezigheidGeregistreerd, setAanwezigheidGeregistreerd] = useState(false)
+  const [aanwezigheidLoading, setAanwezigheidLoading] = useState(false)
+  const [presentatie, setPresentatie] = useState(null)
   const [vragenlijst, setVragenlijst] = useState([])
   const [vragenlijstLoading, setVragenlijstLoading] = useState(false)
   const [antwoorden, setAntwoorden] = useState({})
@@ -89,17 +92,51 @@ export default function EventDetail() {
     fetchEvent()
     fetchVragenlijst()
   }, [id])
- 
+
+  // Presentatie ophalen zodra aanwezigheid is geregistreerd. Het endpoint geeft
+  // 403 vóór aanwezigheid en 404 als er (nog) geen presentatie is — in beide
+  // gevallen tonen we simpelweg geen knop, geen foutmelding.
+  useEffect(() => {
+    if (!aanwezigheidGeregistreerd) return
+    let geannuleerd = false
+    api(`/events/${id}/presentation`)
+      .then((res) => {
+        if (geannuleerd) return
+        const url = res?.data?.url || res?.url || null
+        const filename = res?.data?.filename || res?.filename || null
+        if (url) setPresentatie({ url, filename })
+      })
+      .catch(() => {
+        // 404 (geen presentatie) of 403 (geen aanwezigheid): geen knop tonen.
+      })
+    return () => { geannuleerd = true }
+  }, [aanwezigheidGeregistreerd, id])
+
   async function fetchEvent() {
     try {
       const json = await api(`/events/${id}`)
       const e = json.data
       setEvent(e)
       setIngeschreven(e.is_registered ?? false)
+      setAanwezigheidGeregistreerd(e.is_attended ?? false)
     } catch (err) {
       toast.error(err.message)
     } finally {
       setLoading(false)
+    }
+  }
+
+  async function handleAanwezigheidRegistreren() {
+    setAanwezigheidLoading(true)
+    try {
+      const data = await api(`/events/${id}/attendance`, { method: 'POST' })
+      toast.success(data?.message || 'Aanwezigheid geregistreerd!')
+      setAanwezigheidGeregistreerd(true)
+      await fetchEvent()
+    } catch (err) {
+      toast.error(err.message || 'Registratie mislukt')
+    } finally {
+      setAanwezigheidLoading(false)
     }
   }
  
@@ -476,6 +513,70 @@ export default function EventDetail() {
                 </motion.div>
               )}
  
+              {/* Aanwezigheid & presentatie */}
+              {ingeschreven && (
+                <motion.div
+                  initial={{ opacity: 0, y: 14 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ type: 'spring', stiffness: 350, damping: 30, delay: 0.28 }}
+                  className={`${cardBg} rounded-3xl border ${cardBorder} overflow-hidden shadow-sm`}
+                >
+                  <div className="h-0.5 bg-gradient-to-r from-[#1a3d2b] via-[#4a8c60] to-[#d4e84a]" />
+                  <div className="p-5">
+                    <h2 className={`flex items-center gap-2 text-sm font-bold mb-4 ${titleClr}`}>
+                      <ScanLine className="w-4 h-4 text-[#d4e84a]" />
+                      Aanwezigheid
+                    </h2>
+
+                    <div className="flex flex-col gap-3">
+                      {aanwezigheidGeregistreerd ? (
+                        <div className="flex items-center gap-2.5 rounded-2xl bg-[#1a3d2b] px-4 py-3 text-sm font-bold text-[#d4e84a]">
+                          <CheckCircle className="h-4 w-4 shrink-0" />
+                          Aanwezigheid geregistreerd
+                        </div>
+                      ) : (
+                        <motion.button
+                          whileHover={{ scale: aanwezigheidLoading ? 1 : 1.015 }}
+                          whileTap={{ scale: aanwezigheidLoading ? 1 : 0.98 }}
+                          onClick={handleAanwezigheidRegistreren}
+                          disabled={aanwezigheidLoading}
+                          className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#d4e84a] py-3.5 text-sm font-bold text-[#1a3d2b] transition-colors hover:bg-[#c8dc3e] disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1a3d2b] focus-visible:ring-offset-2"
+                        >
+                          {aanwezigheidLoading ? (
+                            <>
+                              <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                              </svg>
+                              Registreren...
+                            </>
+                          ) : (
+                            <>
+                              <ScanLine className="h-4 w-4" />
+                              Aanwezigheid registreren
+                            </>
+                          )}
+                        </motion.button>
+                      )}
+
+                      {aanwezigheidGeregistreerd && presentatie?.url && (
+                        <a
+                          href={presentatie.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className={`flex w-full items-center justify-center gap-2 rounded-2xl py-3.5 text-sm font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4e84a] focus-visible:ring-offset-2 ${
+                            d ? 'bg-white/[0.07] text-white hover:bg-white/[0.12]' : 'bg-[#eaf3de] text-[#1a3d2b] hover:bg-[#d4e84a]/40'
+                          }`}
+                        >
+                          <Download className="h-4 w-4" />
+                          {presentatie.filename || 'Presentatie downloaden'}
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+
               {/* Dagenquête — alleen ná afloop van het event (US-14c) */}
               {ingeschreven && isAfgelopen && (vragenlijstLoading || vragenlijst.length > 0) && (
                 <motion.div

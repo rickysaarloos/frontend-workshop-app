@@ -64,6 +64,7 @@ function WorkshopDetail() {
   const [antwoorden, setAntwoorden] = useState({})
   const [feedbackLoading, setFeedbackLoading] = useState(false)
   const [feedbackVerzonden, setFeedbackVerzonden] = useState(false)
+  const [enqueteOpen, setEnqueteOpen] = useState(false)
   const [dark, setDark] = useState(() => localStorage.getItem('theme') === 'dark')
   const shouldReduce = useReducedMotion()
 
@@ -591,10 +592,41 @@ function WorkshopDetail() {
                 <motion.div variants={rise}>
                   <Card dark={d}>
                     <div className="p-5">
-                      <div className="mb-4">
+                      <button
+                        type="button"
+                        onClick={() => setEnqueteOpen(o => !o)}
+                        aria-expanded={enqueteOpen}
+                        className="flex w-full items-center justify-between gap-3 rounded-lg text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4e84a]"
+                      >
                         <SectionHeader icon={MessageSquare} dark={d}>Enquête</SectionHeader>
-                      </div>
+                        <span className="flex items-center gap-2">
+                          {feedbackVerzonden && (
+                            <span className="flex items-center gap-1 text-xs font-bold text-[#d4e84a]">
+                              <CheckCircle className="h-3.5 w-3.5" />
+                              <span className="hidden sm:inline">Ingevuld</span>
+                            </span>
+                          )}
+                          <motion.span
+                            animate={{ rotate: enqueteOpen ? 180 : 0 }}
+                            transition={{ duration: 0.2, ease: EASE }}
+                            className="shrink-0"
+                          >
+                            <ChevronDown className={`h-4 w-4 ${subClr}`} />
+                          </motion.span>
+                        </span>
+                      </button>
 
+                      <AnimatePresence initial={false}>
+                        {enqueteOpen && (
+                          <motion.div
+                            key="enquete-body"
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: 'auto' }}
+                            exit={{ opacity: 0, height: 0 }}
+                            transition={{ duration: 0.28, ease: EASE }}
+                            className="overflow-hidden"
+                          >
+                            <div className="pt-4">
                       {vragenlijstLoading ? (
                         <div className="space-y-3">
                           {[1, 2, 3].map(i => (
@@ -704,6 +736,10 @@ function WorkshopDetail() {
                           </motion.button>
                         </form>
                       )}
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
                     </div>
                   </Card>
                 </motion.div>
