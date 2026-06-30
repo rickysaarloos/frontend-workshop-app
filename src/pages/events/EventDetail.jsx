@@ -185,9 +185,10 @@ export default function EventDetail() {
     setFeedbackLoading(true)
     try {
       const token = localStorage.getItem('token')
+      // De API verwacht `answer` altijd als string — ook bij ratings ("8").
       const answers = vragenlijst
         .filter(v => antwoorden[v.id] !== undefined && antwoorden[v.id] !== '')
-        .map(v => ({ question_id: v.id, answer: antwoorden[v.id] }))
+        .map(v => ({ question_id: v.id, answer: String(antwoorden[v.id]) }))
       const res = await fetch(`${API_URL}/api/events/${id}/feedback`, {
         method: 'POST',
         headers: {
@@ -584,7 +585,7 @@ export default function EventDetail() {
                                     )
                                   })}
                                 </div>
-                              ) : type === 'choice' && Array.isArray(vraag.options) ? (
+                              ) : (type === 'multiple_choice' || type === 'choice') && Array.isArray(vraag.options) ? (
                                 <div className="flex flex-wrap gap-2">
                                   {vraag.options.map((optie, oi) => {
                                     const waarde = optie.value ?? optie

@@ -6,7 +6,7 @@ import { toast, Toaster } from 'sonner'
 import Footer from '../../components/Footer'
 
 import { API_URL } from '@/lib/config'
-import { getStoredUser } from '@/lib/auth'
+import { getStoredUser, logout } from '@/lib/auth'
 
 const dieetOpties = [
   'Vegetarisch', 'Veganistisch', 'Glutenvrij', 'Lactosevrij',
@@ -282,9 +282,8 @@ function Profiel() {
     }
   }
 
-  function handleUitloggen() {
-    localStorage.removeItem('token')
-    localStorage.removeItem('user')
+  async function handleUitloggen() {
+    await logout()
     toast.success('Je bent uitgelogd')
     setTimeout(() => navigate('/login'), 600)
   }

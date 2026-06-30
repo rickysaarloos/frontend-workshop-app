@@ -1,3 +1,5 @@
+import { API_URL } from './config'
+
 // Auth-state staat in localStorage.
 //
 // Bewuste afweging: localStorage is simpel en overleeft een page-refresh, maar is
@@ -27,4 +29,23 @@ export function getToken() {
 export function clearAuth() {
   localStorage.removeItem('token')
   localStorage.removeItem('user')
+}
+
+// Logt de gebruiker uit. Roept eerst POST /api/logout aan zodat de backend het
+// huidige bearer-token intrekt (anders blijft het token serverside geldig), en
+// ruimt daarna de lokale auth-state op. Een netwerk-/serverfout mag het lokaal
+// uitloggen nooit blokkeren — we wissen dan alsnog de localStorage.
+export async function logout() {
+  const token = getToken()
+  if (token) {
+    try {
+      await fetch(`${API_URL}/api/logout`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
+      })
+    } catch {
+      // Bewust genegeerd: lokaal uitloggen gaat altijd door.
+    }
+  }
+  clearAuth()
 }

@@ -6,7 +6,7 @@ import { toast, Toaster } from 'sonner'
 import Footer from '../../components/Footer'
 
 import { API_URL } from '@/lib/config'
-import { getStoredUser } from '@/lib/auth'
+import { getStoredUser, logout } from '@/lib/auth'
 
 function Home() {
   const navigate = useNavigate()
@@ -75,9 +75,8 @@ function Home() {
     return new Date(datum).toLocaleDateString('nl-NL', { weekday: 'long', day: 'numeric', month: 'long' })
   }
 
-  function handleUitloggen() {
-    localStorage.removeItem('token')
-    localStorage.removeItem('user')
+  async function handleUitloggen() {
+    await logout()
     toast.success('Je bent uitgelogd')
     setTimeout(() => navigate('/login'), 600)
   }

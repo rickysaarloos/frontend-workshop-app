@@ -9,6 +9,12 @@ import { API_URL } from '@/lib/config'
 
 const EASE = [0.22, 1, 0.36, 1]
 
+// Datum/tijd komen als "YYYY-MM-DD HH:MM:SS" óf als null binnen. Session-mode
+// workshops hebben geen start_date/end_date op workshop-niveau (die zitten in de
+// sessies), dus defensief uitlezen i.p.v. .split op null.
+const datumDeel = (s) => (typeof s === 'string' ? s.split(' ')[0] : '')
+const tijdDeel = (s) => (typeof s === 'string' ? s.split(' ')[1] || '' : '')
+
 function SpinnerIcon() {
   return (
     <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
@@ -199,9 +205,10 @@ function WorkshopDetail() {
     setFeedbackLoading(true)
     try {
       const token = localStorage.getItem('token')
+      // De API verwacht `answer` altijd als string — ook bij ratings ("8").
       const answers = vragenlijst
         .filter(v => antwoorden[v.id] !== undefined && antwoorden[v.id] !== '')
-        .map(v => ({ question_id: v.id, answer: antwoorden[v.id] }))
+        .map(v => ({ question_id: v.id, answer: String(antwoorden[v.id]) }))
       const response = await fetch(`${API_URL}/api/workshops/${id}/feedback`, {
         method: 'POST',
         headers: {
@@ -450,7 +457,7 @@ function WorkshopDetail() {
                         <div>
                           <p className={`text-[10px] font-semibold uppercase tracking-wider ${labelClr}`}>Datum</p>
                           <p className={`mt-0.5 text-sm font-bold capitalize leading-snug ${titleClr}`}>
-                            {formatDatum(workshop.start_date.split(' ')[0])}
+                            {workshop.start_date ? formatDatum(datumDeel(workshop.start_date)) : 'Per sessie'}
                           </p>
                         </div>
                       </div>
@@ -460,7 +467,9 @@ function WorkshopDetail() {
                         <div>
                           <p className={`text-[10px] font-semibold uppercase tracking-wider ${labelClr}`}>Tijd</p>
                           <p className={`mt-0.5 text-sm font-bold tabular-nums leading-snug ${titleClr}`}>
-                            {workshop.start_date.split(' ')[1]} - {workshop.end_date.split(' ')[1]}
+                            {workshop.start_date
+                              ? `${tijdDeel(workshop.start_date)} - ${tijdDeel(workshop.end_date)}`
+                              : 'Per sessie'}
                           </p>
                         </div>
                       </div>
@@ -681,7 +690,7 @@ function WorkshopDetail() {
                                       )
                                     })}
                                   </div>
-                                ) : type === 'choice' && Array.isArray(vraag.options) ? (
+                                ) : (type === 'multiple_choice' || type === 'choice') && Array.isArray(vraag.options) ? (
                                   <div className="flex flex-wrap gap-2">
                                     {vraag.options.map((optie, oi) => {
                                       const waarde = optie.value ?? optie
