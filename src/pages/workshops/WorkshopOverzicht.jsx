@@ -6,7 +6,7 @@ import { toast, Toaster } from 'sonner'
 import Footer from '../../components/Footer'
 import WorkshopCard from './WorkshopCard'
 
-import { API_URL } from '@/lib/config'
+import { api } from '@/lib/api'
 
 const MAANDEN = ['Januari', 'Februari', 'Maart', 'April', 'Mei', 'Juni', 'Juli', 'Augustus', 'September', 'Oktober', 'November', 'December']
 const DAGEN_KORT = ['Ma', 'Di', 'Wo', 'Do', 'Vr', 'Za', 'Zo']
@@ -80,20 +80,7 @@ function WorkshopOverzicht() {
 
   async function fetchWorkshops() {
     try {
-      const token = localStorage.getItem('token')
-      const response = await fetch(`${API_URL}/api/workshops`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          Accept: 'application/json',
-        },
-      })
-
-      const data = await response.json()
-
-      if (!response.ok) {
-        throw new Error(data.message)
-      }
-
+      const data = await api('/workshops')
       setWorkshops(data.data)
     } catch (error) {
       toast.error('Workshops ophalen mislukt')

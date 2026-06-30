@@ -4,8 +4,9 @@ import { motion, AnimatePresence, useReducedMotion } from 'motion/react'
 import { CalendarDays, BookOpen, User, LogOut, ArrowRight, MapPin, Moon, Sun, Clock, UserPlus, Copy, Bell } from 'lucide-react'
 import { toast, Toaster } from 'sonner'
 import Footer from '../../components/Footer'
+import Card from '../../components/Card'
 
-import { API_URL } from '@/lib/config'
+import { api } from '@/lib/api'
 import { getStoredUser, logout } from '@/lib/auth'
 
 function Home() {
@@ -32,20 +33,14 @@ function Home() {
   useEffect(() => {
     const token = localStorage.getItem('token')
     if (!token) { navigate('/login'); return }
-    fetchData(token)
+    fetchData()
   }, [])
 
-  async function fetchData(token) {
-    const headers = { Authorization: `Bearer ${token}`, Accept: 'application/json' }
+  async function fetchData() {
     try {
-      const [workshopsRes, eventsRes] = await Promise.all([
-        fetch(`${API_URL}/api/workshops`, { headers }),
-        fetch(`${API_URL}/api/events`, { headers }),
-      ])
-      if (workshopsRes.status === 401 || eventsRes.status === 401) { navigate('/login'); return }
       const [workshopsJson, eventsJson] = await Promise.all([
-        workshopsRes.json(),
-        eventsRes.json(),
+        api('/workshops'),
+        api('/events'),
       ])
       setWorkshops(workshopsJson.data || [])
       const vandaag = new Date()
@@ -85,13 +80,7 @@ function Home() {
     setStuurlinkLoading(true)
     setGegenereerdeLink(null)
     try {
-      const token = localStorage.getItem('token')
-      const res = await fetch(`${API_URL}/api/invite-tokens`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}`, Accept: 'application/json', 'Content-Type': 'application/json' },
-      })
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.message || 'Aanmaken mislukt')
+      const data = await api('/invite-tokens', { method: 'POST' })
       const inviteToken = data.token || data.data?.token
       const expiresAt = data.expires_at || data.data?.expires_at
       const url = data.url || data.data?.url || `${window.location.origin}/register?token=${inviteToken}`
@@ -131,10 +120,6 @@ function Home() {
   const emptyBg     = d ? 'bg-white/[0.05]'       : 'bg-gray-50'
   const emptyIcon   = d ? 'text-white/20'         : 'text-gray-300'
   const itemBg      = d ? 'bg-white/[0.04]'       : 'bg-[#f6faf2]'
-  // Double-bezel shell (nested-hardware look, gedeeld met Profiel)
-  const shellBg     = d ? 'bg-white/[0.025]'      : 'bg-black/[0.018]'
-  const shellBorder = d ? 'border-white/[0.07]'   : 'border-black/[0.05]'
-  const innerShadow = d ? 'shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]' : 'shadow-sm'
   const emptyBtn    = (d
     ? 'text-[#d4e84a] bg-[#d4e84a]/10 hover:bg-[#d4e84a]/20'
     : 'text-[#1a3d2b] bg-[#eaf3de] hover:bg-[#d4e84a]')
@@ -151,15 +136,6 @@ function Home() {
       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
     </svg>
-  )
-
-  // Double-bezel card wrapper (outer shell + inner core), gedeeld met Profiel
-  const Card = ({ children, className = '' }) => (
-    <div className={`${shellBg} border ${shellBorder} p-[5px] rounded-[32px] ${className}`}>
-      <div className={`${cardBg} rounded-[27px] overflow-hidden ${innerShadow} transition-colors duration-300`}>
-        {children}
-      </div>
-    </div>
   )
 
   return (
@@ -459,7 +435,7 @@ function Home() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ type: 'spring', stiffness: 200, damping: 38, delay: 0.58 }}
         >
-          <Card>
+          <Card dark={d}>
             <div className="p-5">
               <div className="flex items-start gap-3 mb-4">
                 <div className="bg-[#d4e84a]/25 p-2.5 rounded-xl shrink-0">

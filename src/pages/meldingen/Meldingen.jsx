@@ -5,7 +5,7 @@ import { ChevronLeft, Bell, BellRing, BookOpen, CalendarDays, Check, CheckCheck,
 import { toast, Toaster } from 'sonner'
 import Footer from '../../components/Footer'
 
-import { API_URL } from '@/lib/config'
+import { api } from '@/lib/api'
 
 const EASE = [0.22, 1, 0.36, 1]
 
@@ -181,16 +181,7 @@ function Meldingen() {
   async function fetchMeldingen() {
     setLoading(true)
     try {
-      const token = localStorage.getItem('token')
-      const response = await fetch(`${API_URL}/api/notifications`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          Accept: 'application/json',
-        },
-      })
-      if (response.status === 401) { navigate('/login'); return }
-      const data = await response.json()
-      if (!response.ok) throw new Error(data.message)
+      const data = await api('/notifications')
       const lijst = Array.isArray(data) ? data : (data.data || [])
       setMeldingen(lijst.map(normaliseerMelding))
     } catch (error) {
@@ -205,20 +196,7 @@ function Meldingen() {
   async function markeerGelezen(id) {
     setMeldingen(prev => prev.map(m => m.id === id ? { ...m, gelezen: true } : m))
     try {
-      const token = localStorage.getItem('token')
-      const response = await fetch(`${API_URL}/api/notifications/${id}`, {
-        method: 'PATCH',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          Accept: 'application/json',
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ is_read: true }),
-      })
-      if (!response.ok) {
-        const data = await response.json().catch(() => ({}))
-        throw new Error(data.message)
-      }
+      await api(`/notifications/${id}`, { method: 'PATCH', body: { is_read: true } })
     } catch (error) {
       // Optimistische update terugdraaien
       setMeldingen(prev => prev.map(m => m.id === id ? { ...m, gelezen: false } : m))
@@ -231,19 +209,8 @@ function Meldingen() {
     if (ongelezen.length === 0) return
     setMeldingen(prev => prev.map(m => ({ ...m, gelezen: true })))
     try {
-      const token = localStorage.getItem('token')
       await Promise.all(
-        ongelezen.map(m =>
-          fetch(`${API_URL}/api/notifications/${m.id}`, {
-            method: 'PATCH',
-            headers: {
-              Authorization: `Bearer ${token}`,
-              Accept: 'application/json',
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ is_read: true }),
-          }).then(r => { if (!r.ok) throw new Error() })
-        )
+        ongelezen.map(m => api(`/notifications/${m.id}`, { method: 'PATCH', body: { is_read: true } }))
       )
       toast.success('Alles gemarkeerd als gelezen')
     } catch {
@@ -256,18 +223,8 @@ function Meldingen() {
   async function vraagHerinnering(workshopId) {
     setReminderLoading(prev => ({ ...prev, [workshopId]: true }))
     try {
-      const token = localStorage.getItem('token')
-      const response = await fetch(`${API_URL}/api/workshops/${workshopId}/reminder`, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          Accept: 'application/json',
-          'Content-Type': 'application/json',
-        },
-      })
-      const data = await response.json().catch(() => ({}))
-      if (!response.ok) throw new Error(data.message)
-      toast.success(data.message || 'Je ontvangt een herinnering voor deze workshop')
+      const data = await api(`/workshops/${workshopId}/reminder`, { method: 'POST' })
+      toast.success(data?.message || 'Je ontvangt een herinnering voor deze workshop')
     } catch (error) {
       toast.error(error.message || 'Herinnering aanvragen mislukt')
     } finally {

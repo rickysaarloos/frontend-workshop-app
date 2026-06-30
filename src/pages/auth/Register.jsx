@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'motion/react'
 import { Mail, Lock, User, ArrowRight, Eye, EyeOff, ShieldAlert } from 'lucide-react'
 import { toast, Toaster } from 'sonner'
 
-import { API_URL } from '@/lib/config'
+import { api } from '@/lib/api'
 
 function passwordStrength(pw) {
   if (!pw) return 0
@@ -51,31 +51,26 @@ function Register() {
 
     setIsLoading(true)
     try {
-      const response = await fetch(`${API_URL}/api/register`, {
+      await api('/register', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-        body: JSON.stringify({
+        auth: false,
+        body: {
           name: naam,
           email,
           password: wachtwoord,
           password_confirmation: wachtwoordHerhaal,
           token,
-        }),
+        },
       })
-      const data = await response.json()
-      if (!response.ok) {
-        // Stuurlink afgekeurd door de backend (ongeldig of verlopen)
-        const tokenError = data.errors?.token?.[0]
-        if (tokenError || response.status === 403 || response.status === 410) {
-          setLinkError(tokenError || data.message || 'Deze stuurlink is ongeldig of verlopen.')
-          return
-        }
-        toast.error(data.message || 'Registreren mislukt')
+      setRegistered(true)
+    } catch (err) {
+      // Stuurlink afgekeurd door de backend (ongeldig of verlopen)
+      const tokenError = err.errors?.token?.[0]
+      if (tokenError || err.status === 403 || err.status === 410) {
+        setLinkError(tokenError || err.message || 'Deze stuurlink is ongeldig of verlopen.')
         return
       }
-      setRegistered(true)
-    } catch {
-      toast.error('Kan geen verbinding maken met de server')
+      toast.error(err.message || 'Registreren mislukt')
     } finally {
       setIsLoading(false)
     }

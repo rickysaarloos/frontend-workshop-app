@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { motion, AnimatePresence } from 'motion/react'
-import { ChevronLeft, CalendarDays, Clock, MapPin, Users, CheckCircle, Calendar, Moon, Sun, MessageSquare, Star, Send } from 'lucide-react'
+import { ChevronLeft, CalendarDays, Clock, MapPin, Users, CheckCircle, Calendar, Moon, Sun, MessageSquare, Send } from 'lucide-react'
 import { toast, Toaster } from 'sonner'
 import Footer from '../../components/Footer'
  
-import { API_URL } from '@/lib/config'
+import { api } from '@/lib/api'
  
 function mapCategory(cat) {
   const map = {
@@ -86,23 +86,13 @@ export default function EventDetail() {
   useEffect(() => {
     const token = localStorage.getItem('token')
     if (!token) { navigate('/login'); return }
-    fetchEvent(token)
-    fetchVragenlijst(token)
+    fetchEvent()
+    fetchVragenlijst()
   }, [id])
  
-  async function fetchEvent(token) {
+  async function fetchEvent() {
     try {
-      const res = await fetch(`${API_URL}/api/events/${id}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          Accept: 'application/json',
-        },
-      })
- 
-      if (res.status === 401) { navigate('/login'); return }
-      if (!res.ok) throw new Error(`Kon event niet ophalen (${res.status})`)
- 
-      const json = await res.json()
+      const json = await api(`/events/${id}`)
       const e = json.data
       setEvent(e)
       setIngeschreven(e.is_registered ?? false)
@@ -114,29 +104,16 @@ export default function EventDetail() {
   }
  
   async function handleRegistreer() {
-    const token = localStorage.getItem('token')
-    if (!token) { navigate('/login'); return }
- 
     setRegistreerLoading(true)
     try {
       if (ingeschreven) {
-        const res = await fetch(`${API_URL}/api/events/${id}/unregister`, {
-          method: 'DELETE',
-          headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
-        })
-        const data = await res.json()
-        if (!res.ok) throw new Error(data.message || 'Uitschrijven mislukt')
+        const data = await api(`/events/${id}/unregister`, { method: 'DELETE' })
         setIngeschreven(false)
-        toast.success(data.message || 'Uitgeschreven van dit event')
+        toast.success(data?.message || 'Uitgeschreven van dit event')
       } else {
-        const res = await fetch(`${API_URL}/api/events/${id}/register`, {
-          method: 'POST',
-          headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
-        })
-        const data = await res.json()
-        if (!res.ok) throw new Error(data.message || 'Inschrijven mislukt')
+        const data = await api(`/events/${id}/register`, { method: 'POST' })
         setIngeschreven(true)
-        toast.success(data.message || 'Succesvol ingeschreven!')
+        toast.success(data?.message || 'Succesvol ingeschreven!')
       }
     } catch (err) {
       toast.error(err.message)
@@ -146,14 +123,10 @@ export default function EventDetail() {
   }
 
   // US-14a: dagenquête ophalen
-  async function fetchVragenlijst(token) {
+  async function fetchVragenlijst() {
     setVragenlijstLoading(true)
     try {
-      const res = await fetch(`${API_URL}/api/events/${id}/questionnaire`, {
-        headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
-      })
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.message)
+      const data = await api(`/events/${id}/questionnaire`)
       const vragen = Array.isArray(data.questions) ? data.questions
         : Array.isArray(data.data) ? data.data
         : (data.data?.questions || [])
@@ -184,23 +157,12 @@ export default function EventDetail() {
 
     setFeedbackLoading(true)
     try {
-      const token = localStorage.getItem('token')
       // De API verwacht `answer` altijd als string — ook bij ratings ("8").
       const answers = vragenlijst
         .filter(v => antwoorden[v.id] !== undefined && antwoorden[v.id] !== '')
         .map(v => ({ question_id: v.id, answer: String(antwoorden[v.id]) }))
-      const res = await fetch(`${API_URL}/api/events/${id}/feedback`, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          Accept: 'application/json',
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ answers }),
-      })
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.message)
-      toast.success(data.message || 'Bedankt voor je feedback!')
+      const data = await api(`/events/${id}/feedback`, { method: 'POST', body: { answers } })
+      toast.success(data?.message || 'Bedankt voor je feedback!')
       setFeedbackVerzonden(true)
     } catch (err) {
       toast.error(err.message || 'Enquête versturen mislukt')
@@ -563,24 +525,27 @@ export default function EventDetail() {
                               </label>
 
                               {type === 'rating' ? (
-                                <div className="flex items-center gap-1.5">
-                                  {[1, 2, 3, 4, 5].map(score => {
-                                    const actief = (huidig || 0) >= score
+                                // Schaal 1–10 als genummerde knoppen (de API verwacht 1–10).
+                                // Knoppen i.p.v. sterren: op mobiel nauwkeuriger aan te tikken
+                                // en het cijfer maakt de gekozen waarde ondubbelzinnig.
+                                <div className="flex flex-wrap gap-2">
+                                  {Array.from({ length: 10 }, (_, idx) => idx + 1).map(score => {
+                                    const gekozen = huidig === score
                                     return (
                                       <motion.button
                                         key={score}
                                         type="button"
-                                        whileHover={{ scale: 1.12 }}
-                                        whileTap={{ scale: 0.9 }}
+                                        whileTap={{ scale: 0.95 }}
                                         onClick={() => setAntwoord(vraag.id, score)}
-                                        className="p-0.5 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4e84a]"
-                                        aria-label={`${score} sterren`}
+                                        aria-label={`${score} van 10`}
+                                        aria-pressed={gekozen}
+                                        className={`w-10 rounded-xl border py-2 text-xs font-semibold tabular-nums transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4e84a] ${
+                                          gekozen
+                                            ? (d ? 'border-[#d4e84a]/50 bg-[#d4e84a]/10 text-[#d4e84a]' : 'border-[#1a3d2b] bg-[#eaf3de] text-[#1a3d2b]')
+                                            : (d ? 'border-white/[0.08] text-white/70 hover:border-white/20' : 'border-[#1a3d2b]/10 text-[#1a3d2b]/70 hover:border-[#1a3d2b]/30')
+                                        }`}
                                       >
-                                        <Star
-                                          className={`h-7 w-7 transition-colors ${
-                                            actief ? 'fill-[#d4e84a] text-[#d4e84a]' : (d ? 'text-white/15' : 'text-[#1a3d2b]/15')
-                                          }`}
-                                        />
+                                        {score}
                                       </motion.button>
                                     )
                                   })}

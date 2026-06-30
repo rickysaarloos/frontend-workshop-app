@@ -5,7 +5,7 @@ import { ChevronLeft, CalendarDays, Clock, MapPin, Search, Calendar, Moon, Sun }
 import { toast, Toaster } from 'sonner'
 import Footer from '../../components/Footer'
  
-import { API_URL } from '@/lib/config'
+import { api } from '@/lib/api'
 const categorieen = ['Alle', 'Studiedag', 'Open dag', 'Gastcollege', 'Expo']
  
 const containerVariants = {
@@ -125,29 +125,13 @@ function EventOverzicht() {
       navigate('/login')
       return
     }
-    fetchEvents(token)
+    fetchEvents()
   }, [])
  
-  async function fetchEvents(token) {
+  async function fetchEvents() {
     try {
-      const res = await fetch(`${API_URL}/api/events`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          Accept: 'application/json',
-        },
-      })
- 
-      if (res.status === 401) {
-        localStorage.removeItem('token')
-        localStorage.removeItem('user')
-        navigate('/login')
-        return
-      }
- 
-      if (!res.ok) throw new Error(`Kon events niet ophalen (${res.status})`)
- 
-      const json = await res.json()
- 
+      const json = await api('/events')
+
       const mapped = (json.data || []).map((e) => ({
         id: e.id,
         titel: e.title,

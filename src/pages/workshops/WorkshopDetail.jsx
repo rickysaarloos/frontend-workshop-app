@@ -1,13 +1,33 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { motion, AnimatePresence, useReducedMotion } from 'motion/react'
-import { ChevronLeft, CalendarDays, Clock, Users, CheckCircle, MapPin, BookOpen, User, Tag, Moon, Sun, AlertTriangle, ClipboardList, Leaf, HelpCircle, ChevronDown, Download, ScanLine, MessageSquare, Star, Send, ArrowLeftRight } from 'lucide-react'
+import { ChevronLeft, CalendarDays, Clock, Users, CheckCircle, MapPin, BookOpen, User, Tag, Moon, Sun, AlertTriangle, ClipboardList, Leaf, HelpCircle, ChevronDown, Download, ScanLine, MessageSquare, Send, ArrowLeftRight } from 'lucide-react'
 import { toast, Toaster } from 'sonner'
 import Footer from '../../components/Footer'
+import Card from '../../components/Card'
 
-import { API_URL } from '@/lib/config'
+import { api } from '@/lib/api'
 
 const EASE = [0.22, 1, 0.36, 1]
+
+// Consistente sectiekop met getint icoon-chip (sluit aan op de chips van Home).
+// Op module-niveau gedefinieerd (i.p.v. binnen de component) zodat de referentie
+// stabiel blijft en React de subtree niet onnodig remount. De kleur-tokens komen
+// via de `dark`-prop binnen.
+function SectionHeader({ icon: Icon, children, dark }) {
+  const d = dark
+  const titleClr = d ? 'text-white'     : 'text-[#1a3d2b]'
+  const chipBg   = d ? 'bg-[#d4e84a]/12' : 'bg-[#eaf3de]'
+  const chipIcon = d ? 'text-[#d4e84a]'  : 'text-[#1a3d2b]'
+  return (
+    <h2 className={`flex items-center gap-2.5 text-base font-bold tracking-[-0.01em] ${titleClr}`}>
+      <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-xl ${chipBg}`}>
+        <Icon className={`h-4 w-4 ${chipIcon}`} />
+      </span>
+      {children}
+    </h2>
+  )
+}
 
 // Datum/tijd komen als "YYYY-MM-DD HH:MM:SS" óf als null binnen. Session-mode
 // workshops hebben geen start_date/end_date op workshop-niveau (die zitten in de
@@ -38,6 +58,7 @@ function WorkshopDetail() {
   const [openFaqId, setOpenFaqId] = useState(null)
   const [aanwezigheidGeregistreerd, setAanwezigheidGeregistreerd] = useState(false)
   const [aanwezigheidLoading, setAanwezigheidLoading] = useState(false)
+  const [presentatie, setPresentatie] = useState(null)
   const [vragenlijst, setVragenlijst] = useState([])
   const [vragenlijstLoading, setVragenlijstLoading] = useState(false)
   const [antwoorden, setAntwoorden] = useState({})
@@ -65,18 +86,29 @@ function WorkshopDetail() {
     fetchVragenlijst()
   }, [id])
 
+  // Presentatie ophalen zodra aanwezigheid is geregistreerd. Het endpoint geeft
+  // 403 vóór aanwezigheid en 404 als er (nog) geen presentatie is — in beide
+  // gevallen tonen we simpelweg geen knop, geen foutmelding.
+  useEffect(() => {
+    if (!aanwezigheidGeregistreerd) return
+    let geannuleerd = false
+    api(`/workshops/${id}/presentation`)
+      .then((res) => {
+        if (geannuleerd) return
+        const url = res?.data?.url || res?.url || null
+        const filename = res?.data?.filename || res?.filename || null
+        if (url) setPresentatie({ url, filename })
+      })
+      .catch(() => {
+        // 404 (geen presentatie) of 403 (geen aanwezigheid): geen knop tonen.
+      })
+    return () => { geannuleerd = true }
+  }, [aanwezigheidGeregistreerd, id])
+
   async function fetchVragenlijst() {
     setVragenlijstLoading(true)
     try {
-      const token = localStorage.getItem('token')
-      const response = await fetch(`${API_URL}/api/workshops/${id}/questionnaire`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          Accept: 'application/json',
-        },
-      })
-      const data = await response.json()
-      if (!response.ok) throw new Error(data.message)
+      const data = await api(`/workshops/${id}/questionnaire`)
       const vragen = Array.isArray(data.questions) ? data.questions
         : Array.isArray(data.data) ? data.data
         : (data.data?.questions || [])
@@ -92,15 +124,7 @@ function WorkshopDetail() {
   async function fetchFaq() {
     setFaqLoading(true)
     try {
-      const token = localStorage.getItem('token')
-      const response = await fetch(`${API_URL}/api/workshops/${id}/faq`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          Accept: 'application/json',
-        },
-      })
-      const data = await response.json()
-      if (!response.ok) throw new Error(data.message)
+      const data = await api(`/workshops/${id}/faq`)
       setFaq(Array.isArray(data) ? data : (data.data || []))
     } catch (error) {
       console.error('FAQ ophalen mislukt:', error)
@@ -112,15 +136,7 @@ function WorkshopDetail() {
   async function fetchWorkshop() {
     setLoading(true)
     try {
-      const token = localStorage.getItem('token')
-      const response = await fetch(`${API_URL}/api/workshops/${id}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          Accept: 'application/json',
-        },
-      })
-      const data = await response.json()
-      if (!response.ok) throw new Error(data.message)
+      const data = await api(`/workshops/${id}`)
       setWorkshop(data.data)
       setIngeschreven(data.data.is_registered)
       setAanwezigheidGeregistreerd(data.data.is_attended || false)
@@ -141,20 +157,9 @@ function WorkshopDetail() {
 
     setRegistratieLoading(true)
     try {
-      const token = localStorage.getItem('token')
       const body = isSessionMode ? { session_id: geselecteerdeSessie } : {}
-      const response = await fetch(`${API_URL}/api/workshops/${id}/register`, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          Accept: 'application/json',
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(body),
-      })
-      const data = await response.json()
-      if (!response.ok) throw new Error(data.message)
-      toast.success(data.message || 'Je bent ingeschreven!')
+      const data = await api(`/workshops/${id}/register`, { method: 'POST', body })
+      toast.success(data?.message || 'Je bent ingeschreven!')
       await fetchWorkshop()
     } catch (error) {
       toast.error(error.message || 'Inschrijven mislukt')
@@ -166,18 +171,8 @@ function WorkshopDetail() {
   async function handleAanwezigheidRegistreren() {
     setAanwezigheidLoading(true)
     try {
-      const token = localStorage.getItem('token')
-      const response = await fetch(`${API_URL}/api/workshops/${id}/attendance`, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          Accept: 'application/json',
-          'Content-Type': 'application/json',
-        },
-      })
-      const data = await response.json()
-      if (!response.ok) throw new Error(data.message)
-      toast.success(data.message || 'Aanwezigheid geregistreerd!')
+      const data = await api(`/workshops/${id}/attendance`, { method: 'POST' })
+      toast.success(data?.message || 'Aanwezigheid geregistreerd!')
       setAanwezigheidGeregistreerd(true)
       await fetchWorkshop()
     } catch (error) {
@@ -204,23 +199,12 @@ function WorkshopDetail() {
 
     setFeedbackLoading(true)
     try {
-      const token = localStorage.getItem('token')
       // De API verwacht `answer` altijd als string — ook bij ratings ("8").
       const answers = vragenlijst
         .filter(v => antwoorden[v.id] !== undefined && antwoorden[v.id] !== '')
         .map(v => ({ question_id: v.id, answer: String(antwoorden[v.id]) }))
-      const response = await fetch(`${API_URL}/api/workshops/${id}/feedback`, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          Accept: 'application/json',
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ answers }),
-      })
-      const data = await response.json()
-      if (!response.ok) throw new Error(data.message)
-      toast.success(data.message || 'Bedankt voor je feedback!')
+      const data = await api(`/workshops/${id}/feedback`, { method: 'POST', body: { answers } })
+      toast.success(data?.message || 'Bedankt voor je feedback!')
       setFeedbackVerzonden(true)
     } catch (error) {
       toast.error(error.message || 'Enquête versturen mislukt')
@@ -238,10 +222,6 @@ function WorkshopDetail() {
   // --- Design tokens (uitgelijnd op Home.jsx, een palet voor de hele app) ---
   const d = dark
   const contentBg   = d ? 'bg-[#111111]'        : 'bg-[#e4e8e2]'
-  const cardBg      = d ? 'bg-[#1c1c1e]'        : 'bg-white'
-  const shellBg     = d ? 'bg-white/[0.025]'    : 'bg-black/[0.018]'
-  const shellBorder = d ? 'border-white/[0.07]' : 'border-black/[0.05]'
-  const innerShadow = d ? 'shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]' : 'shadow-sm'
   const hairline    = d ? 'border-white/[0.07]' : 'border-[#1a3d2b]/[0.07]'
   const skelBg      = d ? 'bg-white/[0.07]'     : 'bg-black/[0.05]'
   const titleClr    = d ? 'text-white'          : 'text-[#1a3d2b]'
@@ -250,7 +230,6 @@ function WorkshopDetail() {
   const labelClr    = d ? 'text-white/55'       : 'text-[#1a3d2b]/55'
   const tileBg      = d ? 'bg-white/[0.04]'     : 'bg-[#f6faf2]'
   const barTrack    = d ? 'bg-white/10'         : 'bg-[#1a3d2b]/[0.08]'
-  const chipBg      = d ? 'bg-[#d4e84a]/12'     : 'bg-[#eaf3de]'
   const chipIcon    = d ? 'text-[#d4e84a]'      : 'text-[#1a3d2b]'
 
   // Rustige, doelgerichte motion, respecteert useReducedMotion
@@ -258,25 +237,6 @@ function WorkshopDetail() {
   const rise = shouldReduce
     ? { hidden: { opacity: 0 }, visible: { opacity: 1, transition: { duration: 0.3 } } }
     : { hidden: { opacity: 0, y: 8 }, visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: EASE } } }
-
-  // Double-bezel card (outer shell + inner core), gedeeld met Home en Profiel
-  const Card = ({ children, className = '' }) => (
-    <div className={`${shellBg} border ${shellBorder} p-[5px] rounded-[32px] ${className}`}>
-      <div className={`${cardBg} rounded-[27px] overflow-hidden ${innerShadow} transition-colors duration-300`}>
-        {children}
-      </div>
-    </div>
-  )
-
-  // Consistente sectiekop met getint icoon-chip (sluit aan op de chips van Home)
-  const SectionHeader = ({ icon: Icon, children }) => (
-    <h2 className={`flex items-center gap-2.5 text-base font-bold tracking-[-0.01em] ${titleClr}`}>
-      <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-xl ${chipBg}`}>
-        <Icon className={`h-4 w-4 ${chipIcon}`} />
-      </span>
-      {children}
-    </h2>
-  )
 
   // Bezetting
   const bezet = workshop ? (workshop.registered ?? 0) : 0
@@ -394,7 +354,7 @@ function WorkshopDetail() {
           {loading && (
             <div className="flex flex-col gap-5">
               {[1, 2, 3].map((i) => (
-                <Card key={i}>
+                <Card key={i} dark={d}>
                   <div className="space-y-3 p-5">
                     <div className={`h-4 w-32 animate-pulse rounded-full ${skelBg}`} />
                     <div className={`h-3 w-full animate-pulse rounded-full ${skelBg}`} />
@@ -408,7 +368,7 @@ function WorkshopDetail() {
           {/* Niet gevonden */}
           {!loading && !workshop && (
             <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
-              <Card>
+              <Card dark={d}>
                 <div className="p-10 text-center">
                   <div className={`mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl ${d ? 'bg-white/[0.05]' : 'bg-[#1a3d2b]/[0.04]'}`}>
                     <BookOpen className={`h-5 w-5 ${d ? 'text-white/20' : 'text-[#1a3d2b]/25'}`} />
@@ -449,7 +409,7 @@ function WorkshopDetail() {
 
               {/* Details, stat-tegels + bezettingsbalk */}
               <motion.div variants={rise}>
-                <Card>
+                <Card dark={d}>
                   <div className="p-5">
                     <div className="grid grid-cols-2 gap-2.5">
                       <div className={`flex flex-col gap-2 rounded-2xl ${tileBg} p-3.5`}>
@@ -517,7 +477,7 @@ function WorkshopDetail() {
 
               {/* Beschrijving, editorial blok (geen kaart) */}
               <motion.section variants={rise} className="px-1">
-                <SectionHeader icon={BookOpen}>Over deze workshop</SectionHeader>
+                <SectionHeader icon={BookOpen} dark={d}>Over deze workshop</SectionHeader>
                 <p className={`mt-3 max-w-prose text-[15px] leading-relaxed ${bodyClr}`}>{workshop.description}</p>
               </motion.section>
 
@@ -543,7 +503,7 @@ function WorkshopDetail() {
               {/* Benodigdheden, editorial blok */}
               {workshop.requirements && (Array.isArray(workshop.requirements) ? workshop.requirements.length > 0 : true) && (
                 <motion.section variants={rise} className="px-1">
-                  <SectionHeader icon={ClipboardList}>Benodigdheden</SectionHeader>
+                  <SectionHeader icon={ClipboardList} dark={d}>Benodigdheden</SectionHeader>
                   {Array.isArray(workshop.requirements) ? (
                     <ul className="mt-3 flex flex-col gap-2.5">
                       {workshop.requirements.map((item, i) => (
@@ -562,7 +522,7 @@ function WorkshopDetail() {
               {/* Dieetwensen & allergenen, editorial blok */}
               {(workshop.dietary_info || workshop.allergens) && (
                 <motion.section variants={rise} className="px-1">
-                  <SectionHeader icon={Leaf}>Dieetwensen &amp; allergenen</SectionHeader>
+                  <SectionHeader icon={Leaf} dark={d}>Dieetwensen &amp; allergenen</SectionHeader>
                   {(() => {
                     const info = workshop.dietary_info || workshop.allergens
                     return Array.isArray(info) ? (
@@ -583,10 +543,10 @@ function WorkshopDetail() {
               {/* Aanwezigheid & presentatie, interactieve kaart */}
               {ingeschreven && (
                 <motion.div variants={rise}>
-                  <Card>
+                  <Card dark={d}>
                     <div className="p-5">
                       <div className="mb-4">
-                        <SectionHeader icon={ScanLine}>Aanwezigheid</SectionHeader>
+                        <SectionHeader icon={ScanLine} dark={d}>Aanwezigheid</SectionHeader>
                       </div>
 
                       <div className="flex flex-col gap-3">
@@ -607,9 +567,9 @@ function WorkshopDetail() {
                           </motion.button>
                         )}
 
-                        {aanwezigheidGeregistreerd && (workshop.presentation_url || workshop.slides_url || workshop.presentation) && (
+                        {aanwezigheidGeregistreerd && presentatie?.url && (
                           <a
-                            href={workshop.presentation_url || workshop.slides_url || workshop.presentation}
+                            href={presentatie.url}
                             target="_blank"
                             rel="noopener noreferrer"
                             className={`flex w-full items-center justify-center gap-2 rounded-2xl py-3.5 text-sm font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4e84a] focus-visible:ring-offset-2 ${
@@ -617,7 +577,7 @@ function WorkshopDetail() {
                             }`}
                           >
                             <Download className="h-4 w-4" />
-                            Presentatie downloaden
+                            {presentatie.filename || 'Presentatie downloaden'}
                           </a>
                         )}
                       </div>
@@ -629,10 +589,10 @@ function WorkshopDetail() {
               {/* Enquête / feedback, interactieve kaart */}
               {ingeschreven && (vragenlijstLoading || vragenlijst.length > 0) && (
                 <motion.div variants={rise}>
-                  <Card>
+                  <Card dark={d}>
                     <div className="p-5">
                       <div className="mb-4">
-                        <SectionHeader icon={MessageSquare}>Enquête</SectionHeader>
+                        <SectionHeader icon={MessageSquare} dark={d}>Enquête</SectionHeader>
                       </div>
 
                       {vragenlijstLoading ? (
@@ -668,24 +628,27 @@ function WorkshopDetail() {
                                 </label>
 
                                 {type === 'rating' ? (
-                                  <div className="flex items-center gap-1.5">
-                                    {[1, 2, 3, 4, 5].map(score => {
-                                      const actief = (huidig || 0) >= score
+                                  // Schaal 1–10 als genummerde knoppen (de API verwacht 1–10).
+                                  // Knoppen i.p.v. sterren: op mobiel nauwkeuriger aan te tikken
+                                  // en het cijfer maakt de gekozen waarde ondubbelzinnig.
+                                  <div className="flex flex-wrap gap-2">
+                                    {Array.from({ length: 10 }, (_, idx) => idx + 1).map(score => {
+                                      const gekozen = huidig === score
                                       return (
                                         <motion.button
                                           key={score}
                                           type="button"
-                                          whileHover={{ scale: 1.12 }}
-                                          whileTap={{ scale: 0.9 }}
+                                          whileTap={{ scale: 0.95 }}
                                           onClick={() => setAntwoord(vraag.id, score)}
-                                          className="p-0.5 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4e84a]"
-                                          aria-label={`${score} sterren`}
+                                          aria-label={`${score} van 10`}
+                                          aria-pressed={gekozen}
+                                          className={`w-10 rounded-xl border py-2 text-xs font-semibold tabular-nums transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4e84a] ${
+                                            gekozen
+                                              ? (d ? 'border-[#d4e84a]/50 bg-[#d4e84a]/10 text-[#d4e84a]' : 'border-[#1a3d2b] bg-[#eaf3de] text-[#1a3d2b]')
+                                              : (d ? 'border-white/[0.08] text-white/70 hover:border-white/20' : 'border-[#1a3d2b]/10 text-[#1a3d2b]/70 hover:border-[#1a3d2b]/30')
+                                          }`}
                                         >
-                                          <Star
-                                            className={`h-7 w-7 transition-colors ${
-                                              actief ? 'fill-[#d4e84a] text-[#d4e84a]' : (d ? 'text-white/15' : 'text-[#1a3d2b]/15')
-                                            }`}
-                                          />
+                                          {score}
                                         </motion.button>
                                       )
                                     })}
@@ -749,10 +712,10 @@ function WorkshopDetail() {
               {/* Sessie-selectie, interactieve kaart */}
               {workshop.registration_mode === 'session' && workshop.sessions?.length > 0 && !ingeschreven && (
                 <motion.div variants={rise}>
-                  <Card>
+                  <Card dark={d}>
                     <div className="p-5">
                       <div className="mb-4">
-                        <SectionHeader icon={Tag}>Kies een sessie</SectionHeader>
+                        <SectionHeader icon={Tag} dark={d}>Kies een sessie</SectionHeader>
                       </div>
                       <div className="flex flex-col gap-2">
                         {workshop.sessions.map((sessie) => {
@@ -801,7 +764,7 @@ function WorkshopDetail() {
               {(faqLoading || faq.length > 0) && (
                 <motion.section variants={rise} className="px-1">
                   <div className="mb-2">
-                    <SectionHeader icon={HelpCircle}>Veelgestelde vragen</SectionHeader>
+                    <SectionHeader icon={HelpCircle} dark={d}>Veelgestelde vragen</SectionHeader>
                   </div>
                   {faqLoading ? (
                     <div className="mt-3 space-y-2">

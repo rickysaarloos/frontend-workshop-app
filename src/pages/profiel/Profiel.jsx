@@ -4,8 +4,10 @@ import { motion, AnimatePresence, useReducedMotion } from 'motion/react'
 import { User, Mail, Lock, Utensils, LogOut, ChevronLeft, Save, Check, BookOpen, CalendarDays, ArrowRight, Eye, EyeOff, Moon, Sun, UserPlus, Copy, Clock, Network, Hash, UserCheck, QrCode } from 'lucide-react'
 import { toast, Toaster } from 'sonner'
 import Footer from '../../components/Footer'
+import Card from '../../components/Card'
 
 import { API_URL } from '@/lib/config'
+import { api } from '@/lib/api'
 import { getStoredUser, logout } from '@/lib/auth'
 
 const dieetOpties = [
@@ -60,7 +62,7 @@ function Profiel() {
   useEffect(() => {
     const token = localStorage.getItem('token')
     if (!token) { navigate('/login'); return }
-    fetchAlles(token)
+    fetchAlles()
     fetchQr(token)
   }, [])
 
@@ -90,22 +92,15 @@ function Profiel() {
     if (actieveTab !== 'netwerk' || netwerkGeladen) return
     const token = localStorage.getItem('token')
     if (!token) return
-    fetchNetwerkdata(token)
+    fetchNetwerkdata()
   }, [actieveTab])
 
-  async function fetchAlles(token) {
-    const headers = { Authorization: `Bearer ${token}`, Accept: 'application/json' }
+  async function fetchAlles() {
     try {
-      const [userRes, workshopsRes, eventsRes] = await Promise.all([
-        fetch(`${API_URL}/api/user`, { headers }),
-        fetch(`${API_URL}/api/workshops`, { headers }),
-        fetch(`${API_URL}/api/events`, { headers }),
-      ])
-      if (userRes.status === 401) { navigate('/login'); return }
       const [userJson, workshopsJson, eventsJson] = await Promise.all([
-        userRes.json(),
-        workshopsRes.json(),
-        eventsRes.json(),
+        api('/user'),
+        api('/workshops'),
+        api('/events'),
       ])
       if (userJson.name)  setNaam(userJson.name)
       if (userJson.email) setEmail(userJson.email)
@@ -140,14 +135,7 @@ function Profiel() {
     if (!naam || !email) { toast.error('Vul naam en e-mailadres in'); return }
     setProfielLoading(true)
     try {
-      const token = localStorage.getItem('token')
-      const res = await fetch(`${API_URL}/api/user`, {
-        method: 'PATCH',
-        headers: { Authorization: `Bearer ${token}`, Accept: 'application/json', 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: naam, email }),
-      })
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.message || 'Opslaan mislukt')
+      await api('/user', { method: 'PATCH', body: { name: naam, email } })
       const fresh = getStoredUser() || {}
       localStorage.setItem('user', JSON.stringify({ ...fresh, name: naam, email }))
       toast.success('Profiel opgeslagen')
@@ -165,14 +153,10 @@ function Profiel() {
     if (nieuwWachtwoord.length < 8) { toast.error('Minimaal 8 tekens'); return }
     setWachtwoordLoading(true)
     try {
-      const token = localStorage.getItem('token')
-      const res = await fetch(`${API_URL}/api/user/password`, {
+      await api('/user/password', {
         method: 'PATCH',
-        headers: { Authorization: `Bearer ${token}`, Accept: 'application/json', 'Content-Type': 'application/json' },
-        body: JSON.stringify({ current_password: huidigWachtwoord, password: nieuwWachtwoord, password_confirmation: wachtwoordHerhaal }),
+        body: { current_password: huidigWachtwoord, password: nieuwWachtwoord, password_confirmation: wachtwoordHerhaal },
       })
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.message || 'Wijzigen mislukt')
       toast.success('Wachtwoord gewijzigd')
       setHuidigWachtwoord(''); setNieuwWachtwoord(''); setWachtwoordHerhaal('')
     } catch (err) {
@@ -185,14 +169,7 @@ function Profiel() {
   async function handleDieetOpslaan() {
     setDieetLoading(true)
     try {
-      const token = localStorage.getItem('token')
-      const res = await fetch(`${API_URL}/api/user/dietary-preferences`, {
-        method: 'PATCH',
-        headers: { Authorization: `Bearer ${token}`, Accept: 'application/json', 'Content-Type': 'application/json' },
-        body: JSON.stringify({ dietary_preferences: geselecteerdeDieet }),
-      })
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.message || 'Opslaan mislukt')
+      await api('/user/dietary-preferences', { method: 'PATCH', body: { dietary_preferences: geselecteerdeDieet } })
       toast.success('Dieetwensen opgeslagen')
     } catch (err) {
       toast.error(err.message)
@@ -205,13 +182,7 @@ function Profiel() {
     setStuurlinkLoading(true)
     setGegenereerdeLink(null)
     try {
-      const token = localStorage.getItem('token')
-      const res = await fetch(`${API_URL}/api/invite-tokens`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}`, Accept: 'application/json', 'Content-Type': 'application/json' },
-      })
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.message || 'Aanmaken mislukt')
+      const data = await api('/invite-tokens', { method: 'POST' })
       const inviteToken = data.token || data.data?.token
       const expiresAt = data.expires_at || data.data?.expires_at
       const url = data.url || data.data?.url || `${window.location.origin}/register?token=${inviteToken}`
@@ -223,20 +194,19 @@ function Profiel() {
     }
   }
 
-  async function fetchNetwerkdata(token) {
+  async function fetchNetwerkdata() {
     setNetwerkGeladen(true)
-    const headers = { Authorization: `Bearer ${token}`, Accept: 'application/json' }
     setNetwerkcodeLoading(true)
     setContactenLoading(true)
+    // Per call afzonderlijk afvangen: één mislukte call mag de andere niet
+    // blokkeren (zoals de oude `if (res.ok)`-checks ook deden).
     try {
-      const [codeRes, contactenRes] = await Promise.all([
-        fetch(`${API_URL}/api/user/network-code`, { headers }),
-        fetch(`${API_URL}/api/user/network`, { headers }),
+      const [codeJson, contactenJson] = await Promise.all([
+        api('/user/network-code').catch(() => null),
+        api('/user/network').catch(() => null),
       ])
-      const codeJson = await codeRes.json()
-      const contactenJson = await contactenRes.json()
-      if (codeRes.ok) setNetwerkcode(codeJson.network_code || codeJson.code || codeJson.netwerkcode || codeJson.data?.network_code || codeJson.data?.code || null)
-      if (contactenRes.ok) setNetwerkContacten(Array.isArray(contactenJson) ? contactenJson : (contactenJson.data || contactenJson.contacts || []))
+      if (codeJson) setNetwerkcode(codeJson.network_code || codeJson.code || codeJson.netwerkcode || codeJson.data?.network_code || codeJson.data?.code || null)
+      if (contactenJson) setNetwerkContacten(Array.isArray(contactenJson) ? contactenJson : (contactenJson.data || contactenJson.contacts || []))
     } catch {
       toast.error('Netwerkgegevens ophalen mislukt')
     } finally {
@@ -249,21 +219,12 @@ function Profiel() {
     if (!invulCode.trim()) { toast.error('Voer een code in'); return }
     setCodeToevoegenLoading(true)
     try {
-      const token = localStorage.getItem('token')
-      const res = await fetch(`${API_URL}/api/networking`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}`, Accept: 'application/json', 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code: invulCode.trim() }),
-      })
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.message || 'Toevoegen mislukt')
-      toast.success(data.message || 'Contact toegevoegd!')
+      const data = await api('/networking', { method: 'POST', body: { code: invulCode.trim() } })
+      toast.success(data?.message || 'Contact toegevoegd!')
       setInvulCode('')
-      const contactenRes = await fetch(`${API_URL}/api/user/network`, {
-        headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
-      })
-      if (contactenRes.ok) {
-        const contactenJson = await contactenRes.json()
+      // Herladen van de contactenlijst mag stil falen — het toevoegen zelf is al gelukt.
+      const contactenJson = await api('/user/network').catch(() => null)
+      if (contactenJson) {
         setNetwerkContacten(Array.isArray(contactenJson) ? contactenJson : (contactenJson.data || contactenJson.contacts || []))
       }
     } catch (err) {
@@ -292,10 +253,6 @@ function Profiel() {
 
   // --- Design tokens (uitgelijnd op Home.jsx / WorkshopDetail.jsx — één palet voor de hele app) ---
   const contentBg    = d ? 'bg-[#111111]'           : 'bg-[#e4e8e2]'
-  const cardBg       = d ? 'bg-[#1c1c1e]'           : 'bg-white'
-  const shellBg      = d ? 'bg-white/[0.025]'       : 'bg-black/[0.018]'
-  const shellBorder  = d ? 'border-white/[0.07]'    : 'border-black/[0.05]'
-  const innerShadow  = d ? 'shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]' : 'shadow-sm'
   const labelClr     = d ? 'text-white/55'          : 'text-[#4a6e52]'
   const titleClr     = d ? 'text-white'             : 'text-[#1a3d2b]'
   const subClr       = d ? 'text-white/60'          : 'text-gray-500'
@@ -330,15 +287,6 @@ function Profiel() {
       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
     </svg>
-  )
-
-  // Double-bezel card: outer shell + inner core (high-end-visual-design §4.A)
-  const Card = ({ children, className = '' }) => (
-    <div className={`${shellBg} border ${shellBorder} p-[5px] rounded-[32px] ${className}`}>
-      <div className={`${cardBg} rounded-[27px] overflow-hidden ${innerShadow} transition-colors duration-300`}>
-        {children}
-      </div>
-    </div>
   )
 
   return (
@@ -559,7 +507,7 @@ function Profiel() {
               className="flex flex-col gap-3"
             >
               {/* QR-code */}
-              <Card>
+              <Card dark={d}>
                 <div className={gradientTop} />
                 <div className="p-5">
                   <div className="flex items-center gap-2.5 mb-4">
@@ -587,7 +535,7 @@ function Profiel() {
               </Card>
 
               {/* Workshops */}
-              <Card>
+              <Card dark={d}>
                 <div className={gradientTop} />
                 <div className="p-5">
                   <div className="flex items-center justify-between mb-4">
@@ -661,7 +609,7 @@ function Profiel() {
               </Card>
 
               {/* Events */}
-              <Card>
+              <Card dark={d}>
                 <div className={gradientTop} />
                 <div className="p-5">
                   <div className="flex items-center justify-between mb-4">
@@ -743,7 +691,7 @@ function Profiel() {
               className="flex flex-col gap-3"
             >
               {/* Profielgegevens */}
-              <Card>
+              <Card dark={d}>
                 <div className={gradientTop} />
                 <div className="p-6">
                   <div className="flex items-center gap-2.5 mb-5">
@@ -796,7 +744,7 @@ function Profiel() {
               </Card>
 
               {/* Wachtwoord */}
-              <Card>
+              <Card dark={d}>
                 <div className={gradientTop} />
                 <div className="p-6">
                   <div className="flex items-center gap-2.5 mb-5">
@@ -887,7 +835,7 @@ function Profiel() {
               exit={{ opacity: 0, y: -8 }}
               transition={{ type: 'spring', stiffness: 260, damping: 32 }}
             >
-              <Card>
+              <Card dark={d}>
                 <div className={gradientTop} />
                 <div className="p-6">
                   <div className="flex items-center gap-2.5 mb-5">
@@ -966,7 +914,7 @@ function Profiel() {
               exit={{ opacity: 0, y: -8 }}
               transition={{ type: 'spring', stiffness: 260, damping: 32 }}
             >
-              <Card>
+              <Card dark={d}>
                 <div className={gradientTop} />
                 <div className="p-6">
                   <div className="flex items-center gap-2.5 mb-5">
@@ -1035,7 +983,7 @@ function Profiel() {
               className="flex flex-col gap-3"
             >
               {/* Jouw netwerkcode */}
-              <Card>
+              <Card dark={d}>
                 <div className={gradientTop} />
                 <div className="p-6">
                   <div className="flex items-center gap-2.5 mb-5">
@@ -1081,7 +1029,7 @@ function Profiel() {
               </Card>
 
               {/* Contact toevoegen */}
-              <Card>
+              <Card dark={d}>
                 <div className={gradientTop} />
                 <div className="p-6">
                   <div className="flex items-center gap-2.5 mb-5">
@@ -1129,7 +1077,7 @@ function Profiel() {
               </Card>
 
               {/* Contacten lijst */}
-              <Card>
+              <Card dark={d}>
                 <div className={gradientTop} />
                 <div className="p-5">
                   <div className="flex items-center justify-between mb-4">

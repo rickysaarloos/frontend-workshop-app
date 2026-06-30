@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'motion/react'
 import { Mail, Lock, ArrowRight, Eye, EyeOff } from 'lucide-react'
 import { toast, Toaster } from 'sonner'
 
-import { API_URL } from '@/lib/config'
+import { api } from '@/lib/api'
 
 function Login() {
   const [email, setEmail] = useState('')
@@ -20,18 +20,12 @@ function Login() {
     if (!email || !wachtwoord) { toast.error('Vul alle velden in'); return }
     setIsLoading(true)
     try {
-      const response = await fetch(`${API_URL}/api/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-        body: JSON.stringify({ email, password: wachtwoord }),
-      })
-      const data = await response.json()
-      if (!response.ok) { toast.error(data.message || 'Inloggen mislukt'); return }
+      const data = await api('/login', { method: 'POST', auth: false, body: { email, password: wachtwoord } })
       localStorage.setItem('token', data.token)
       localStorage.setItem('user', JSON.stringify(data.user))
       setTransitioning(true)
-    } catch {
-      toast.error('Kan geen verbinding maken met de server')
+    } catch (err) {
+      toast.error(err.message || 'Inloggen mislukt')
     } finally {
       setIsLoading(false)
     }
