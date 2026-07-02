@@ -308,7 +308,7 @@ function WorkshopOverzicht() {
                       whileTap={{ scale: 0.86 }}
                       transition={{ type: 'spring', stiffness: 500, damping: 28 }}
                       onClick={() => setGeselecteerdeDag(isGeselecteerd ? null : dag)}
-                      className={`relative mx-auto flex h-9 w-9 flex-col items-center justify-center rounded-xl text-[13px] tabular-nums transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4e84a]
+                      className={`relative mx-auto flex aspect-square w-full max-w-9 flex-col items-center justify-center rounded-xl text-[13px] tabular-nums transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4e84a]
                         ${isGeselecteerd
                           ? 'bg-[#1a3d2b] font-bold text-[#d4e84a] shadow-sm shadow-[#1a3d2b]/25'
                           : isVandaag
