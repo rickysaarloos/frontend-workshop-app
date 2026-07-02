@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { motion, AnimatePresence, useReducedMotion } from 'motion/react'
-import { ChevronLeft, CalendarDays, Clock, Users, CheckCircle, MapPin, BookOpen, User, Tag, Moon, Sun, AlertTriangle, ClipboardList, Leaf, HelpCircle, ChevronDown, Download, ScanLine, MessageSquare, Send, ArrowLeftRight, UserMinus } from 'lucide-react'
+import { ChevronLeft, CalendarDays, Clock, Users, CheckCircle, MapPin, BookOpen, User, Tag, Moon, Sun, AlertTriangle, ClipboardList, Leaf, HelpCircle, ChevronDown, Download, ScanLine, MessageSquare, Send, ArrowLeftRight } from 'lucide-react'
 import { toast, Toaster } from 'sonner'
 import Footer from '../../components/Footer'
 import Card from '../../components/Card'
@@ -211,20 +211,6 @@ function WorkshopDetail() {
       toast.error(error.message || 'Wisselen mislukt — controleer je inschrijvingen')
       await fetchWorkshop()
       await fetchHuidigeInschrijving()
-    } finally {
-      setRegistratieLoading(false)
-    }
-  }
-
-  async function handleUitschrijven() {
-    setRegistratieLoading(true)
-    try {
-      const data = await api(`/workshops/${id}/unregister`, { method: 'DELETE' })
-      toast.success(data?.message || 'Je bent uitgeschreven')
-      await fetchWorkshop()
-      await fetchHuidigeInschrijving()
-    } catch (error) {
-      toast.error(error.message || 'Uitschrijven mislukt')
     } finally {
       setRegistratieLoading(false)
     }
@@ -978,22 +964,7 @@ function WorkshopDetail() {
                       <ArrowLeftRight className="h-4 w-4" />
                       Wissel van workshop
                     </motion.button>
-
-                    <motion.button
-                      whileHover={{ scale: registratieLoading ? 1 : 1.01 }}
-                      whileTap={{ scale: registratieLoading ? 1 : 0.98 }}
-                      onClick={handleUitschrijven}
-                      disabled={registratieLoading}
-                      className={`flex w-full items-center justify-center gap-2 rounded-2xl py-4 text-[15px] font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400 focus-visible:ring-offset-2 disabled:opacity-60
-                        ${d ? 'bg-red-950/30 text-red-400 hover:bg-red-950/50' : 'bg-red-50 text-red-500 hover:bg-red-100'}`}
-                    >
-                      {registratieLoading ? (
-                        <><SpinnerIcon />Uitschrijven...</>
-                      ) : (
-                        <><UserMinus className="h-4 w-4" />Uitschrijven</>
-                      )}
-                    </motion.button>
-                    <p className={`text-center text-xs ${subClr}`}>Wissel van workshop of schrijf je helemaal uit</p>
+                    <p className={`text-center text-xs ${subClr}`}>Kies een andere workshop in het overzicht</p>
                   </>
                 )}
               </motion.div>
