@@ -613,6 +613,7 @@ function Home() {
             </>
           )}
         </motion.div>
+
         </div>
       </div>
       <Footer />

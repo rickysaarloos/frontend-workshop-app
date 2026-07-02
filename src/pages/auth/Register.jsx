@@ -36,16 +36,49 @@ function Register() {
 
   async function handleSubmit(e) {
     e.preventDefault()
-    if (!naam || !email || !wachtwoord || !wachtwoordHerhaal) {
-      toast.error('Vul alle velden in')
+
+    // Client-side controles: wijs precies aan wélk veld nog niet klopt,
+    // zodat de gebruiker meteen weet wat er moet gebeuren.
+    if (!naam.trim()) {
+      toast.error('Vul je naam in', {
+        description: 'We hebben je volledige naam nodig voor je account.',
+      })
       return
     }
-    if (wachtwoord !== wachtwoordHerhaal) {
-      toast.error('Wachtwoorden komen niet overeen')
+    if (!email.trim()) {
+      toast.error('Vul je e-mailadres in', {
+        description: 'Met dit adres log je straks in.',
+      })
+      return
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      toast.error('Dit e-mailadres klopt niet', {
+        description: 'Controleer of het adres een @ en een geldig domein bevat, bijv. naam@tcrmbo.nl.',
+      })
+      return
+    }
+    if (!wachtwoord) {
+      toast.error('Kies een wachtwoord', {
+        description: 'Gebruik minimaal 8 tekens.',
+      })
       return
     }
     if (wachtwoord.length < 8) {
-      toast.error('Wachtwoord moet minimaal 8 tekens zijn')
+      toast.error('Je wachtwoord is te kort', {
+        description: `Gebruik minimaal 8 tekens — je hebt er nu ${wachtwoord.length}.`,
+      })
+      return
+    }
+    if (!wachtwoordHerhaal) {
+      toast.error('Herhaal je wachtwoord', {
+        description: 'Vul je wachtwoord nog een keer in ter controle.',
+      })
+      return
+    }
+    if (wachtwoord !== wachtwoordHerhaal) {
+      toast.error('De wachtwoorden komen niet overeen', {
+        description: 'Zorg dat je in beide velden exact hetzelfde wachtwoord typt.',
+      })
       return
     }
 
@@ -55,8 +88,10 @@ function Register() {
         method: 'POST',
         auth: false,
         body: {
-          name: naam,
-          email,
+          name: naam.trim(),
+          // E-mail genormaliseerd: de backend slaat adressen in kleine letters op,
+          // dus een hoofdletter aan het begin leverde anders een 422 op.
+          email: email.trim().toLowerCase(),
           password: wachtwoord,
           password_confirmation: wachtwoordHerhaal,
           token,
@@ -70,7 +105,48 @@ function Register() {
         setLinkError(tokenError || err.message || 'Deze stuurlink is ongeldig of verlopen.')
         return
       }
-      toast.error(err.message || 'Registreren mislukt')
+
+      // Geen HTTP-response: netwerk- of timeoutfout (api.js zet status op 0).
+      if (err.status === 0) {
+        toast.error('Geen verbinding met de server', {
+          description: err.message || 'Controleer je internetverbinding en probeer het opnieuw.',
+        })
+        return
+      }
+
+      // Te veel pogingen achter elkaar.
+      if (err.status === 429) {
+        toast.error('Te veel pogingen', {
+          description: 'Wacht even en probeer het over een paar minuten opnieuw.',
+        })
+        return
+      }
+
+      // Validatiefouten van de backend (422): toon het eerste, veldspecifieke bericht.
+      if (err.status === 422 && err.errors) {
+        const emailError = err.errors.email?.[0]
+        const passwordError = err.errors.password?.[0]
+        const nameError = err.errors.name?.[0]
+
+        if (emailError) {
+          const alreadyUsed = /taken|bestaat|already|in gebruik/i.test(emailError)
+          toast.error(alreadyUsed ? 'Dit e-mailadres is al in gebruik' : 'Controleer je e-mailadres', {
+            description: alreadyUsed
+              ? 'Er bestaat al een account met dit adres. Log in of gebruik een ander e-mailadres.'
+              : emailError,
+          })
+          return
+        }
+        toast.error('Controleer je gegevens', {
+          description: passwordError || nameError || 'Niet alle velden zijn correct ingevuld.',
+        })
+        return
+      }
+
+      // Alle overige fouten (bijv. 500).
+      toast.error('Registreren is mislukt', {
+        description: err.message || 'Er ging iets mis aan onze kant. Probeer het later opnieuw.',
+      })
     } finally {
       setIsLoading(false)
     }

@@ -18,25 +18,31 @@ function SpinnerIcon() {
   )
 }
 
-// De backend-velden zijn niet hard gedocumenteerd; we lezen ze defensief uit
-// zodat de pagina werkt ongeacht of het veld nu is_read of read_at heet.
+// Normalisatielaag naar de gedocumenteerde notificatie-vorm: we lezen alleen
+// de velden uit die de API belooft (id is altijd een UUID-string).
 function normaliseerMelding(m) {
-  const gelezen =
-    m.is_read ??
-    m.read ??
-    m.gelezen ??
-    (m.read_at != null) ??
-    false
   return {
-    id: m.id,
-    titel: m.title || m.titel || m.subject || m.onderwerp || 'Melding',
-    bericht: m.message || m.bericht || m.body || m.content || m.text || '',
-    gelezen: Boolean(gelezen),
-    datum: m.created_at || m.datum || m.date || m.sent_at || null,
-    type: String(m.type || '').toLowerCase(),
-    workshopId: m.workshop_id ?? m.workshopId ?? m.workshop?.id ?? null,
-    workshopTitel: m.workshop?.title || m.workshop_title || null,
+    id:         m.id,
+    titel:      m.title  || 'Melding',
+    bericht:    m.message || '',
+    gelezen:    Boolean(m.is_read),
+    datum:      m.created_at || null,
+    type:       String(m.type || '').toLowerCase(),
+    workshopId: m.workshop_id ?? null,
+    eventId:    m.event_id   ?? null,
   }
+}
+
+// Bepaalt uit de paginering of er nog een volgende pagina is. Werkt zowel met
+// links.next als met meta.current_page/last_page; bij een platte array (geen
+// paginering) is er niets meer te laden.
+function heeftVolgende(data) {
+  if (data?.links?.next) return true
+  const meta = data?.meta
+  if (meta?.current_page != null && meta?.last_page != null) {
+    return meta.current_page < meta.last_page
+  }
+  return false
 }
 
 function iconVoorType(type) {
@@ -60,8 +66,19 @@ function formatTijd(datum) {
 
 function MeldingKaart({ melding, dark, navigate, onMarkeerGelezen, onHerinnering, reminderLoading }) {
   const d = dark
-  const { gelezen, workshopId } = melding
+  const { gelezen, workshopId, eventId } = melding
   const Icon = iconVoorType(melding.type)
+
+  // Een melding is klikbaar als hij aan een workshop óf event hangt.
+  const kanNavigeren = workshopId !== null || eventId !== null
+
+  // Markeer eerst als gelezen (fire-and-forget: de optimistische update in de
+  // parent werkt direct) en navigeer daarna naar de gekoppelde pagina.
+  function handleNavigeer() {
+    if (!gelezen) onMarkeerGelezen(melding.id)
+    if (workshopId !== null) navigate(`/workshops/${workshopId}`)
+    else if (eventId !== null) navigate(`/events/${eventId}`)
+  }
 
   const cardBg     = d ? 'bg-[#1c1c1e]'        : 'bg-white'
   const cardBorder = gelezen
@@ -113,13 +130,13 @@ function MeldingKaart({ melding, dark, navigate, onMarkeerGelezen, onHerinnering
           )}
 
           <div className="mt-3.5 flex flex-wrap items-center gap-2">
-            {workshopId && (
+            {kanNavigeren && (
               <button
-                onClick={() => navigate(`/workshops/${workshopId}`)}
+                onClick={handleNavigeer}
                 className={`inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4e84a] ${ghostBtn}`}
               >
-                <BookOpen className="h-3.5 w-3.5" />
-                Bekijk workshop
+                {workshopId !== null ? <BookOpen className="h-3.5 w-3.5" /> : <CalendarDays className="h-3.5 w-3.5" />}
+                {workshopId !== null ? 'Bekijk workshop' : 'Bekijk event'}
                 <ArrowRight className="h-3 w-3" />
               </button>
             )}
@@ -158,6 +175,9 @@ function Meldingen() {
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState('alle') // 'alle' | 'ongelezen'
   const [reminderLoading, setReminderLoading] = useState({})
+  const [pagina, setPagina] = useState(1)
+  const [heeftMeer, setHeeftMeer] = useState(false)
+  const [paginaLoading, setPaginaLoading] = useState(false)
   const [dark, setDark] = useState(() => localStorage.getItem('theme') === 'dark')
 
   function toggleDark() {
@@ -177,13 +197,15 @@ function Meldingen() {
     fetchMeldingen()
   }, [])
 
-  // US-12a: meldingen ophalen via GET /api/notifications
+  // US-12a: eerste pagina meldingen ophalen via GET /api/notifications
   async function fetchMeldingen() {
     setLoading(true)
     try {
       const data = await api('/notifications')
       const lijst = Array.isArray(data) ? data : (data.data || [])
       setMeldingen(lijst.map(normaliseerMelding))
+      setPagina(1)
+      setHeeftMeer(heeftVolgende(data))
     } catch (error) {
       toast.error('Meldingen ophalen mislukt')
       console.error(error)
@@ -192,11 +214,35 @@ function Meldingen() {
     }
   }
 
+  // Volgende pagina ophalen en achter de bestaande lijst plakken (niet vervangen).
+  async function laadMeer() {
+    if (paginaLoading || !heeftMeer) return
+    const volgende = pagina + 1
+    setPaginaLoading(true)
+    try {
+      const data = await api(`/notifications?page=${volgende}`)
+      const lijst = Array.isArray(data) ? data : (data.data || [])
+      const nieuw = lijst.map(normaliseerMelding)
+      // Dedupe op id, zodat een verschoven pagina geen dubbele React-keys geeft.
+      setMeldingen(prev => {
+        const bestaand = new Set(prev.map(m => m.id))
+        return [...prev, ...nieuw.filter(m => !bestaand.has(m.id))]
+      })
+      setPagina(volgende)
+      setHeeftMeer(heeftVolgende(data))
+    } catch (error) {
+      toast.error(error.message || 'Meer meldingen laden mislukt')
+    } finally {
+      setPaginaLoading(false)
+    }
+  }
+
   // US-12b: melding als gelezen markeren via PATCH /api/notifications/{id}
   async function markeerGelezen(id) {
     setMeldingen(prev => prev.map(m => m.id === id ? { ...m, gelezen: true } : m))
     try {
-      await api(`/notifications/${id}`, { method: 'PATCH', body: { is_read: true } })
+      // Geen body: het endpoint markeert als gelezen o.b.v. het id in het pad.
+      await api(`/notifications/${id}`, { method: 'PATCH' })
     } catch (error) {
       // Optimistische update terugdraaien
       setMeldingen(prev => prev.map(m => m.id === id ? { ...m, gelezen: false } : m))
@@ -210,7 +256,7 @@ function Meldingen() {
     setMeldingen(prev => prev.map(m => ({ ...m, gelezen: true })))
     try {
       await Promise.all(
-        ongelezen.map(m => api(`/notifications/${m.id}`, { method: 'PATCH', body: { is_read: true } }))
+        ongelezen.map(m => api(`/notifications/${m.id}`, { method: 'PATCH' }))
       )
       toast.success('Alles gemarkeerd als gelezen')
     } catch {
@@ -455,6 +501,21 @@ function Meldingen() {
                 ))}
               </AnimatePresence>
             </motion.div>
+          )}
+
+          {/* Laad meer — alleen als de API nog een volgende pagina heeft */}
+          {!loading && heeftMeer && (
+            <div className="flex justify-center pt-1">
+              <button
+                onClick={laadMeer}
+                disabled={paginaLoading}
+                className={`inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-bold transition-colors disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4e84a] ${
+                  d ? 'bg-white/[0.06] text-white/80 hover:bg-white/[0.12]' : 'bg-[#1a3d2b]/[0.05] text-[#1a3d2b]/80 hover:bg-[#1a3d2b]/[0.09]'
+                }`}
+              >
+                {paginaLoading ? <><SpinnerIcon />Laden...</> : 'Laad meer'}
+              </button>
+            </div>
           )}
         </div>
       </div>
