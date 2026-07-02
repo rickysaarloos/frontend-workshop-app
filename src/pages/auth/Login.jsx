@@ -251,24 +251,6 @@ function Login() {
             </motion.button>
           </motion.div>
 
-          {/* Register link */}
-          <motion.p
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.64 }}
-            className="text-xs text-center text-gray-400 pt-1"
-          >
-            Nog geen account?{' '}
-            <motion.span
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => navigate('/register')}
-              className="text-[#1a3d2b] font-bold cursor-pointer hover:underline underline-offset-2"
-            >
-              Registreren
-            </motion.span>
-          </motion.p>
-
         </form>
       </motion.div>
 

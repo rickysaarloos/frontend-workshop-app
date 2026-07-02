@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { motion, AnimatePresence, useReducedMotion } from 'motion/react'
-import { ChevronLeft, CalendarDays, Clock, Users, CheckCircle, MapPin, BookOpen, User, Tag, Moon, Sun, AlertTriangle, ClipboardList, Leaf, HelpCircle, ChevronDown, Download, ScanLine, MessageSquare, Send, ArrowLeftRight } from 'lucide-react'
+import { ChevronLeft, CalendarDays, Clock, Users, CheckCircle, MapPin, BookOpen, User, Tag, Moon, Sun, AlertTriangle, ClipboardList, Leaf, HelpCircle, ChevronDown, Download, ScanLine, MessageSquare, Send, ArrowLeftRight, UserMinus } from 'lucide-react'
 import { toast, Toaster } from 'sonner'
 import Footer from '../../components/Footer'
 import Card from '../../components/Card'
@@ -51,6 +51,10 @@ function WorkshopDetail() {
   const [workshop, setWorkshop] = useState(null)
   const [loading, setLoading] = useState(true)
   const [ingeschreven, setIngeschreven] = useState(false)
+  // De workshop waarvoor de gebruiker (evt.) al is ingeschreven. Nodig om te
+  // bepalen of "Inschrijven" een échte inschrijving is of een wissel: een
+  // gebruiker mag maar bij één workshop tegelijk ingeschreven staan.
+  const [huidigeInschrijving, setHuidigeInschrijving] = useState(null)
   const [registratieLoading, setRegistratieLoading] = useState(false)
   const [geselecteerdeSessie, setGeselecteerdeSessie] = useState(null)
   const [faq, setFaq] = useState([])
@@ -83,6 +87,7 @@ function WorkshopDetail() {
       return
     }
     fetchWorkshop()
+    fetchHuidigeInschrijving()
     fetchFaq()
     fetchVragenlijst()
   }, [id])
@@ -149,6 +154,18 @@ function WorkshopDetail() {
     }
   }
 
+  // De workshop waarvoor de gebruiker al ingeschreven staat, uit het overzicht.
+  // Stil falen: dit is aanvullende info, geen kritieke lading van de pagina.
+  async function fetchHuidigeInschrijving() {
+    try {
+      const data = await api('/workshops')
+      const lijst = data.data || []
+      setHuidigeInschrijving(lijst.find(w => w.is_registered) || null)
+    } catch {
+      // Overzicht kon niet geladen worden — laat de wisselknop dan achterwege.
+    }
+  }
+
   async function handleInschrijven() {
     const isSessionMode = workshop.registration_mode === 'session'
     if (isSessionMode && !geselecteerdeSessie) {
@@ -162,8 +179,52 @@ function WorkshopDetail() {
       const data = await api(`/workshops/${id}/register`, { method: 'POST', body })
       toast.success(data?.message || 'Je bent ingeschreven!')
       await fetchWorkshop()
+      await fetchHuidigeInschrijving()
     } catch (error) {
       toast.error(error.message || 'Inschrijven mislukt')
+    } finally {
+      setRegistratieLoading(false)
+    }
+  }
+
+  // Wisselen: schrijf eerst uit bij de huidige workshop, schrijf dan in bij deze.
+  // Uitschrijven eerst zodat een backend die "één workshop per gebruiker"
+  // afdwingt de nieuwe inschrijving niet weigert. De inschrijfknop is al
+  // uitgeschakeld bij een volle workshop, dus de kans dat stap 2 faalt is klein;
+  // faalt hij toch, dan melden we dat de oude inschrijving is komen te vervallen.
+  async function handleWisselNaarDeze() {
+    const isSessionMode = workshop.registration_mode === 'session'
+    if (isSessionMode && !geselecteerdeSessie) {
+      toast.error('Kies eerst een sessie')
+      return
+    }
+
+    setRegistratieLoading(true)
+    try {
+      await api(`/workshops/${huidigeInschrijving.id}/unregister`, { method: 'DELETE' })
+      const body = isSessionMode ? { session_id: geselecteerdeSessie } : {}
+      const data = await api(`/workshops/${id}/register`, { method: 'POST', body })
+      toast.success(data?.message || `Gewisseld naar ${workshop.title}`)
+      await fetchWorkshop()
+      await fetchHuidigeInschrijving()
+    } catch (error) {
+      toast.error(error.message || 'Wisselen mislukt — controleer je inschrijvingen')
+      await fetchWorkshop()
+      await fetchHuidigeInschrijving()
+    } finally {
+      setRegistratieLoading(false)
+    }
+  }
+
+  async function handleUitschrijven() {
+    setRegistratieLoading(true)
+    try {
+      const data = await api(`/workshops/${id}/unregister`, { method: 'DELETE' })
+      toast.success(data?.message || 'Je bent uitgeschreven')
+      await fetchWorkshop()
+      await fetchHuidigeInschrijving()
+    } catch (error) {
+      toast.error(error.message || 'Uitschrijven mislukt')
     } finally {
       setRegistratieLoading(false)
     }
@@ -238,6 +299,9 @@ function WorkshopDetail() {
   const rise = shouldReduce
     ? { hidden: { opacity: 0 }, visible: { opacity: 1, transition: { duration: 0.3 } } }
     : { hidden: { opacity: 0, y: 8 }, visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: EASE } } }
+
+  // Al ingeschreven bij een ándere workshop? Dan wordt "Inschrijven" een wissel.
+  const ingeschrevenElders = !ingeschreven && huidigeInschrijving && String(huidigeInschrijving.id) !== String(id)
 
   // Bezetting
   const bezet = workshop ? (workshop.registered ?? 0) : 0
@@ -404,6 +468,25 @@ function WorkshopDetail() {
                   >
                     <CheckCircle className="h-4 w-4 shrink-0" />
                     Je bent ingeschreven voor deze workshop
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              {/* Al elders ingeschreven: leg uit dat inschrijven hier wisselt */}
+              <AnimatePresence>
+                {ingeschrevenElders && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -8 }}
+                    className={`flex items-start gap-2.5 rounded-2xl px-4 py-3 text-sm font-medium ${
+                      d ? 'bg-[#d4e84a]/10 text-[#d4e84a]' : 'bg-[#eaf3de] text-[#1a3d2b]'
+                    }`}
+                  >
+                    <ArrowLeftRight className="mt-0.5 h-4 w-4 shrink-0" />
+                    <span>
+                      Je bent al ingeschreven voor <span className="font-bold">{huidigeInschrijving.title}</span>. Je kunt maar bij één workshop tegelijk ingeschreven staan — schrijf je hieronder in om te wisselen.
+                    </span>
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -856,7 +939,7 @@ function WorkshopDetail() {
                     <motion.button
                       whileHover={{ scale: registratieLoading || workshop.is_full ? 1 : 1.015 }}
                       whileTap={{ scale: registratieLoading || workshop.is_full ? 1 : 0.98 }}
-                      onClick={handleInschrijven}
+                      onClick={ingeschrevenElders ? handleWisselNaarDeze : handleInschrijven}
                       disabled={registratieLoading || workshop.is_full}
                       className={`flex w-full items-center justify-center gap-2 rounded-2xl py-4 text-[15px] font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4e84a] focus-visible:ring-offset-2
                         ${workshop.is_full
@@ -865,13 +948,20 @@ function WorkshopDetail() {
                         } disabled:opacity-60`}
                     >
                       {registratieLoading ? (
-                        <><SpinnerIcon />Inschrijven...</>
+                        <><SpinnerIcon />{ingeschrevenElders ? 'Wisselen...' : 'Inschrijven...'}</>
                       ) : workshop.is_full ? (
                         'Workshop is vol'
+                      ) : ingeschrevenElders ? (
+                        <><ArrowLeftRight className="h-4 w-4" />Wissel naar deze workshop</>
                       ) : (
                         'Inschrijven'
                       )}
                     </motion.button>
+                    {ingeschrevenElders && !workshop.is_full && (
+                      <p className={`text-center text-xs ${subClr}`}>
+                        Je inschrijving voor <span className="font-semibold">{huidigeInschrijving.title}</span> komt hiermee te vervallen
+                      </p>
+                    )}
                     {workshop.registration_mode === 'session' && workshop.sessions?.length > 0 && !geselecteerdeSessie && !workshop.is_full && (
                       <p className={`text-center text-xs ${subClr}`}>Kies eerst een sessie hierboven</p>
                     )}
@@ -888,7 +978,22 @@ function WorkshopDetail() {
                       <ArrowLeftRight className="h-4 w-4" />
                       Wissel van workshop
                     </motion.button>
-                    <p className={`text-center text-xs ${subClr}`}>Kies een andere workshop in het overzicht</p>
+
+                    <motion.button
+                      whileHover={{ scale: registratieLoading ? 1 : 1.01 }}
+                      whileTap={{ scale: registratieLoading ? 1 : 0.98 }}
+                      onClick={handleUitschrijven}
+                      disabled={registratieLoading}
+                      className={`flex w-full items-center justify-center gap-2 rounded-2xl py-4 text-[15px] font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400 focus-visible:ring-offset-2 disabled:opacity-60
+                        ${d ? 'bg-red-950/30 text-red-400 hover:bg-red-950/50' : 'bg-red-50 text-red-500 hover:bg-red-100'}`}
+                    >
+                      {registratieLoading ? (
+                        <><SpinnerIcon />Uitschrijven...</>
+                      ) : (
+                        <><UserMinus className="h-4 w-4" />Uitschrijven</>
+                      )}
+                    </motion.button>
+                    <p className={`text-center text-xs ${subClr}`}>Wissel van workshop of schrijf je helemaal uit</p>
                   </>
                 )}
               </motion.div>
