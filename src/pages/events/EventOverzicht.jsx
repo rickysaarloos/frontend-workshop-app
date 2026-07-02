@@ -25,6 +25,8 @@ const cardVariants = {
   },
 }
  
+// Kaart voor één event: categorie, titel, meta en een aftel-teller in dagen.
+// Verstreken events worden gedimd. De hele kaart navigeert naar de detailpagina.
 function EventCard({ event, navigate, formatDatum, getDagenTot, dark }) {
   const d = dark
   const dagenTot = getDagenTot(event.datum)
@@ -102,9 +104,10 @@ function EventCard({ event, navigate, formatDatum, getDagenTot, dark }) {
   )
 }
  
+// Eventoverzicht (route /events): zoekbalk, categoriefilter en de lijst met kaarten.
 function EventOverzicht() {
   const navigate = useNavigate()
- 
+
   const [events, setEvents] = useState([])
   const [loading, setLoading] = useState(true)
   const [zoekterm, setZoekterm] = useState('')
@@ -128,6 +131,7 @@ function EventOverzicht() {
     fetchEvents()
   }, [])
  
+  // Haalt de events op en mapt de API-velden naar de Nederlandse vorm die de UI gebruikt.
   async function fetchEvents() {
     try {
       const json = await api('/events')
@@ -152,6 +156,7 @@ function EventOverzicht() {
     }
   }
  
+  // Vertaalt de Engelse categorie-codes van de API naar Nederlandse labels.
   function mapCategory(cat) {
     const map = {
       conference: 'Studiedag',
@@ -177,12 +182,14 @@ function EventOverzicht() {
     })
   }
  
+  // Aantal dagen tot het event; negatief betekent dat het al voorbij is.
   function getDagenTot(datum) {
     if (!datum) return 0
     const verschil = new Date(datum) - new Date()
     return Math.ceil(verschil / (1000 * 60 * 60 * 24))
   }
  
+  // Filter op zoekterm (titel) én actieve categorie.
   const gefilterd = events.filter((e) => {
     const matchZoek = e.titel?.toLowerCase().includes(zoekterm.toLowerCase())
     const matchCategorie = actieveCategorie === 'Alle' || e.categorie === actieveCategorie

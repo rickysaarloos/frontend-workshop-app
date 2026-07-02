@@ -44,6 +44,8 @@ function SpinnerIcon() {
   )
 }
 
+// Workshopdetail (route /workshops/:id): details, in-/uitschrijven en wisselen
+// (max. 1 workshop tegelijk), sessiekeuze, aanwezigheid, presentatie, FAQ en enquête.
 function WorkshopDetail() {
   const { id } = useParams()
   const navigate = useNavigate()

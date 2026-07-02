@@ -6,7 +6,8 @@ import { toast, Toaster } from 'sonner'
 import Footer from '../../components/Footer'
  
 import { api } from '@/lib/api'
- 
+
+// Vertaalt de Engelse categorie-codes van de API naar Nederlandse labels.
 function mapCategory(cat) {
   const map = {
     conference: 'Studiedag',
@@ -60,10 +61,12 @@ function isEventAfgelopen(event) {
   return Date.now() > eind.getTime()
 }
  
+// Eventdetail (route /events/:id): details, in-/uitschrijven, aanwezigheid,
+// presentatie downloaden en de dagenquête invullen.
 export default function EventDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
- 
+
   const [event, setEvent] = useState(null)
   const [loading, setLoading] = useState(true)
   const [ingeschreven, setIngeschreven] = useState(false)
@@ -112,6 +115,7 @@ export default function EventDetail() {
     return () => { geannuleerd = true }
   }, [aanwezigheidGeregistreerd, id])
 
+  // Haalt het event op en zet meteen de inschrijf-/aanwezigheidsstatus.
   async function fetchEvent() {
     try {
       const json = await api(`/events/${id}`)
@@ -140,6 +144,7 @@ export default function EventDetail() {
     }
   }
  
+  // Schakelt tussen in- en uitschrijven, afhankelijk van de huidige status.
   async function handleRegistreer() {
     setRegistreerLoading(true)
     try {

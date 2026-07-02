@@ -6,6 +6,8 @@ import { toast, Toaster } from 'sonner'
 
 import { api } from '@/lib/api'
 
+// Loginpagina (routes / en /login). Registreren kan alleen via een
+// uitnodigingslink, dus hier staat bewust geen link naar /register.
 function Login() {
   const [email, setEmail] = useState('')
   const [wachtwoord, setWachtwoord] = useState('')
@@ -15,6 +17,7 @@ function Login() {
   const [transitioning, setTransitioning] = useState(false)
   const navigate = useNavigate()
 
+  // Logt in en bewaart token + gebruiker; start bij succes de overgang naar /home.
   async function handleSubmit(e) {
     e.preventDefault()
     if (!email || !wachtwoord) { toast.error('Vul alle velden in'); return }

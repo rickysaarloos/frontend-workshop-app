@@ -6,6 +6,7 @@ import { toast, Toaster } from 'sonner'
 
 import { api } from '@/lib/api'
 
+// Grove wachtwoordsterkte voor de balk: 0 leeg, 1 te kort, 2 redelijk, 3 sterk.
 function passwordStrength(pw) {
   if (!pw) return 0
   if (pw.length < 8) return 1
@@ -19,6 +20,8 @@ const strengthMeta = {
   3: { label: 'Sterk',    color: 'bg-[#1a3d2b]' },
 }
 
+// Registratiepagina (route /register). Werkt alleen met een geldig `token` uit de
+// query-string; zonder (of bij een afgekeurd) token toont de pagina een blokkade.
 function Register() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
@@ -34,6 +37,8 @@ function Register() {
   const [registered, setRegistered] = useState(false)
   const [linkError, setLinkError] = useState(null)
 
+  // Valideert de velden, registreert via de API met het uitnodigingstoken en
+  // vertaalt backend-fouten (afgekeurd token, 422, 429, netwerk) naar toasts.
   async function handleSubmit(e) {
     e.preventDefault()
 

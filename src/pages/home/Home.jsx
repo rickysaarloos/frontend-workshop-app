@@ -9,6 +9,8 @@ import Card from '../../components/Card'
 import { api } from '@/lib/api'
 import { getStoredUser, logout } from '@/lib/auth'
 
+// Home / dashboard (route /home): begroeting, eerstvolgende event, snelkoppelingen,
+// eigen workshops en het genereren van een uitnodigingslink.
 function Home() {
   const navigate = useNavigate()
   const shouldReduce = useReducedMotion()
@@ -36,6 +38,7 @@ function Home() {
     fetchData()
   }, [])
 
+  // Haalt workshops en events parallel op en kiest het eerstvolgende event voor de banner.
   async function fetchData() {
     try {
       const [workshopsJson, eventsJson] = await Promise.all([
@@ -76,6 +79,7 @@ function Home() {
     setTimeout(() => navigate('/login'), 600)
   }
 
+  // Genereert een eenmalige uitnodigingslink en bewaart URL + vervaltijd om te kopiëren.
   async function handleStuurlinkAanmaken() {
     setStuurlinkLoading(true)
     setGegenereerdeLink(null)

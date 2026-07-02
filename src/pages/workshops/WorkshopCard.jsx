@@ -18,9 +18,12 @@ const cardVariants = {
 const datumDeel = (s) => (typeof s === 'string' ? s.split(' ')[0] : '')
 const tijdDeel = (s) => (typeof s === 'string' ? s.split(' ')[1] || '' : '')
 
+// Kaart voor één workshop in het overzicht: titel, beschrijving, meta, een
+// bezettingsbalk en aandachtspunt-chips. De hele kaart navigeert naar het detail.
 function WorkshopCard({ workshop, navigate, formatDatum, dark }) {
   const d = dark
   const isVol = workshop.is_full
+  // Bezettingspercentage voor de voortgangsbalk.
   const procentVol = workshop.capacity ? Math.round((workshop.registered / workshop.capacity) * 100) : 0
 
   const datum = datumDeel(workshop.start_date)

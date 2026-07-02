@@ -13,6 +13,8 @@ const DAGEN_KORT = ['Ma', 'Di', 'Wo', 'Do', 'Vr', 'Za', 'Zo']
 
 const EASE = [0.22, 1, 0.36, 1]
 
+// Bouwt de dag-cellen voor de maandkalender: eerst lege plekken tot de juiste
+// weekdag (maandag-start), daarna de dagnummers 1..laatste.
 function getKalenderDagen(jaar, maand) {
   const eerstedag = new Date(jaar, maand, 1)
   const aantalDagen = new Date(jaar, maand + 1, 0).getDate()
@@ -41,6 +43,8 @@ const cardVariants = {
   },
 }
 
+// Workshopoverzicht (route /workshops): maandkalender die dagen met workshops
+// markeert, plus de lijst met workshopkaarten (gefilterd op de gekozen dag).
 function WorkshopOverzicht() {
   const navigate = useNavigate()
   const vandaag = new Date()
@@ -78,6 +82,7 @@ function WorkshopOverzicht() {
     fetchWorkshops()
   }, [])
 
+  // Haalt alle workshops op voor de kalender en de lijst.
   async function fetchWorkshops() {
     try {
       const data = await api('/workshops')
@@ -102,6 +107,7 @@ function WorkshopOverzicht() {
     ? `${jaar}-${String(maand + 1).padStart(2, '0')}-${String(geselecteerdeDag).padStart(2, '0')}`
     : null
 
+  // Zonder gekozen dag alle workshops; met een gekozen dag alleen die van die datum.
   const zichtbareWorkshops = geselecteerdeDatum
     ? workshops.filter((w) => workshopDatum(w) === geselecteerdeDatum)
     : workshops

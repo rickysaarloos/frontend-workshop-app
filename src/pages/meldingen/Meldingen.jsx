@@ -45,6 +45,7 @@ function heeftVolgende(data) {
   return false
 }
 
+// Kiest een passend icoon op basis van het meldingstype.
 function iconVoorType(type) {
   if (type.includes('herinner') || type.includes('reminder')) return BellRing
   if (type.includes('workshop')) return BookOpen
@@ -52,6 +53,7 @@ function iconVoorType(type) {
   return Bell
 }
 
+// Relatieve "tijd geleden" (zojuist / X min / uur / gisteren), anders korte datum.
 function formatTijd(datum) {
   if (!datum) return ''
   const d0 = new Date(datum)
@@ -64,6 +66,8 @@ function formatTijd(datum) {
   return d0.toLocaleDateString('nl-NL', { day: 'numeric', month: 'long' })
 }
 
+// Eén meldingskaart: titel, bericht en type-afhankelijke acties (navigeren,
+// herinnering aanvragen, als gelezen markeren).
 function MeldingKaart({ melding, dark, navigate, onMarkeerGelezen, onHerinnering, reminderLoading }) {
   const d = dark
   const { gelezen, workshopId, eventId } = melding
@@ -167,6 +171,8 @@ function MeldingKaart({ melding, dark, navigate, onMarkeerGelezen, onHerinnering
   )
 }
 
+// Meldingen / postvak (route /meldingen): gepagineerde notificaties, filter op
+// alle/ongelezen, optimistisch als gelezen markeren en herinneringen aanvragen.
 function Meldingen() {
   const navigate = useNavigate()
   const shouldReduce = useReducedMotion()
