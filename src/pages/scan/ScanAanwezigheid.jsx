@@ -12,10 +12,11 @@ import { getStoredUser } from '@/lib/auth'
 
 const EASE = [0.22, 1, 0.36, 1]
 
-// Alleen de admin-rol mag scannen. Pas 'admin' aan als de backend een andere
-// naam gebruikt (bv. 'administrator' of 'beheerder').
+// Rollen die de scanner mogen gebruiken. Breid de lijst uit als de backend
+// andere namen gebruikt (bv. 'administrator' of 'beheerder').
+const SCAN_ROLLEN = ['admin', 'workshopgever']
 function magScannen(rol) {
-  return typeof rol === 'string' && rol.toLowerCase() === 'admin'
+  return typeof rol === 'string' && SCAN_ROLLEN.includes(rol.toLowerCase())
 }
 
 // AANNAME — bevestig met de backend. Een organisator markeert een ándere gebruiker
@@ -274,7 +275,7 @@ function ScanAanwezigheid() {
                 </div>
                 <p className={`mb-1 text-sm font-bold ${titleClr}`}>Geen toegang</p>
                 <p className={`mb-4 text-xs ${subClr}`}>
-                  Alleen beheerders (admin) kunnen aanwezigheid scannen. Je bent ingelogd als <span className="font-semibold capitalize">{rol}</span>.
+                  Alleen beheerders (admin) en workshopgevers kunnen aanwezigheid scannen. Je bent ingelogd als <span className="font-semibold capitalize">{rol}</span>.
                 </p>
                 <motion.button
                   whileHover={{ scale: 1.04 }}

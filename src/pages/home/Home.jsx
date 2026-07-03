@@ -38,7 +38,9 @@ function Home() {
     fetchData()
   }, [])
 
-  // Haalt workshops en events parallel op en kiest het eerstvolgende event voor de banner.
+  // Haalt workshops en events parallel op en kiest het eerstvolgende event voor
+  // de banner. Alleen events die aan de gebruiker zijn toegewezen (is_registered)
+  // tellen mee — zelf inschrijven voor events kan niet.
   async function fetchData() {
     try {
       const [workshopsJson, eventsJson] = await Promise.all([
@@ -50,6 +52,7 @@ function Home() {
       vandaag.setHours(0, 0, 0, 0)
       const komende = (eventsJson.data || [])
         .filter(e => {
+          if (!e.is_registered) return false
           const datum = new Date(e.days?.[0]?.date || e.start_date?.split(' ')?.[0] || 0)
           return datum >= vandaag
         })

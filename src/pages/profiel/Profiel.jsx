@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence, useReducedMotion } from 'motion/react'
-import { User, Mail, Lock, Utensils, LogOut, ChevronLeft, Save, Check, BookOpen, CalendarDays, ArrowRight, Eye, EyeOff, Moon, Sun, UserPlus, Copy, Clock, Network, Hash, UserCheck, QrCode, ScanLine } from 'lucide-react'
+import { User, Mail, Lock, Utensils, LogOut, ChevronLeft, Save, Check, BookOpen, CalendarDays, ArrowRight, Eye, EyeOff, Moon, Sun, UserPlus, Copy, Clock, Network, Hash, UserCheck, QrCode, ScanLine, Camera, X } from 'lucide-react'
 import { toast, Toaster } from 'sonner'
+import { BrowserQRCodeReader, BrowserQRCodeSvgWriter } from '@zxing/browser'
 import Footer from '../../components/Footer'
 import Card from '../../components/Card'
 
@@ -50,6 +51,10 @@ function Profiel() {
   const [netwerkGeladen, setNetwerkGeladen] = useState(false)
   const [qrUrl, setQrUrl] = useState(null)
   const [qrLoading, setQrLoading] = useState(false)
+  const [netwerkScannen, setNetwerkScannen] = useState(false)
+  const netwerkQrRef = useRef(null)      // container voor de gegenereerde netwerkcode-QR
+  const netwerkVideoRef = useRef(null)   // <video> van de netwerkscanner
+  const netwerkControlsRef = useRef(null) // camera-controls van @zxing om te kunnen stoppen
 
   function toggleDark() {
     setDark(d => {
@@ -94,6 +99,47 @@ function Profiel() {
     if (!token) return
     fetchNetwerkdata()
   }, [actieveTab])
+
+  // Genereert client-side een QR van de eigen netwerkcode, zodat anderen die
+  // met hun telefoon kunnen scannen. De QR bevat de kale code als tekst.
+  useEffect(() => {
+    if (actieveTab !== 'netwerk' || !netwerkcode || !netwerkQrRef.current) return
+    const writer = new BrowserQRCodeSvgWriter()
+    const svg = writer.write(netwerkcode, 176, 176)
+    svg.setAttribute('viewBox', '0 0 176 176')
+    svg.setAttribute('width', '100%')
+    svg.setAttribute('height', '100%')
+    netwerkQrRef.current.replaceChildren(svg)
+  }, [actieveTab, netwerkcode])
+
+  // Camera aan/uit voor het scannen van andermans netwerkcode-QR. Bij een
+  // geslaagde scan wordt het contact direct toegevoegd en stopt de camera.
+  useEffect(() => {
+    if (!netwerkScannen) return
+    let actief = true
+    const reader = new BrowserQRCodeReader()
+    reader
+      .decodeFromVideoDevice(undefined, netwerkVideoRef.current, (result) => {
+        if (!actief || !result) return
+        actief = false
+        setNetwerkScannen(false)
+        voegCodeToe(result.getText().trim().toUpperCase())
+      })
+      .then((controls) => {
+        netwerkControlsRef.current = controls
+        if (!actief) controls.stop() // effect al opgeruimd vóór de camera klaar was
+      })
+      .catch(() => {
+        toast.error('Camera starten mislukt — controleer of de browser cameratoegang heeft')
+        setNetwerkScannen(false)
+      })
+    return () => {
+      actief = false
+      netwerkControlsRef.current?.stop()
+      netwerkControlsRef.current = null
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [netwerkScannen])
 
   async function fetchAlles() {
     try {
@@ -215,11 +261,13 @@ function Profiel() {
     }
   }
 
-  async function handleCodeToevoegen() {
-    if (!invulCode.trim()) { toast.error('Voer een code in'); return }
+  // Voegt een contact toe op basis van een netwerkcode — handmatig ingevuld
+  // óf uit een gescande QR.
+  async function voegCodeToe(code) {
+    if (!code) { toast.error('Voer een code in'); return }
     setCodeToevoegenLoading(true)
     try {
-      const data = await api('/networking', { method: 'POST', body: { code: invulCode.trim() } })
+      const data = await api('/networking', { method: 'POST', body: { code } })
       toast.success(data?.message || 'Contact toegevoegd!')
       setInvulCode('')
       // Herladen van de contactenlijst mag stil falen — het toevoegen zelf is al gelukt.
@@ -232,6 +280,10 @@ function Profiel() {
     } finally {
       setCodeToevoegenLoading(false)
     }
+  }
+
+  function handleCodeToevoegen() {
+    voegCodeToe(invulCode.trim())
   }
 
   async function handleKopieer(url) {
@@ -506,8 +558,8 @@ function Profiel() {
               transition={{ type: 'spring', stiffness: 260, damping: 32 }}
               className="flex flex-col gap-3"
             >
-              {/* Aanwezigheid scannen — alleen voor de admin-rol */}
-              {rol.toLowerCase() === 'admin' && (
+              {/* Aanwezigheid scannen — alleen voor admins en workshopgevers */}
+              {['admin', 'workshopgever'].includes(rol.toLowerCase()) && (
                 <Card dark={d}>
                   <div className={gradientTop} />
                   <div className="p-5">
@@ -1019,7 +1071,7 @@ function Profiel() {
                     </div>
                     <div>
                       <h2 className={`text-sm font-bold ${titleClr}`}>Jouw netwerkcode</h2>
-                      <p className={`text-[11px] ${subClr} mt-0.5`}>Deel met anderen om te verbinden</p>
+                      <p className={`text-[11px] ${subClr} mt-0.5`}>Laat je QR scannen of deel je code om te verbinden</p>
                     </div>
                   </div>
 
@@ -1029,8 +1081,12 @@ function Profiel() {
                     <motion.div
                       initial={{ opacity: 0, scale: 0.95 }}
                       animate={{ opacity: 1, scale: 1 }}
-                      className={`flex items-center justify-center py-5 mb-4 rounded-2xl ${d ? 'bg-white/[0.05] border border-white/[0.07]' : 'bg-[#f4f9ef] border border-[#ddebd3]'}`}
+                      className={`flex flex-col items-center gap-4 py-5 mb-4 rounded-2xl ${d ? 'bg-white/[0.05] border border-white/[0.07]' : 'bg-[#f4f9ef] border border-[#ddebd3]'}`}
                     >
+                      {/* QR van de eigen code — witte tegel zodat hij ook in dark mode scanbaar is */}
+                      <div className="rounded-2xl bg-white p-3 shadow-sm">
+                        <div ref={netwerkQrRef} className="h-40 w-40" aria-label="QR-code van jouw netwerkcode" />
+                      </div>
                       <span className={`font-black tracking-[0.28em] text-2xl select-all ${titleClr}`}>
                         {netwerkcode}
                       </span>
@@ -1065,7 +1121,7 @@ function Profiel() {
                     </div>
                     <div>
                       <h2 className={`text-sm font-bold ${titleClr}`}>Contact toevoegen</h2>
-                      <p className={`text-[11px] ${subClr} mt-0.5`}>Voer de code van iemand in</p>
+                      <p className={`text-[11px] ${subClr} mt-0.5`}>Scan een QR-code of voer een code in</p>
                     </div>
                   </div>
 
@@ -1100,6 +1156,42 @@ function Profiel() {
                       {codeToevoegenLoading ? <SpinnerIcon /> : <UserPlus className="w-4 h-4" />}
                     </motion.button>
                   </div>
+
+                  {/* QR scannen: camera aan/uit; bij een geslaagde scan wordt het contact direct toegevoegd */}
+                  <AnimatePresence initial={false}>
+                    {netwerkScannen && (
+                      <motion.div
+                        key="netwerk-scanner"
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        exit={{ opacity: 0, height: 0 }}
+                        transition={{ duration: 0.25 }}
+                        className="overflow-hidden"
+                      >
+                        <div className="relative mt-3 overflow-hidden rounded-2xl bg-black">
+                          <video ref={netwerkVideoRef} className="aspect-square w-full object-cover" muted playsInline />
+                          {/* Scankader */}
+                          <div className="pointer-events-none absolute inset-0 grid place-items-center">
+                            <div className="h-40 w-40 rounded-2xl border-2 border-[#d4e84a]/80" />
+                          </div>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.97 }}
+                    type="button"
+                    onClick={() => setNetwerkScannen(s => !s)}
+                    className={`mt-3 w-full rounded-2xl py-3 text-sm font-bold flex items-center justify-center gap-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4e84a] focus-visible:ring-offset-2 ${
+                      netwerkScannen
+                        ? (d ? 'bg-white/[0.07] text-white hover:bg-white/[0.12]' : 'bg-[#1a3d2b]/[0.06] text-[#1a3d2b] hover:bg-[#1a3d2b]/[0.1]')
+                        : 'bg-[#1a3d2b] text-[#d4e84a] hover:bg-[#16331f]'
+                    }`}
+                  >
+                    {netwerkScannen ? <><X className="w-4 h-4" />Stop scannen</> : <><Camera className="w-4 h-4" />Scan een QR-code</>}
+                  </motion.button>
                 </div>
               </Card>
 

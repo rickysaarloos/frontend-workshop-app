@@ -131,12 +131,14 @@ function EventOverzicht() {
     fetchEvents()
   }, [])
  
-  // Haalt de events op en mapt de API-velden naar de Nederlandse vorm die de UI gebruikt.
+  // Haalt de events op en mapt de API-velden naar de Nederlandse vorm die de UI
+  // gebruikt. Gebruikers zien alleen de events die via de backend aan ze zijn
+  // toegewezen (is_registered) — zelf inschrijven kan niet.
   async function fetchEvents() {
     try {
       const json = await api('/events')
 
-      const mapped = (json.data || []).map((e) => ({
+      const mapped = (json.data || []).filter((e) => e.is_registered).map((e) => ({
         id: e.id,
         titel: e.title,
         beschrijving: e.description,
@@ -292,7 +294,7 @@ function EventOverzicht() {
             transition={{ delay: 0.2 }}
             className="text-[#d4e84a] text-xs font-bold uppercase tracking-widest mb-2"
           >
-            Aanbod
+            Jouw events
           </motion.p>
           <h1 className="text-4xl font-black text-white tracking-tight leading-none mb-3">Events</h1>
           <motion.div
@@ -305,7 +307,7 @@ function EventOverzicht() {
             ) : (
               <span className="inline-flex items-center gap-1.5 bg-white/10 text-white/70 text-xs font-medium px-3 py-1.5 rounded-full">
                 <Calendar className="w-3 h-3" />
-                {events.length} events beschikbaar
+                {events.length} events voor jou
               </span>
             )}
           </motion.div>
@@ -419,7 +421,9 @@ function EventOverzicht() {
                     >
                       <Calendar className={`w-5 h-5 ${d ? 'text-white/20' : 'text-gray-300'}`} />
                     </motion.div>
-                    <p className={`text-sm font-semibold mb-3 ${d ? 'text-white/70' : 'text-gray-500'}`}>Geen events gevonden</p>
+                    <p className={`text-sm font-semibold mb-3 ${d ? 'text-white/70' : 'text-gray-500'}`}>
+                      {events.length === 0 ? 'Er zijn nog geen events aan je toegewezen' : 'Geen events gevonden'}
+                    </p>
                     <motion.button
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}

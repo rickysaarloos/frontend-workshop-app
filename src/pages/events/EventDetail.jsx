@@ -61,8 +61,9 @@ function isEventAfgelopen(event) {
   return Date.now() > eind.getTime()
 }
  
-// Eventdetail (route /events/:id): details, in-/uitschrijven, aanwezigheid,
-// presentatie downloaden en de dagenquête invullen.
+// Eventdetail (route /events/:id): details, aanwezigheid, presentatie downloaden
+// en de dagenquête invullen. Inschrijven gebeurt niet hier: events worden via de
+// backend aan gebruikers toegewezen.
 export default function EventDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
@@ -70,7 +71,6 @@ export default function EventDetail() {
   const [event, setEvent] = useState(null)
   const [loading, setLoading] = useState(true)
   const [ingeschreven, setIngeschreven] = useState(false)
-  const [registreerLoading, setRegistreerLoading] = useState(false)
   const [aanwezigheidGeregistreerd, setAanwezigheidGeregistreerd] = useState(false)
   const [aanwezigheidLoading, setAanwezigheidLoading] = useState(false)
   const [presentatie, setPresentatie] = useState(null)
@@ -144,26 +144,6 @@ export default function EventDetail() {
     }
   }
  
-  // Schakelt tussen in- en uitschrijven, afhankelijk van de huidige status.
-  async function handleRegistreer() {
-    setRegistreerLoading(true)
-    try {
-      if (ingeschreven) {
-        const data = await api(`/events/${id}/unregister`, { method: 'DELETE' })
-        setIngeschreven(false)
-        toast.success(data?.message || 'Uitgeschreven van dit event')
-      } else {
-        const data = await api(`/events/${id}/register`, { method: 'POST' })
-        setIngeschreven(true)
-        toast.success(data?.message || 'Succesvol ingeschreven!')
-      }
-    } catch (err) {
-      toast.error(err.message)
-    } finally {
-      setRegistreerLoading(false)
-    }
-  }
-
   // US-14a: dagenquête ophalen
   async function fetchVragenlijst() {
     setVragenlijstLoading(true)
@@ -724,42 +704,6 @@ export default function EventDetail() {
                 </motion.div>
               )}
 
-              {/* Actie knop */}
-              <motion.div
-                initial={{ opacity: 0, y: 14 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ type: 'spring', stiffness: 350, damping: 30, delay: 0.34 }}
-              >
-                <motion.button
-                  whileHover={{ scale: registreerLoading ? 1 : 1.02 }}
-                  whileTap={{ scale: registreerLoading ? 1 : 0.98 }}
-                  onClick={handleRegistreer}
-                  disabled={registreerLoading || (isFull && !ingeschreven)}
-                  className={`w-full rounded-2xl py-4 text-sm font-bold flex items-center justify-center gap-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4e84a] focus-visible:ring-offset-2
-                    ${ingeschreven
-                      ? d ? 'bg-white/[0.07] text-white/70 hover:bg-red-900/30 hover:text-red-400' : 'bg-gray-100 text-gray-600 hover:bg-red-50 hover:text-red-500'
-                      : isFull
-                      ? d ? 'bg-white/[0.05] text-white/25 cursor-not-allowed' : 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                      : 'bg-[#d4e84a] text-[#1a3d2b] hover:bg-[#c8dc3e]'
-                    } disabled:opacity-60`}
-                >
-                  {registreerLoading ? (
-                    <>
-                      <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
-                      </svg>
-                      Bezig...
-                    </>
-                  ) : ingeschreven ? (
-                    'Uitschrijven'
-                  ) : isFull ? (
-                    'Vol — niet meer beschikbaar'
-                  ) : (
-                    'Inschrijven'
-                  )}
-                </motion.button>
-              </motion.div>
             </>
           )}
         </div>
