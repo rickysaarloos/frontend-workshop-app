@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { motion, AnimatePresence, useReducedMotion } from 'motion/react'
-import { ChevronLeft, CalendarDays, Clock, Users, CheckCircle, MapPin, BookOpen, User, Tag, Moon, Sun, AlertTriangle, ClipboardList, Leaf, HelpCircle, ChevronDown, Download, ScanLine, MessageSquare, Send, ArrowLeftRight } from 'lucide-react'
+import { ChevronLeft, CalendarDays, Clock, Users, CheckCircle, MapPin, BookOpen, User, Tag, Moon, Sun, AlertTriangle, ClipboardList, Leaf, HelpCircle, ChevronDown, Download, ScanLine, MessageSquare, Send, ArrowLeftRight, Star } from 'lucide-react'
 import { toast, Toaster } from 'sonner'
 import Footer from '../../components/Footer'
 import Card from '../../components/Card'
@@ -235,9 +235,13 @@ function WorkshopDetail() {
     setFeedbackLoading(true)
     try {
       // De API verwacht `answer` altijd als string — ook bij ratings ("8").
+      // Sterren gaan 1–5 in de UI, maar de API rekent met 1–10: dus x2.
       const answers = vragenlijst
         .filter(v => antwoorden[v.id] !== undefined && antwoorden[v.id] !== '')
-        .map(v => ({ question_id: v.id, answer: String(antwoorden[v.id]) }))
+        .map(v => ({
+          question_id: v.id,
+          answer: String((v.type || 'text') === 'rating' ? antwoorden[v.id] * 2 : antwoorden[v.id]),
+        }))
       const data = await api(`/workshops/${id}/feedback`, { method: 'POST', body: { answers } })
       toast.success(data?.message || 'Bedankt voor je feedback!')
       setFeedbackVerzonden(true)
@@ -677,11 +681,11 @@ function WorkshopDetail() {
                             transition={{ duration: 0.28, ease: EASE }}
                             className="overflow-hidden"
                           >
-                            <div className="pt-4">
+                            <div className="pt-3">
                       {vragenlijstLoading ? (
-                        <div className="space-y-3">
-                          {[1, 2, 3].map(i => (
-                            <div key={i} className={`h-16 animate-pulse rounded-2xl ${skelBg}`} />
+                        <div className="space-y-2.5">
+                          {[1, 2].map(i => (
+                            <div key={i} className={`h-12 animate-pulse rounded-xl ${skelBg}`} />
                           ))}
                         </div>
                       ) : feedbackVerzonden ? (
@@ -689,49 +693,47 @@ function WorkshopDetail() {
                           initial={{ opacity: 0, scale: 0.97 }}
                           animate={{ opacity: 1, scale: 1 }}
                           transition={{ type: 'spring', stiffness: 300, damping: 26 }}
-                          className="flex flex-col items-center py-6 text-center"
+                          className="flex items-center justify-center gap-2.5 py-4 text-center"
                         >
-                          <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#1a3d2b]">
-                            <CheckCircle className="h-6 w-6 text-[#d4e84a]" />
-                          </div>
+                          <CheckCircle className="h-5 w-5 shrink-0 text-[#d4e84a]" />
                           <p className={`text-sm font-bold ${titleClr}`}>Bedankt voor je feedback!</p>
-                          <p className={`mt-1 text-xs ${subClr}`}>Je enquête is succesvol verstuurd.</p>
                         </motion.div>
                       ) : (
-                        <form onSubmit={handleFeedbackVersturen} className="flex flex-col gap-5">
+                        <form onSubmit={handleFeedbackVersturen} className="flex flex-col gap-3.5">
                           {vragenlijst.map((vraag, i) => {
                             const type = vraag.type || 'text'
                             const huidig = antwoorden[vraag.id]
                             return (
-                              <div key={vraag.id} className="flex flex-col gap-2">
-                                <label className={`text-sm font-semibold ${titleClr}`}>
+                              <div key={vraag.id} className="flex flex-col gap-1.5">
+                                <label className={`text-[13px] font-semibold ${titleClr}`}>
                                   <span className={`mr-1 tabular-nums ${subClr}`}>{i + 1}.</span>
                                   {vraag.question_text || vraag.question || vraag.label}
                                   {vraag.required && <span className="ml-1 text-red-400">*</span>}
                                 </label>
 
                                 {type === 'rating' ? (
-                                  // Schaal 1–10 als genummerde knoppen (de API verwacht 1–10).
-                                  // Knoppen i.p.v. sterren: op mobiel nauwkeuriger aan te tikken
-                                  // en het cijfer maakt de gekozen waarde ondubbelzinnig.
-                                  <div className="flex flex-wrap gap-2">
-                                    {Array.from({ length: 10 }, (_, idx) => idx + 1).map(score => {
-                                      const gekozen = huidig === score
+                                  // 5 sterren; bij versturen omgerekend naar de 1–10 schaal van de API.
+                                  <div className="flex gap-1" role="radiogroup" aria-label="Beoordeling in sterren">
+                                    {[1, 2, 3, 4, 5].map(score => {
+                                      const actief = (huidig || 0) >= score
                                       return (
                                         <motion.button
                                           key={score}
                                           type="button"
-                                          whileTap={{ scale: 0.95 }}
+                                          whileTap={{ scale: 0.85 }}
                                           onClick={() => setAntwoord(vraag.id, score)}
-                                          aria-label={`${score} van 10`}
-                                          aria-pressed={gekozen}
-                                          className={`w-10 rounded-xl border py-2 text-xs font-semibold tabular-nums transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4e84a] ${
-                                            gekozen
-                                              ? (d ? 'border-[#d4e84a]/50 bg-[#d4e84a]/10 text-[#d4e84a]' : 'border-[#1a3d2b] bg-[#eaf3de] text-[#1a3d2b]')
-                                              : (d ? 'border-white/[0.08] text-white/70 hover:border-white/20' : 'border-[#1a3d2b]/10 text-[#1a3d2b]/70 hover:border-[#1a3d2b]/30')
-                                          }`}
+                                          aria-label={`${score} van 5 sterren`}
+                                          aria-pressed={huidig === score}
+                                          className="rounded-lg p-1 transition-transform duration-150 hover:scale-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4e84a]"
                                         >
-                                          {score}
+                                          <Star
+                                            className={`h-6 w-6 transition-colors duration-150 ${
+                                              actief
+                                                ? 'text-[#d4e84a]'
+                                                : (d ? 'text-white/20' : 'text-[#1a3d2b]/20')
+                                            }`}
+                                            fill={actief ? 'currentColor' : 'none'}
+                                          />
                                         </motion.button>
                                       )
                                     })}
@@ -748,7 +750,7 @@ function WorkshopDetail() {
                                           type="button"
                                           whileTap={{ scale: 0.95 }}
                                           onClick={() => setAntwoord(vraag.id, waarde)}
-                                          className={`rounded-xl border px-3.5 py-2 text-xs font-semibold transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4e84a] ${
+                                          className={`rounded-xl border px-3 py-1.5 text-xs font-semibold transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4e84a] ${
                                             gekozen
                                               ? (d ? 'border-[#d4e84a]/50 bg-[#d4e84a]/10 text-[#d4e84a]' : 'border-[#1a3d2b] bg-[#eaf3de] text-[#1a3d2b]')
                                               : (d ? 'border-white/[0.08] text-white/70 hover:border-white/20' : 'border-[#1a3d2b]/10 text-[#1a3d2b]/70 hover:border-[#1a3d2b]/30')
@@ -763,9 +765,9 @@ function WorkshopDetail() {
                                   <textarea
                                     value={huidig || ''}
                                     onChange={e => setAntwoord(vraag.id, e.target.value)}
-                                    rows={3}
+                                    rows={2}
                                     placeholder="Je antwoord..."
-                                    className={`w-full resize-none rounded-2xl border px-4 py-3 text-sm outline-none transition-colors focus-visible:ring-2 focus-visible:ring-[#d4e84a] ${
+                                    className={`w-full resize-none rounded-xl border px-3.5 py-2.5 text-sm outline-none transition-colors focus-visible:ring-2 focus-visible:ring-[#d4e84a] ${
                                       d
                                         ? 'border-white/[0.08] bg-white/[0.05] text-white placeholder:text-white/40 focus:border-[#d4e84a]/40'
                                         : 'border-[#1a3d2b]/10 bg-[#f6faf2] text-[#1a3d2b] placeholder:text-[#1a3d2b]/40 focus:border-[#1a3d2b]/40'
@@ -781,9 +783,9 @@ function WorkshopDetail() {
                             whileTap={{ scale: feedbackLoading ? 1 : 0.98 }}
                             type="submit"
                             disabled={feedbackLoading}
-                            className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#1a3d2b] py-3.5 text-sm font-bold text-[#d4e84a] transition-colors hover:bg-[#16331f] disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4e84a] focus-visible:ring-offset-2"
+                            className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#1a3d2b] py-2.5 text-xs font-bold text-[#d4e84a] transition-colors hover:bg-[#16331f] disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4e84a] focus-visible:ring-offset-2"
                           >
-                            {feedbackLoading ? <><SpinnerIcon />Versturen...</> : <><Send className="h-4 w-4" />Enquête versturen</>}
+                            {feedbackLoading ? <><SpinnerIcon />Versturen...</> : <><Send className="h-3.5 w-3.5" />Versturen</>}
                           </motion.button>
                         </form>
                       )}
