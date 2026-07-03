@@ -3,10 +3,11 @@ import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'motion/react'
 import { ChevronLeft, CalendarDays, Clock, MapPin, Search, Calendar, Moon, Sun } from 'lucide-react'
 import { toast, Toaster } from 'sonner'
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://187.124.29.171:8002'
+import Footer from '../../components/Footer'
+ 
+import { api } from '@/lib/api'
 const categorieen = ['Alle', 'Studiedag', 'Open dag', 'Gastcollege', 'Expo']
-
+ 
 const containerVariants = {
   hidden: { opacity: 0 },
   visible: {
@@ -14,7 +15,7 @@ const containerVariants = {
     transition: { staggerChildren: 0.07, delayChildren: 0.05 },
   },
 }
-
+ 
 const cardVariants = {
   hidden: { opacity: 0, y: 18 },
   visible: {
@@ -23,47 +24,52 @@ const cardVariants = {
     transition: { type: 'spring', stiffness: 380, damping: 28 },
   },
 }
-
+ 
+// Kaart voor één event: categorie, titel, meta en een aftel-teller in dagen.
+// Verstreken events worden gedimd. De hele kaart navigeert naar de detailpagina.
 function EventCard({ event, navigate, formatDatum, getDagenTot, dark }) {
   const d = dark
   const dagenTot = getDagenTot(event.datum)
   const isVoorbij = dagenTot < 0
-
+ 
   const cardBg    = d ? 'bg-[#1c1c1e]'       : 'bg-white'
   const cardBord  = d ? 'border-white/[0.07]' : 'border-gray-100'
   const catBg     = d ? 'bg-[#d4e84a]/12 text-[#d4e84a]' : 'bg-[#eaf3de] text-[#1a3d2b]'
   const titleClr  = d ? 'text-white'          : 'text-[#1a3d2b]'
-  const subClr    = d ? 'text-white/45'       : 'text-gray-400'
+  const subClr    = d ? 'text-white/70'       : 'text-gray-500'
   const metaBg    = d ? 'bg-white/[0.06]'     : 'bg-gray-50'
-  const metaClr   = d ? 'text-white/55'       : 'text-gray-500'
-  const metaIcon  = d ? 'text-white/30'       : 'text-gray-400'
+  const metaClr   = d ? 'text-white/70'       : 'text-gray-500'
+  const metaIcon  = d ? 'text-white/60'       : 'text-gray-500'
   const countClr  = isVoorbij ? (d ? 'text-white/20' : 'text-gray-300') : (d ? 'text-white' : 'text-[#1a3d2b]')
-
+ 
   return (
     <motion.div
       variants={cardVariants}
       whileHover={{ y: -3, boxShadow: d ? '0 16px 36px rgba(0,0,0,0.4)' : '0 16px 36px rgba(26,61,43,0.13)' }}
       whileTap={{ scale: 0.99 }}
       onClick={() => navigate(`/events/${event.id}`)}
-      className={`${cardBg} rounded-3xl border ${cardBord} overflow-hidden cursor-pointer`}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigate(`/events/${event.id}`) } }}
+      className={`${cardBg} rounded-3xl border ${cardBord} overflow-hidden cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4e84a]`}
     >
       <div className={`h-0.5 w-full ${isVoorbij ? (d ? 'bg-white/10' : 'bg-gradient-to-r from-gray-200 to-gray-300') : 'bg-gradient-to-r from-[#1a3d2b] via-[#4a8c60] to-[#d4e84a]'}`} />
-
+ 
       <div className="p-5">
         <div className="flex justify-between gap-4">
           <div className="flex-1 min-w-0">
             <span className={`text-xs font-semibold px-2 py-1 rounded-lg ${catBg}`}>
               {event.categorie}
             </span>
-
+ 
             <h2 className={`font-bold mt-2 text-sm leading-snug truncate ${titleClr}`}>
               {event.titel}
             </h2>
-
+ 
             <p className={`text-xs mt-1 mb-3 line-clamp-2 leading-relaxed ${subClr}`}>
               {event.beschrijving}
             </p>
-
+ 
             <div className="flex flex-wrap gap-2">
               <span className={`flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-lg ${metaBg} ${metaClr}`}>
                 <CalendarDays className={`w-3 h-3 ${metaIcon}`} />
@@ -83,12 +89,12 @@ function EventCard({ event, navigate, formatDatum, getDagenTot, dark }) {
               )}
             </div>
           </div>
-
+ 
           <div className="text-right shrink-0 flex flex-col items-end justify-center">
             <p className={`text-lg font-bold ${countClr}`}>
               {isVoorbij ? '–' : dagenTot}
             </p>
-            <p className={`text-xs ${d ? 'text-white/30' : 'text-gray-400'}`}>
+            <p className={`text-xs ${d ? 'text-white/60' : 'text-gray-500'}`}>
               {isVoorbij ? 'voorbij' : 'dagen'}
             </p>
           </div>
@@ -97,7 +103,8 @@ function EventCard({ event, navigate, formatDatum, getDagenTot, dark }) {
     </motion.div>
   )
 }
-
+ 
+// Eventoverzicht (route /events): zoekbalk, categoriefilter en de lijst met kaarten.
 function EventOverzicht() {
   const navigate = useNavigate()
 
@@ -106,7 +113,7 @@ function EventOverzicht() {
   const [zoekterm, setZoekterm] = useState('')
   const [actieveCategorie, setActieveCategorie] = useState('Alle')
   const [dark, setDark] = useState(() => localStorage.getItem('theme') === 'dark')
-
+ 
   function toggleDark() {
     setDark(d => {
       const next = !d
@@ -114,37 +121,24 @@ function EventOverzicht() {
       return next
     })
   }
-
+ 
   useEffect(() => {
     const token = localStorage.getItem('token')
     if (!token) {
       navigate('/login')
       return
     }
-    fetchEvents(token)
+    fetchEvents()
   }, [])
-
-  async function fetchEvents(token) {
+ 
+  // Haalt de events op en mapt de API-velden naar de Nederlandse vorm die de UI
+  // gebruikt. Gebruikers zien alleen de events die via de backend aan ze zijn
+  // toegewezen (is_registered) — zelf inschrijven kan niet.
+  async function fetchEvents() {
     try {
-      const res = await fetch(`${API_URL}/api/events`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          Accept: 'application/json',
-        },
-      })
+      const json = await api('/events')
 
-      if (res.status === 401) {
-        localStorage.removeItem('token')
-        localStorage.removeItem('user')
-        navigate('/login')
-        return
-      }
-
-      if (!res.ok) throw new Error(`Kon events niet ophalen (${res.status})`)
-
-      const json = await res.json()
-
-      const mapped = (json.data || []).map((e) => ({
+      const mapped = (json.data || []).filter((e) => e.is_registered).map((e) => ({
         id: e.id,
         titel: e.title,
         beschrijving: e.description,
@@ -154,7 +148,7 @@ function EventOverzicht() {
         tijd: formatTimeRange(e.days),
         startDate: e.start_date,
       }))
-
+ 
       setEvents(mapped)
     } catch (err) {
       toast.error('Events ophalen mislukt')
@@ -163,7 +157,8 @@ function EventOverzicht() {
       setLoading(false)
     }
   }
-
+ 
+  // Vertaalt de Engelse categorie-codes van de API naar Nederlandse labels.
   function mapCategory(cat) {
     const map = {
       conference: 'Studiedag',
@@ -173,13 +168,13 @@ function EventOverzicht() {
     }
     return map[cat] || cat
   }
-
+ 
   function formatTimeRange(days) {
     if (!days?.length) return ''
     const day = days[0]
     return `${day.start_time} - ${day.end_time}`
   }
-
+ 
   function formatDatum(datum) {
     if (!datum) return ''
     return new Date(datum).toLocaleDateString('nl-NL', {
@@ -188,30 +183,32 @@ function EventOverzicht() {
       month: 'short',
     })
   }
-
+ 
+  // Aantal dagen tot het event; negatief betekent dat het al voorbij is.
   function getDagenTot(datum) {
     if (!datum) return 0
     const verschil = new Date(datum) - new Date()
     return Math.ceil(verschil / (1000 * 60 * 60 * 24))
   }
-
+ 
+  // Filter op zoekterm (titel) én actieve categorie.
   const gefilterd = events.filter((e) => {
     const matchZoek = e.titel?.toLowerCase().includes(zoekterm.toLowerCase())
     const matchCategorie = actieveCategorie === 'Alle' || e.categorie === actieveCategorie
     return matchZoek && matchCategorie
   })
-
+ 
   const d = dark
   const contentBg  = d ? 'bg-[#111111]'       : 'bg-[#e4e8e2]'
   const cardBg     = d ? 'bg-[#1c1c1e]'       : 'bg-white'
   const cardBorder = d ? 'border-white/[0.07]' : 'border-gray-100'
   const skelBg     = d ? 'bg-white/[0.07]'    : 'bg-gray-100'
-  const labelClr   = d ? 'text-white/30'       : 'text-gray-400'
-
+  const labelClr   = d ? 'text-white/60'       : 'text-gray-500'
+ 
   return (
     <div className="min-h-[100dvh] bg-[#1a3d2b] flex flex-col">
       <Toaster position="top-right" richColors />
-
+ 
       {/* Header */}
       <motion.header
         initial={{ opacity: 0, y: -16 }}
@@ -224,20 +221,19 @@ function EventOverzicht() {
             whileHover={{ scale: 1.1, x: -2 }}
             whileTap={{ scale: 0.85 }}
             onClick={() => navigate('/home')}
-            className="text-white/40 hover:text-white transition-colors p-1.5 rounded-xl hover:bg-white/10"
+            className="text-white/60 hover:text-white transition-colors p-1.5 rounded-xl hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4e84a]"
+            aria-label="Terug naar home"
           >
             <ChevronLeft className="w-5 h-5" />
           </motion.button>
-          <motion.div
-            whileHover={{ rotate: 8, scale: 1.1 }}
-            transition={{ type: 'spring', stiffness: 400, damping: 20 }}
-            className="w-7 h-7 bg-[#d4e84a] rounded-lg flex items-center justify-center cursor-default"
-          >
-            <span className="text-[#1a3d2b] font-black text-xs">T</span>
-          </motion.div>
+          <img
+            src="/img/techniek-college-rotterdam2.jpg"
+            alt="Techniek College Rotterdam"
+            className="h-8 w-auto object-contain rounded"
+          />
           <div className="flex flex-col leading-none">
             <span className="text-white font-bold text-xs tracking-tight">Techniek College</span>
-            <span className="text-white/40 text-xs">Rotterdam</span>
+            <span className="text-white/50 font-medium text-xs tracking-tight">Rotterdam</span>
           </div>
         </div>
 
@@ -245,7 +241,7 @@ function EventOverzicht() {
           whileHover={{ scale: 1.08 }}
           whileTap={{ scale: 0.88 }}
           onClick={toggleDark}
-          className="w-8 h-8 flex items-center justify-center rounded-xl hover:bg-white/10 transition-colors text-white/40 hover:text-white/70"
+          className="w-8 h-8 flex items-center justify-center rounded-xl hover:bg-white/10 transition-colors text-white/60 hover:text-white/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4e84a]"
           aria-label="Wissel kleurmodus"
         >
           <AnimatePresence mode="wait">
@@ -273,7 +269,7 @@ function EventOverzicht() {
           </AnimatePresence>
         </motion.button>
       </motion.header>
-
+ 
       {/* Hero */}
       <div className="px-6 pt-2 pb-10 relative overflow-hidden">
         <motion.div
@@ -286,7 +282,7 @@ function EventOverzicht() {
           transition={{ duration: 9, repeat: Infinity, ease: 'easeInOut', delay: 3 }}
           className="absolute -left-20 bottom-0 w-48 h-48 bg-[#d4e84a] rounded-full pointer-events-none"
         />
-
+ 
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -298,7 +294,7 @@ function EventOverzicht() {
             transition={{ delay: 0.2 }}
             className="text-[#d4e84a] text-xs font-bold uppercase tracking-widest mb-2"
           >
-            Aanbod
+            Jouw events
           </motion.p>
           <h1 className="text-4xl font-black text-white tracking-tight leading-none mb-3">Events</h1>
           <motion.div
@@ -311,17 +307,17 @@ function EventOverzicht() {
             ) : (
               <span className="inline-flex items-center gap-1.5 bg-white/10 text-white/70 text-xs font-medium px-3 py-1.5 rounded-full">
                 <Calendar className="w-3 h-3" />
-                {events.length} events beschikbaar
+                {events.length} events voor jou
               </span>
             )}
           </motion.div>
         </motion.div>
       </div>
-
+ 
       {/* Content sectie */}
       <div className={`flex-1 ${contentBg} rounded-t-[2.5rem] px-5 pt-7 pb-10`}>
         <div className="max-w-2xl mx-auto flex flex-col gap-4">
-
+ 
           {/* Zoekbalk */}
           <div className="relative">
             <Search className={`absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 ${d ? 'text-white/20' : 'text-gray-300'}`} />
@@ -330,14 +326,14 @@ function EventOverzicht() {
               value={zoekterm}
               onChange={(e) => setZoekterm(e.target.value)}
               placeholder="Zoek een event..."
-              className={`w-full rounded-2xl pl-10 pr-4 py-3 text-sm outline-none transition-all shadow-sm border ${
+              className={`w-full rounded-2xl pl-10 pr-4 py-3 text-sm outline-none transition-all shadow-sm border focus-visible:ring-2 focus-visible:ring-[#d4e84a] ${
                 d
-                  ? 'bg-[#1c1c1e] border-white/[0.07] text-white placeholder:text-white/20 focus:border-white/20'
+                  ? 'bg-[#1c1c1e] border-white/[0.07] text-white placeholder:text-white/40 focus:border-white/20'
                   : 'bg-white border-gray-100 text-[#1a3d2b] focus:border-[#1a3d2b]'
               }`}
             />
           </div>
-
+ 
           {/* Categorie filter */}
           <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
             {categorieen.map((cat) => (
@@ -345,19 +341,19 @@ function EventOverzicht() {
                 key={cat}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => setActieveCategorie(cat)}
-                className={`shrink-0 text-xs px-3 py-1.5 rounded-xl font-semibold transition-all ${
+                className={`shrink-0 text-xs px-3 py-1.5 rounded-xl font-semibold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4e84a] ${
                   actieveCategorie === cat
                     ? 'bg-[#1a3d2b] text-[#d4e84a]'
                     : d
-                    ? 'bg-[#1c1c1e] border border-white/[0.07] text-white/45'
-                    : 'bg-white text-gray-400 border border-gray-100'
+                    ? 'bg-[#1c1c1e] border border-white/[0.07] text-white/70'
+                    : 'bg-white text-gray-500 border border-gray-100'
                 }`}
               >
                 {cat}
               </motion.button>
             ))}
           </div>
-
+ 
           {/* Label */}
           <AnimatePresence mode="wait">
             <motion.p
@@ -371,7 +367,7 @@ function EventOverzicht() {
               {loading ? 'Laden...' : `${gefilterd.length} events gevonden`}
             </motion.p>
           </AnimatePresence>
-
+ 
           {/* Skeleton loading */}
           {loading && (
             <div className="flex flex-col gap-3">
@@ -401,7 +397,7 @@ function EventOverzicht() {
               ))}
             </div>
           )}
-
+ 
           {/* Event lijst */}
           <AnimatePresence mode="wait">
             {!loading && (
@@ -425,12 +421,14 @@ function EventOverzicht() {
                     >
                       <Calendar className={`w-5 h-5 ${d ? 'text-white/20' : 'text-gray-300'}`} />
                     </motion.div>
-                    <p className={`text-sm font-semibold mb-3 ${d ? 'text-white/40' : 'text-gray-400'}`}>Geen events gevonden</p>
+                    <p className={`text-sm font-semibold mb-3 ${d ? 'text-white/70' : 'text-gray-500'}`}>
+                      {events.length === 0 ? 'Er zijn nog geen events aan je toegewezen' : 'Geen events gevonden'}
+                    </p>
                     <motion.button
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
                       onClick={() => { setZoekterm(''); setActieveCategorie('Alle') }}
-                      className={`text-xs font-bold px-3 py-1.5 rounded-lg transition-colors ${
+                      className={`text-xs font-bold px-3 py-1.5 rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4e84a] ${
                         d
                           ? 'text-[#d4e84a] bg-[#d4e84a]/10 hover:bg-[#d4e84a]/20'
                           : 'text-[#1a3d2b] bg-[#eaf3de] hover:bg-[#d4e84a]'
@@ -456,8 +454,9 @@ function EventOverzicht() {
           </AnimatePresence>
         </div>
       </div>
+      <Footer />
     </div>
   )
 }
-
+ 
 export default EventOverzicht

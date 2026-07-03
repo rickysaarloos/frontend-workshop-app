@@ -1,11 +1,12 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { motion, AnimatePresence } from 'motion/react'
-import { Mail, Lock, User, ArrowRight, Eye, EyeOff } from 'lucide-react'
+import { Mail, Lock, User, ArrowRight, Eye, EyeOff, ShieldAlert } from 'lucide-react'
 import { toast, Toaster } from 'sonner'
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://187.124.29.171:8002'
+import { api } from '@/lib/api'
 
+// Grove wachtwoordsterkte voor de balk: 0 leeg, 1 te kort, 2 redelijk, 3 sterk.
 function passwordStrength(pw) {
   if (!pw) return 0
   if (pw.length < 8) return 1
@@ -19,8 +20,12 @@ const strengthMeta = {
   3: { label: 'Sterk',    color: 'bg-[#1a3d2b]' },
 }
 
+// Registratiepagina (route /register). Werkt alleen met een geldig `token` uit de
+// query-string; zonder (of bij een afgekeurd) token toont de pagina een blokkade.
 function Register() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const token = searchParams.get('token')
   const [naam, setNaam] = useState('')
   const [email, setEmail] = useState('')
   const [wachtwoord, setWachtwoord] = useState('')
@@ -30,42 +35,123 @@ function Register() {
   const [toonWachtwoord, setToonWachtwoord] = useState(false)
   const [toonHerhaal, setToonHerhaal] = useState(false)
   const [registered, setRegistered] = useState(false)
+  const [linkError, setLinkError] = useState(null)
 
+  // Valideert de velden, registreert via de API met het uitnodigingstoken en
+  // vertaalt backend-fouten (afgekeurd token, 422, 429, netwerk) naar toasts.
   async function handleSubmit(e) {
     e.preventDefault()
-    if (!naam || !email || !wachtwoord || !wachtwoordHerhaal) {
-      toast.error('Vul alle velden in')
+
+    // Client-side controles: wijs precies aan wélk veld nog niet klopt,
+    // zodat de gebruiker meteen weet wat er moet gebeuren.
+    if (!naam.trim()) {
+      toast.error('Vul je naam in', {
+        description: 'We hebben je volledige naam nodig voor je account.',
+      })
       return
     }
-    if (wachtwoord !== wachtwoordHerhaal) {
-      toast.error('Wachtwoorden komen niet overeen')
+    if (!email.trim()) {
+      toast.error('Vul je e-mailadres in', {
+        description: 'Met dit adres log je straks in.',
+      })
+      return
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      toast.error('Dit e-mailadres klopt niet', {
+        description: 'Controleer of het adres een @ en een geldig domein bevat, bijv. naam@tcrmbo.nl.',
+      })
+      return
+    }
+    if (!wachtwoord) {
+      toast.error('Kies een wachtwoord', {
+        description: 'Gebruik minimaal 8 tekens.',
+      })
       return
     }
     if (wachtwoord.length < 8) {
-      toast.error('Wachtwoord moet minimaal 8 tekens zijn')
+      toast.error('Je wachtwoord is te kort', {
+        description: `Gebruik minimaal 8 tekens — je hebt er nu ${wachtwoord.length}.`,
+      })
+      return
+    }
+    if (!wachtwoordHerhaal) {
+      toast.error('Herhaal je wachtwoord', {
+        description: 'Vul je wachtwoord nog een keer in ter controle.',
+      })
+      return
+    }
+    if (wachtwoord !== wachtwoordHerhaal) {
+      toast.error('De wachtwoorden komen niet overeen', {
+        description: 'Zorg dat je in beide velden exact hetzelfde wachtwoord typt.',
+      })
       return
     }
 
     setIsLoading(true)
     try {
-      const response = await fetch(`${API_URL}/api/register`, {
+      await api('/register', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-        body: JSON.stringify({
-          name: naam,
-          email,
+        auth: false,
+        body: {
+          name: naam.trim(),
+          // E-mail genormaliseerd: de backend slaat adressen in kleine letters op,
+          // dus een hoofdletter aan het begin leverde anders een 422 op.
+          email: email.trim().toLowerCase(),
           password: wachtwoord,
           password_confirmation: wachtwoordHerhaal,
-        }),
+          token,
+        },
       })
-      const data = await response.json()
-      if (!response.ok) {
-        toast.error(data.message || 'Registreren mislukt')
+      setRegistered(true)
+    } catch (err) {
+      // Stuurlink afgekeurd door de backend (ongeldig of verlopen)
+      const tokenError = err.errors?.token?.[0]
+      if (tokenError || err.status === 403 || err.status === 410) {
+        setLinkError(tokenError || err.message || 'Deze stuurlink is ongeldig of verlopen.')
         return
       }
-      setRegistered(true)
-    } catch {
-      toast.error('Kan geen verbinding maken met de server')
+
+      // Geen HTTP-response: netwerk- of timeoutfout (api.js zet status op 0).
+      if (err.status === 0) {
+        toast.error('Geen verbinding met de server', {
+          description: err.message || 'Controleer je internetverbinding en probeer het opnieuw.',
+        })
+        return
+      }
+
+      // Te veel pogingen achter elkaar.
+      if (err.status === 429) {
+        toast.error('Te veel pogingen', {
+          description: 'Wacht even en probeer het over een paar minuten opnieuw.',
+        })
+        return
+      }
+
+      // Validatiefouten van de backend (422): toon het eerste, veldspecifieke bericht.
+      if (err.status === 422 && err.errors) {
+        const emailError = err.errors.email?.[0]
+        const passwordError = err.errors.password?.[0]
+        const nameError = err.errors.name?.[0]
+
+        if (emailError) {
+          const alreadyUsed = /taken|bestaat|already|in gebruik/i.test(emailError)
+          toast.error(alreadyUsed ? 'Dit e-mailadres is al in gebruik' : 'Controleer je e-mailadres', {
+            description: alreadyUsed
+              ? 'Er bestaat al een account met dit adres. Log in of gebruik een ander e-mailadres.'
+              : emailError,
+          })
+          return
+        }
+        toast.error('Controleer je gegevens', {
+          description: passwordError || nameError || 'Niet alle velden zijn correct ingevuld.',
+        })
+        return
+      }
+
+      // Alle overige fouten (bijv. 500).
+      toast.error('Registreren is mislukt', {
+        description: err.message || 'Er ging iets mis aan onze kant. Probeer het later opnieuw.',
+      })
     } finally {
       setIsLoading(false)
     }
@@ -73,6 +159,9 @@ function Register() {
 
   const pwStrength = passwordStrength(wachtwoord)
   const pwMeta = strengthMeta[pwStrength]
+  // Zonder geldige stuurlink is registreren niet mogelijk (US-04c),
+  // en een door de backend afgekeurde link toont dezelfde kaart (US-04b).
+  const showBlocked = !token || linkError
 
   return (
     <div className="min-h-[100dvh] bg-[#1a3d2b] flex flex-col items-center justify-center relative overflow-hidden px-6 py-12">
@@ -116,15 +205,13 @@ function Register() {
         transition={{ type: 'spring', stiffness: 220, damping: 40 }}
         className="flex items-center gap-3 mb-8 z-10"
       >
-        <motion.div
-          whileHover={{ rotate: -8, scale: 1.1 }}
-          transition={{ type: 'spring', stiffness: 260, damping: 26 }}
-          className="w-8 h-8 bg-[#d4e84a] rounded-xl flex items-center justify-center cursor-default"
-        >
-          <span className="text-[#1a3d2b] font-black text-sm">T</span>
-        </motion.div>
+        <img
+          src="/img/techniek-college-rotterdam2.jpg"
+          alt="Techniek College Rotterdam"
+          className="h-9 w-auto object-contain rounded"
+        />
         <div className="flex flex-col leading-none">
-          <span className="text-white font-bold text-xs tracking-tight">Techniek College</span>
+          <span className="text-white font-bold text-sm tracking-tight">Techniek College</span>
           <span className="text-white/50 font-medium text-xs tracking-tight">Rotterdam</span>
         </div>
       </motion.div>
@@ -137,6 +224,37 @@ function Register() {
         className="w-full max-w-sm bg-white rounded-3xl p-7 z-10 relative"
         style={{ boxShadow: '0 32px 80px rgba(0,0,0,0.28), 0 8px 24px rgba(0,0,0,0.12)' }}
       >
+        {showBlocked ? (
+          /* Geblokkeerd: geen of ongeldige stuurlink (US-04b / US-04c) */
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ type: 'spring', stiffness: 200, damping: 38, delay: 0.28 }}
+            className="flex flex-col items-center text-center py-2"
+          >
+            <div className="w-14 h-14 rounded-2xl bg-red-50 flex items-center justify-center mb-5">
+              <ShieldAlert className="w-7 h-7 text-red-400" />
+            </div>
+            <h1 className="text-2xl font-black text-[#1a3d2b] leading-tight tracking-tight mb-2">
+              {linkError ? 'Ongeldige stuurlink' : 'Stuurlink vereist'}
+            </h1>
+            <p className="text-gray-400 text-xs leading-relaxed mb-6 max-w-[16rem]">
+              {linkError
+                ? linkError
+                : 'Registreren kan alleen via een geldige stuurlink. Vraag je beheerder om een nieuwe uitnodiging.'}
+            </p>
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.97 }}
+              onClick={() => navigate('/login')}
+              className="w-full bg-[#1a3d2b] text-[#d4e84a] rounded-2xl py-3.5 text-sm font-bold transition-all duration-200 flex items-center justify-center gap-2"
+            >
+              Naar inloggen
+              <ArrowRight className="w-4 h-4" />
+            </motion.button>
+          </motion.div>
+        ) : (
+         <>
         {/* Kaart heading */}
         <div className="mb-6">
           <motion.p
@@ -417,6 +535,8 @@ function Register() {
           </motion.p>
 
         </form>
+         </>
+        )}
       </motion.div>
 
       {/* Radiale transitie-overlay naar Login, identiek aan Login → Home */}

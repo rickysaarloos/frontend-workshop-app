@@ -4,8 +4,10 @@ import { motion, AnimatePresence } from 'motion/react'
 import { Mail, Lock, ArrowRight, Eye, EyeOff } from 'lucide-react'
 import { toast, Toaster } from 'sonner'
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://187.124.29.171:8002'
+import { api } from '@/lib/api'
 
+// Loginpagina (routes / en /login). Registreren kan alleen via een
+// uitnodigingslink, dus hier staat bewust geen link naar /register.
 function Login() {
   const [email, setEmail] = useState('')
   const [wachtwoord, setWachtwoord] = useState('')
@@ -15,23 +17,18 @@ function Login() {
   const [transitioning, setTransitioning] = useState(false)
   const navigate = useNavigate()
 
+  // Logt in en bewaart token + gebruiker; start bij succes de overgang naar /home.
   async function handleSubmit(e) {
     e.preventDefault()
     if (!email || !wachtwoord) { toast.error('Vul alle velden in'); return }
     setIsLoading(true)
     try {
-      const response = await fetch(`${API_URL}/api/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-        body: JSON.stringify({ email, password: wachtwoord }),
-      })
-      const data = await response.json()
-      if (!response.ok) { toast.error(data.message || 'Inloggen mislukt'); return }
+      const data = await api('/login', { method: 'POST', auth: false, body: { email, password: wachtwoord } })
       localStorage.setItem('token', data.token)
       localStorage.setItem('user', JSON.stringify(data.user))
       setTransitioning(true)
-    } catch {
-      toast.error('Kan geen verbinding maken met de server')
+    } catch (err) {
+      toast.error(err.message || 'Inloggen mislukt')
     } finally {
       setIsLoading(false)
     }
@@ -79,15 +76,13 @@ function Login() {
         transition={{ type: 'spring', stiffness: 220, damping: 40 }}
         className="flex items-center gap-3 mb-8 z-10"
       >
-        <motion.div
-          whileHover={{ rotate: 8, scale: 1.1 }}
-          transition={{ type: 'spring', stiffness: 260, damping: 26 }}
-          className="w-8 h-8 bg-[#d4e84a] rounded-xl flex items-center justify-center cursor-default"
-        >
-          <span className="text-[#1a3d2b] font-black text-sm">T</span>
-        </motion.div>
+        <img
+          src="/img/techniek-college-rotterdam2.jpg"
+          alt="Techniek College Rotterdam"
+          className="h-9 w-auto object-contain rounded"
+        />
         <div className="flex flex-col leading-none">
-          <span className="text-white font-bold text-xs tracking-tight">Techniek College</span>
+          <span className="text-white font-bold text-sm tracking-tight">Techniek College</span>
           <span className="text-white/50 font-medium text-xs tracking-tight">Rotterdam</span>
         </div>
       </motion.div>
@@ -258,24 +253,6 @@ function Login() {
               </AnimatePresence>
             </motion.button>
           </motion.div>
-
-          {/* Register link */}
-          <motion.p
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.64 }}
-            className="text-xs text-center text-gray-400 pt-1"
-          >
-            Nog geen account?{' '}
-            <motion.span
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => navigate('/register')}
-              className="text-[#1a3d2b] font-bold cursor-pointer hover:underline underline-offset-2"
-            >
-              Registreren
-            </motion.span>
-          </motion.p>
 
         </form>
       </motion.div>

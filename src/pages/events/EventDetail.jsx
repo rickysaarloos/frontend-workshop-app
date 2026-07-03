@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { motion, AnimatePresence } from 'motion/react'
-import { ChevronLeft, CalendarDays, Clock, MapPin, Users, CheckCircle, Calendar, Moon, Sun } from 'lucide-react'
+import { ChevronLeft, CalendarDays, Clock, MapPin, Users, CheckCircle, Calendar, Moon, Sun, MessageSquare, Send, ScanLine, Download } from 'lucide-react'
 import { toast, Toaster } from 'sonner'
+import Footer from '../../components/Footer'
+ 
+import { api } from '@/lib/api'
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://187.124.29.171:8002'
-
+// Vertaalt de Engelse categorie-codes van de API naar Nederlandse labels.
 function mapCategory(cat) {
   const map = {
     conference: 'Studiedag',
@@ -15,7 +17,7 @@ function mapCategory(cat) {
   }
   return map[cat] || cat
 }
-
+ 
 function formatDatum(datum) {
   if (!datum) return ''
   return new Date(datum).toLocaleDateString('nl-NL', {
@@ -25,7 +27,7 @@ function formatDatum(datum) {
     year: 'numeric',
   })
 }
-
+ 
 function formatDatumKort(datum) {
   if (!datum) return ''
   return new Date(datum).toLocaleDateString('nl-NL', {
@@ -34,13 +36,34 @@ function formatDatumKort(datum) {
     month: 'short',
   })
 }
-
+ 
 function formatTijd(days) {
   if (!days?.length) return ''
   const day = days[0]
   return `${day.start_time} - ${day.end_time}`
 }
 
+// US-14c: bepaal of het event volledig is afgelopen (einde laatste dag of end_date)
+function isEventAfgelopen(event) {
+  if (!event) return false
+  let eindStr = null
+  const days = event.days
+  if (days?.length) {
+    const laatste = days[days.length - 1]
+    if (laatste?.date) {
+      eindStr = laatste.end_time ? `${laatste.date} ${laatste.end_time}` : `${laatste.date} 23:59`
+    }
+  }
+  if (!eindStr && event.end_date) eindStr = event.end_date
+  if (!eindStr) return false
+  const eind = new Date(eindStr.replace(' ', 'T'))
+  if (isNaN(eind.getTime())) return false
+  return Date.now() > eind.getTime()
+}
+ 
+// Eventdetail (route /events/:id): details, aanwezigheid, presentatie downloaden
+// en de dagenquête invullen. Inschrijven gebeurt niet hier: events worden via de
+// backend aan gebruikers toegewezen.
 export default function EventDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
@@ -48,9 +71,16 @@ export default function EventDetail() {
   const [event, setEvent] = useState(null)
   const [loading, setLoading] = useState(true)
   const [ingeschreven, setIngeschreven] = useState(false)
-  const [registreerLoading, setRegistreerLoading] = useState(false)
+  const [aanwezigheidGeregistreerd, setAanwezigheidGeregistreerd] = useState(false)
+  const [aanwezigheidLoading, setAanwezigheidLoading] = useState(false)
+  const [presentatie, setPresentatie] = useState(null)
+  const [vragenlijst, setVragenlijst] = useState([])
+  const [vragenlijstLoading, setVragenlijstLoading] = useState(false)
+  const [antwoorden, setAntwoorden] = useState({})
+  const [feedbackLoading, setFeedbackLoading] = useState(false)
+  const [feedbackVerzonden, setFeedbackVerzonden] = useState(false)
   const [dark, setDark] = useState(() => localStorage.getItem('theme') === 'dark')
-
+ 
   function toggleDark() {
     setDark(d => {
       const next = !d
@@ -58,29 +88,41 @@ export default function EventDetail() {
       return next
     })
   }
-
+ 
   useEffect(() => {
     const token = localStorage.getItem('token')
     if (!token) { navigate('/login'); return }
-    fetchEvent(token)
+    fetchEvent()
+    fetchVragenlijst()
   }, [id])
 
-  async function fetchEvent(token) {
-    try {
-      const res = await fetch(`${API_URL}/api/events/${id}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          Accept: 'application/json',
-        },
+  // Presentatie ophalen zodra aanwezigheid is geregistreerd. Het endpoint geeft
+  // 403 vóór aanwezigheid en 404 als er (nog) geen presentatie is — in beide
+  // gevallen tonen we simpelweg geen knop, geen foutmelding.
+  useEffect(() => {
+    if (!aanwezigheidGeregistreerd) return
+    let geannuleerd = false
+    api(`/events/${id}/presentation`)
+      .then((res) => {
+        if (geannuleerd) return
+        const url = res?.data?.url || res?.url || null
+        const filename = res?.data?.filename || res?.filename || null
+        if (url) setPresentatie({ url, filename })
       })
+      .catch(() => {
+        // 404 (geen presentatie) of 403 (geen aanwezigheid): geen knop tonen.
+      })
+    return () => { geannuleerd = true }
+  }, [aanwezigheidGeregistreerd, id])
 
-      if (res.status === 401) { navigate('/login'); return }
-      if (!res.ok) throw new Error(`Kon event niet ophalen (${res.status})`)
-
-      const json = await res.json()
+  // Haalt het event op en zet meteen de inschrijf-/aanwezigheidsstatus.
+  async function fetchEvent() {
+    try {
+      const json = await api(`/events/${id}`)
       const e = json.data
       setEvent(e)
       setIngeschreven(e.is_registered ?? false)
+      setAanwezigheidGeregistreerd(e.is_attended ?? false)
     } catch (err) {
       toast.error(err.message)
     } finally {
@@ -88,35 +130,66 @@ export default function EventDetail() {
     }
   }
 
-  async function handleRegistreer() {
-    const token = localStorage.getItem('token')
-    if (!token) { navigate('/login'); return }
-
-    setRegistreerLoading(true)
+  async function handleAanwezigheidRegistreren() {
+    setAanwezigheidLoading(true)
     try {
-      if (ingeschreven) {
-        const res = await fetch(`${API_URL}/api/events/${id}/unregister`, {
-          method: 'DELETE',
-          headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
-        })
-        const data = await res.json()
-        if (!res.ok) throw new Error(data.message || 'Uitschrijven mislukt')
-        setIngeschreven(false)
-        toast.success(data.message || 'Uitgeschreven van dit event')
-      } else {
-        const res = await fetch(`${API_URL}/api/events/${id}/register`, {
-          method: 'POST',
-          headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
-        })
-        const data = await res.json()
-        if (!res.ok) throw new Error(data.message || 'Inschrijven mislukt')
-        setIngeschreven(true)
-        toast.success(data.message || 'Succesvol ingeschreven!')
-      }
+      const data = await api(`/events/${id}/attendance`, { method: 'POST' })
+      toast.success(data?.message || 'Aanwezigheid geregistreerd!')
+      setAanwezigheidGeregistreerd(true)
+      await fetchEvent()
     } catch (err) {
-      toast.error(err.message)
+      toast.error(err.message || 'Registratie mislukt')
     } finally {
-      setRegistreerLoading(false)
+      setAanwezigheidLoading(false)
+    }
+  }
+ 
+  // US-14a: dagenquête ophalen
+  async function fetchVragenlijst() {
+    setVragenlijstLoading(true)
+    try {
+      const data = await api(`/events/${id}/questionnaire`)
+      const vragen = Array.isArray(data.questions) ? data.questions
+        : Array.isArray(data.data) ? data.data
+        : (data.data?.questions || [])
+      setVragenlijst(vragen)
+      setFeedbackVerzonden(data.feedback_submitted ?? data.data?.feedback_submitted ?? false)
+    } catch (err) {
+      console.error('Dagenquête ophalen mislukt:', err)
+    } finally {
+      setVragenlijstLoading(false)
+    }
+  }
+
+  function setAntwoord(vraagId, waarde) {
+    setAntwoorden(prev => ({ ...prev, [vraagId]: waarde }))
+  }
+
+  // US-14b: enquête insturen
+  async function handleFeedbackVersturen(e) {
+    e.preventDefault()
+
+    const onbeantwoord = vragenlijst.filter(
+      v => v.required && (antwoorden[v.id] === undefined || antwoorden[v.id] === '')
+    )
+    if (onbeantwoord.length > 0) {
+      toast.error('Beantwoord eerst alle verplichte vragen')
+      return
+    }
+
+    setFeedbackLoading(true)
+    try {
+      // De API verwacht `answer` altijd als string — ook bij ratings ("8").
+      const answers = vragenlijst
+        .filter(v => antwoorden[v.id] !== undefined && antwoorden[v.id] !== '')
+        .map(v => ({ question_id: v.id, answer: String(antwoorden[v.id]) }))
+      const data = await api(`/events/${id}/feedback`, { method: 'POST', body: { answers } })
+      toast.success(data?.message || 'Bedankt voor je feedback!')
+      setFeedbackVerzonden(true)
+    } catch (err) {
+      toast.error(err.message || 'Enquête versturen mislukt')
+    } finally {
+      setFeedbackLoading(false)
     }
   }
 
@@ -126,23 +199,24 @@ export default function EventDetail() {
   const registered = event?.registered ?? null
   const isFull = event?.is_full ?? false
   const spotsPct = capacity ? Math.round((registered / capacity) * 100) : null
-
+  const isAfgelopen = isEventAfgelopen(event)
+ 
   const d = dark
   const contentBg  = d ? 'bg-[#111111]'       : 'bg-[#e4e8e2]'
   const cardBg     = d ? 'bg-[#1c1c1e]'       : 'bg-white'
   const cardBorder = d ? 'border-white/[0.07]' : 'border-gray-100'
   const skelBg     = d ? 'bg-white/[0.07]'    : 'bg-gray-100'
   const titleClr   = d ? 'text-white'          : 'text-[#1a3d2b]'
-  const subClr     = d ? 'text-white/45'       : 'text-gray-400'
+  const subClr     = d ? 'text-white/70'       : 'text-gray-500'
   const iconBg     = d ? 'bg-[#d4e84a]/12'     : 'bg-gradient-to-br from-[#eaf3de] to-[#d4e84a]/30'
   const iconClr    = d ? 'text-[#d4e84a]'      : 'text-[#1a3d2b]'
   const barBg      = d ? 'bg-white/10'         : 'bg-gray-100'
   const rowBorder  = d ? 'border-white/[0.05]' : 'border-gray-50'
-
+ 
   return (
     <div className="min-h-[100dvh] bg-[#1a3d2b] flex flex-col">
       <Toaster position="top-right" richColors />
-
+ 
       {/* Header */}
       <motion.header
         initial={{ opacity: 0, y: -16 }}
@@ -155,20 +229,19 @@ export default function EventDetail() {
             whileHover={{ scale: 1.1, x: -2 }}
             whileTap={{ scale: 0.85 }}
             onClick={() => navigate(-1)}
-            className="text-white/40 hover:text-white transition-colors p-1.5 rounded-xl hover:bg-white/10"
+            className="text-white/60 hover:text-white transition-colors p-1.5 rounded-xl hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4e84a]"
+            aria-label="Terug"
           >
             <ChevronLeft className="w-5 h-5" />
           </motion.button>
-          <motion.div
-            whileHover={{ rotate: 8, scale: 1.1 }}
-            transition={{ type: 'spring', stiffness: 400, damping: 20 }}
-            className="w-7 h-7 bg-[#d4e84a] rounded-lg flex items-center justify-center cursor-default"
-          >
-            <span className="text-[#1a3d2b] font-black text-xs">T</span>
-          </motion.div>
+          <img
+            src="/img/techniek-college-rotterdam2.jpg"
+            alt="Techniek College Rotterdam"
+            className="h-8 w-auto object-contain rounded"
+          />
           <div className="flex flex-col leading-none">
             <span className="text-white font-bold text-xs tracking-tight">Techniek College</span>
-            <span className="text-white/40 text-xs">Rotterdam</span>
+            <span className="text-white/50 font-medium text-xs tracking-tight">Rotterdam</span>
           </div>
         </div>
 
@@ -176,7 +249,7 @@ export default function EventDetail() {
           whileHover={{ scale: 1.08 }}
           whileTap={{ scale: 0.88 }}
           onClick={toggleDark}
-          className="w-8 h-8 flex items-center justify-center rounded-xl hover:bg-white/10 transition-colors text-white/40 hover:text-white/70"
+          className="w-8 h-8 flex items-center justify-center rounded-xl hover:bg-white/10 transition-colors text-white/60 hover:text-white/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4e84a]"
           aria-label="Wissel kleurmodus"
         >
           <AnimatePresence mode="wait">
@@ -204,7 +277,7 @@ export default function EventDetail() {
           </AnimatePresence>
         </motion.button>
       </motion.header>
-
+ 
       {/* Hero */}
       <div className="px-6 pt-2 pb-10 relative overflow-hidden">
         <motion.div
@@ -212,7 +285,7 @@ export default function EventDetail() {
           transition={{ duration: 7, repeat: Infinity, ease: 'easeInOut' }}
           className="absolute -right-16 -top-8 w-64 h-64 bg-[#d4e84a] rounded-full pointer-events-none"
         />
-
+ 
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -226,7 +299,7 @@ export default function EventDetail() {
           >
             Event
           </motion.p>
-
+ 
           {loading ? (
             <div className="space-y-2">
               <div className="h-8 w-56 bg-white/10 rounded-xl animate-pulse" />
@@ -245,11 +318,11 @@ export default function EventDetail() {
           ) : null}
         </motion.div>
       </div>
-
+ 
       {/* Content */}
       <div className={`flex-1 ${contentBg} rounded-t-[2.5rem] px-5 pt-7 pb-10`}>
         <div className="max-w-2xl mx-auto flex flex-col gap-4">
-
+ 
           {/* Loading skeleton */}
           {loading && (
             <div className="flex flex-col gap-4">
@@ -265,7 +338,7 @@ export default function EventDetail() {
               ))}
             </div>
           )}
-
+ 
           {/* Niet gevonden */}
           {!loading && !event && (
             <motion.div
@@ -281,7 +354,7 @@ export default function EventDetail() {
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => navigate('/events')}
-                className={`text-xs font-bold px-3 py-1.5 rounded-lg transition-colors ${
+                className={`text-xs font-bold px-3 py-1.5 rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4e84a] ${
                   d ? 'text-[#d4e84a] bg-[#d4e84a]/10 hover:bg-[#d4e84a]/20' : 'text-[#1a3d2b] bg-[#eaf3de] hover:bg-[#d4e84a]'
                 }`}
               >
@@ -289,7 +362,7 @@ export default function EventDetail() {
               </motion.button>
             </motion.div>
           )}
-
+ 
           {!loading && event && (
             <>
               {/* Ingeschreven badge */}
@@ -306,7 +379,7 @@ export default function EventDetail() {
                   </motion.div>
                 )}
               </AnimatePresence>
-
+ 
               {/* Info kaart */}
               <motion.div
                 initial={{ opacity: 0, y: 14 }}
@@ -316,7 +389,7 @@ export default function EventDetail() {
               >
                 <div className="h-0.5 bg-gradient-to-r from-[#1a3d2b] via-[#4a8c60] to-[#d4e84a]" />
                 <div className="p-5 flex flex-col gap-4">
-
+ 
                   <div className="flex items-center gap-3">
                     <div className={`${iconBg} p-2.5 rounded-xl shrink-0`}>
                       <CalendarDays className={`w-4 h-4 ${iconClr}`} />
@@ -328,7 +401,7 @@ export default function EventDetail() {
                       </p>
                     </div>
                   </div>
-
+ 
                   <div className="flex items-center gap-3">
                     <div className={`${iconBg} p-2.5 rounded-xl shrink-0`}>
                       <Clock className={`w-4 h-4 ${iconClr}`} />
@@ -338,7 +411,7 @@ export default function EventDetail() {
                       <p className={`text-sm font-semibold ${titleClr}`}>{formatTijd(event.days)}</p>
                     </div>
                   </div>
-
+ 
                   {event.location && (
                     <div className="flex items-center gap-3">
                       <div className={`${iconBg} p-2.5 rounded-xl shrink-0`}>
@@ -350,7 +423,7 @@ export default function EventDetail() {
                       </div>
                     </div>
                   )}
-
+ 
                   {capacity !== null && (
                     <div className="flex items-center gap-3">
                       <div className={`p-2.5 rounded-xl shrink-0 ${isFull ? 'bg-red-50' : iconBg}`}>
@@ -364,7 +437,7 @@ export default function EventDetail() {
                       </div>
                     </div>
                   )}
-
+ 
                   {/* Voortgangsbalk */}
                   {spotsPct !== null && (
                     <div className="flex items-center gap-2.5">
@@ -383,7 +456,7 @@ export default function EventDetail() {
                   )}
                 </div>
               </motion.div>
-
+ 
               {/* Beschrijving */}
               {event.description && (
                 <motion.div
@@ -399,7 +472,7 @@ export default function EventDetail() {
                   </div>
                 </motion.div>
               )}
-
+ 
               {/* Meerdere dagen / programma */}
               {event.days?.length > 1 && (
                 <motion.div
@@ -415,7 +488,7 @@ export default function EventDetail() {
                       {event.days.map((dag, i) => (
                         <div key={i} className={`flex justify-between items-center text-sm py-2 border-b ${rowBorder} last:border-0`}>
                           <span className={`font-semibold capitalize ${titleClr}`}>{formatDatumKort(dag.date)}</span>
-                          <span className={`text-xs px-2.5 py-1 rounded-lg ${d ? 'text-white/45 bg-white/[0.06]' : 'text-gray-400 bg-gray-50'}`}>
+                          <span className={`text-xs px-2.5 py-1 rounded-lg ${d ? 'text-white/70 bg-white/[0.06]' : 'text-gray-500 bg-gray-50'}`}>
                             {dag.start_time} – {dag.end_time}
                           </span>
                         </div>
@@ -424,47 +497,218 @@ export default function EventDetail() {
                   </div>
                 </motion.div>
               )}
-
-              {/* Actie knop */}
-              <motion.div
-                initial={{ opacity: 0, y: 14 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ type: 'spring', stiffness: 350, damping: 30, delay: 0.34 }}
-              >
-                <motion.button
-                  whileHover={{ scale: registreerLoading ? 1 : 1.02 }}
-                  whileTap={{ scale: registreerLoading ? 1 : 0.98 }}
-                  onClick={handleRegistreer}
-                  disabled={registreerLoading || (isFull && !ingeschreven)}
-                  className={`w-full rounded-2xl py-4 text-sm font-bold flex items-center justify-center gap-2 transition-colors
-                    ${ingeschreven
-                      ? d ? 'bg-white/[0.07] text-white/40 hover:bg-red-900/30 hover:text-red-400' : 'bg-gray-100 text-gray-500 hover:bg-red-50 hover:text-red-500'
-                      : isFull
-                      ? d ? 'bg-white/[0.05] text-white/25 cursor-not-allowed' : 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                      : 'bg-[#d4e84a] text-[#1a3d2b] hover:bg-[#c8dc3e]'
-                    } disabled:opacity-60`}
+ 
+              {/* Aanwezigheid & presentatie */}
+              {ingeschreven && (
+                <motion.div
+                  initial={{ opacity: 0, y: 14 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ type: 'spring', stiffness: 350, damping: 30, delay: 0.28 }}
+                  className={`${cardBg} rounded-3xl border ${cardBorder} overflow-hidden shadow-sm`}
                 >
-                  {registreerLoading ? (
-                    <>
-                      <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
-                      </svg>
-                      Bezig...
-                    </>
-                  ) : ingeschreven ? (
-                    'Uitschrijven'
-                  ) : isFull ? (
-                    'Vol — niet meer beschikbaar'
-                  ) : (
-                    'Inschrijven'
-                  )}
-                </motion.button>
-              </motion.div>
+                  <div className="h-0.5 bg-gradient-to-r from-[#1a3d2b] via-[#4a8c60] to-[#d4e84a]" />
+                  <div className="p-5">
+                    <h2 className={`flex items-center gap-2 text-sm font-bold mb-4 ${titleClr}`}>
+                      <ScanLine className="w-4 h-4 text-[#d4e84a]" />
+                      Aanwezigheid
+                    </h2>
+
+                    <div className="flex flex-col gap-3">
+                      {aanwezigheidGeregistreerd ? (
+                        <div className="flex items-center gap-2.5 rounded-2xl bg-[#1a3d2b] px-4 py-3 text-sm font-bold text-[#d4e84a]">
+                          <CheckCircle className="h-4 w-4 shrink-0" />
+                          Aanwezigheid geregistreerd
+                        </div>
+                      ) : (
+                        <motion.button
+                          whileHover={{ scale: aanwezigheidLoading ? 1 : 1.015 }}
+                          whileTap={{ scale: aanwezigheidLoading ? 1 : 0.98 }}
+                          onClick={handleAanwezigheidRegistreren}
+                          disabled={aanwezigheidLoading}
+                          className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#d4e84a] py-3.5 text-sm font-bold text-[#1a3d2b] transition-colors hover:bg-[#c8dc3e] disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1a3d2b] focus-visible:ring-offset-2"
+                        >
+                          {aanwezigheidLoading ? (
+                            <>
+                              <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                              </svg>
+                              Registreren...
+                            </>
+                          ) : (
+                            <>
+                              <ScanLine className="h-4 w-4" />
+                              Aanwezigheid registreren
+                            </>
+                          )}
+                        </motion.button>
+                      )}
+
+                      {aanwezigheidGeregistreerd && presentatie?.url && (
+                        <a
+                          href={presentatie.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className={`flex w-full items-center justify-center gap-2 rounded-2xl py-3.5 text-sm font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4e84a] focus-visible:ring-offset-2 ${
+                            d ? 'bg-white/[0.07] text-white hover:bg-white/[0.12]' : 'bg-[#eaf3de] text-[#1a3d2b] hover:bg-[#d4e84a]/40'
+                          }`}
+                        >
+                          <Download className="h-4 w-4" />
+                          {presentatie.filename || 'Presentatie downloaden'}
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+
+              {/* Dagenquête — alleen ná afloop van het event (US-14c) */}
+              {ingeschreven && isAfgelopen && (vragenlijstLoading || vragenlijst.length > 0) && (
+                <motion.div
+                  initial={{ opacity: 0, y: 14 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ type: 'spring', stiffness: 350, damping: 30, delay: 0.3 }}
+                  className={`${cardBg} rounded-3xl border ${cardBorder} overflow-hidden shadow-sm`}
+                >
+                  <div className="h-0.5 bg-gradient-to-r from-[#1a3d2b] via-[#4a8c60] to-[#d4e84a]" />
+                  <div className="p-5">
+                    <h2 className={`flex items-center gap-2 text-sm font-bold mb-1 ${titleClr}`}>
+                      <MessageSquare className="w-4 h-4 text-[#d4e84a]" />
+                      Dagenquête
+                    </h2>
+                    <p className={`text-xs mb-4 ${subClr}`}>Het event is afgelopen — beoordeel hoe je de dag hebt ervaren.</p>
+
+                    {vragenlijstLoading ? (
+                      <div className="space-y-3">
+                        {[1, 2, 3].map(i => (
+                          <div key={i} className={`h-16 animate-pulse rounded-2xl ${skelBg}`} />
+                        ))}
+                      </div>
+                    ) : feedbackVerzonden ? (
+                      <motion.div
+                        initial={{ opacity: 0, scale: 0.97 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ type: 'spring', stiffness: 300, damping: 26 }}
+                        className="flex flex-col items-center py-6 text-center"
+                      >
+                        <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#1a3d2b]">
+                          <CheckCircle className="h-6 w-6 text-[#d4e84a]" />
+                        </div>
+                        <p className={`text-sm font-bold ${titleClr}`}>Bedankt voor je feedback!</p>
+                        <p className={`mt-1 text-xs ${subClr}`}>Je dagenquête is succesvol verstuurd.</p>
+                      </motion.div>
+                    ) : (
+                      <form onSubmit={handleFeedbackVersturen} className="flex flex-col gap-5">
+                        {vragenlijst.map((vraag, i) => {
+                          const type = vraag.type || 'text'
+                          const huidig = antwoorden[vraag.id]
+                          return (
+                            <div key={vraag.id} className="flex flex-col gap-2">
+                              <label className={`text-sm font-semibold ${titleClr}`}>
+                                <span className={`mr-1 ${subClr}`}>{i + 1}.</span>
+                                {vraag.question_text || vraag.question || vraag.label}
+                                {vraag.required && <span className="ml-1 text-red-400">*</span>}
+                              </label>
+
+                              {type === 'rating' ? (
+                                // Schaal 1–10 als genummerde knoppen (de API verwacht 1–10).
+                                // Knoppen i.p.v. sterren: op mobiel nauwkeuriger aan te tikken
+                                // en het cijfer maakt de gekozen waarde ondubbelzinnig.
+                                <div className="flex flex-wrap gap-2">
+                                  {Array.from({ length: 10 }, (_, idx) => idx + 1).map(score => {
+                                    const gekozen = huidig === score
+                                    return (
+                                      <motion.button
+                                        key={score}
+                                        type="button"
+                                        whileTap={{ scale: 0.95 }}
+                                        onClick={() => setAntwoord(vraag.id, score)}
+                                        aria-label={`${score} van 10`}
+                                        aria-pressed={gekozen}
+                                        className={`w-10 rounded-xl border py-2 text-xs font-semibold tabular-nums transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4e84a] ${
+                                          gekozen
+                                            ? (d ? 'border-[#d4e84a]/50 bg-[#d4e84a]/10 text-[#d4e84a]' : 'border-[#1a3d2b] bg-[#eaf3de] text-[#1a3d2b]')
+                                            : (d ? 'border-white/[0.08] text-white/70 hover:border-white/20' : 'border-[#1a3d2b]/10 text-[#1a3d2b]/70 hover:border-[#1a3d2b]/30')
+                                        }`}
+                                      >
+                                        {score}
+                                      </motion.button>
+                                    )
+                                  })}
+                                </div>
+                              ) : (type === 'multiple_choice' || type === 'choice') && Array.isArray(vraag.options) ? (
+                                <div className="flex flex-wrap gap-2">
+                                  {vraag.options.map((optie, oi) => {
+                                    const waarde = optie.value ?? optie
+                                    const tekst = optie.label ?? optie
+                                    const gekozen = huidig === waarde
+                                    return (
+                                      <motion.button
+                                        key={oi}
+                                        type="button"
+                                        whileTap={{ scale: 0.95 }}
+                                        onClick={() => setAntwoord(vraag.id, waarde)}
+                                        className={`rounded-xl border px-3.5 py-2 text-xs font-semibold transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4e84a] ${
+                                          gekozen
+                                            ? (d ? 'border-[#d4e84a]/50 bg-[#d4e84a]/10 text-[#d4e84a]' : 'border-[#1a3d2b] bg-[#eaf3de] text-[#1a3d2b]')
+                                            : (d ? 'border-white/[0.08] text-white/70 hover:border-white/20' : 'border-[#1a3d2b]/10 text-[#1a3d2b]/70 hover:border-[#1a3d2b]/30')
+                                        }`}
+                                      >
+                                        {tekst}
+                                      </motion.button>
+                                    )
+                                  })}
+                                </div>
+                              ) : (
+                                <textarea
+                                  value={huidig || ''}
+                                  onChange={e => setAntwoord(vraag.id, e.target.value)}
+                                  rows={3}
+                                  placeholder="Je antwoord..."
+                                  className={`w-full resize-none rounded-2xl border px-4 py-3 text-sm outline-none transition-colors focus-visible:ring-2 focus-visible:ring-[#d4e84a] ${
+                                    d
+                                      ? 'border-white/[0.08] bg-white/[0.05] text-white placeholder:text-white/40 focus:border-[#d4e84a]/40'
+                                      : 'border-[#1a3d2b]/10 bg-[#f6faf2] text-[#1a3d2b] placeholder:text-[#1a3d2b]/40 focus:border-[#1a3d2b]/40'
+                                  }`}
+                                />
+                              )}
+                            </div>
+                          )
+                        })}
+
+                        <motion.button
+                          whileHover={{ scale: feedbackLoading ? 1 : 1.02 }}
+                          whileTap={{ scale: feedbackLoading ? 1 : 0.98 }}
+                          type="submit"
+                          disabled={feedbackLoading}
+                          className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#1a3d2b] py-3.5 text-sm font-bold text-[#d4e84a] transition-colors hover:bg-[#16331f] disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4e84a] focus-visible:ring-offset-2"
+                        >
+                          {feedbackLoading ? (
+                            <>
+                              <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                              </svg>
+                              Versturen...
+                            </>
+                          ) : (
+                            <>
+                              <Send className="h-4 w-4" />
+                              Enquête versturen
+                            </>
+                          )}
+                        </motion.button>
+                      </form>
+                    )}
+                  </div>
+                </motion.div>
+              )}
+
             </>
           )}
         </div>
       </div>
+      <Footer />
     </div>
   )
 }

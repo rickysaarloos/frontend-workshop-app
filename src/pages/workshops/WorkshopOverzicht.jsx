@@ -1,14 +1,20 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { motion, AnimatePresence } from 'motion/react'
-import { ChevronLeft, ChevronRight, BookOpen, MapPin, Clock, Calendar, Users, Moon, Sun } from 'lucide-react'
+import { motion, AnimatePresence, useReducedMotion } from 'motion/react'
+import { ChevronLeft, ChevronRight, BookOpen, Moon, Sun } from 'lucide-react'
 import { toast, Toaster } from 'sonner'
+import Footer from '../../components/Footer'
+import WorkshopCard from './WorkshopCard'
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://187.124.29.171:8002'
+import { api } from '@/lib/api'
 
 const MAANDEN = ['Januari', 'Februari', 'Maart', 'April', 'Mei', 'Juni', 'Juli', 'Augustus', 'September', 'Oktober', 'November', 'December']
 const DAGEN_KORT = ['Ma', 'Di', 'Wo', 'Do', 'Vr', 'Za', 'Zo']
 
+const EASE = [0.22, 1, 0.36, 1]
+
+// Bouwt de dag-cellen voor de maandkalender: eerst lege plekken tot de juiste
+// weekdag (maandag-start), daarna de dagnummers 1..laatste.
 function getKalenderDagen(jaar, maand) {
   const eerstedag = new Date(jaar, maand, 1)
   const aantalDagen = new Date(jaar, maand + 1, 0).getDate()
@@ -24,114 +30,40 @@ const containerVariants = {
   hidden: { opacity: 0 },
   visible: {
     opacity: 1,
-    transition: { staggerChildren: 0.07, delayChildren: 0.05 },
+    transition: { staggerChildren: 0.06, delayChildren: 0.04 },
   },
 }
 
 const cardVariants = {
-  hidden: { opacity: 0, y: 18 },
+  hidden: { opacity: 0, y: 10 },
   visible: {
     opacity: 1,
     y: 0,
-    transition: { type: 'spring', stiffness: 380, damping: 28 },
+    transition: { duration: 0.5, ease: EASE },
   },
 }
 
-function WorkshopCard({ workshop, index, navigate, formatDatum, dark }) {
-  const d = dark
-  const isVol = workshop.is_full
-  const procentVol = Math.round((workshop.registered / workshop.capacity) * 100)
-
-  const cardBg   = d ? 'bg-[#1c1c1e]'       : 'bg-white'
-  const cardBord = d ? 'border-white/[0.07]' : 'border-gray-100'
-  const titleClr = d ? 'text-white'          : 'text-[#1a3d2b]'
-  const subClr   = d ? 'text-white/45'       : 'text-gray-400'
-  const metaBg   = d ? 'bg-white/[0.06]'     : 'bg-gray-50'
-  const metaClr  = d ? 'text-white/55'       : 'text-gray-500'
-  const metaIcon = d ? 'text-white/30'       : 'text-gray-400'
-  const iconBg   = isVol ? 'bg-red-50' : (d ? 'bg-[#d4e84a]/12' : 'bg-gradient-to-br from-[#eaf3de] to-[#d4e84a]/30')
-  const iconClr  = isVol ? 'text-red-400' : (d ? 'text-[#d4e84a]' : 'text-[#1a3d2b]')
-  const badgeBg  = isVol
-    ? 'bg-red-50 text-red-400 border border-red-100'
-    : d ? 'bg-[#d4e84a]/12 text-[#d4e84a]' : 'bg-[#eaf3de] text-[#1a3d2b]'
-  const barBg    = d ? 'bg-white/10' : 'bg-gray-100'
-  const countClr = isVol ? 'text-red-400' : (d ? 'text-white' : 'text-[#1a3d2b]')
-
-  return (
-    <motion.div
-      variants={cardVariants}
-      whileHover={{ y: -3, boxShadow: d ? '0 16px 36px rgba(0,0,0,0.4)' : '0 16px 36px rgba(26,61,43,0.13)' }}
-      whileTap={{ scale: 0.99 }}
-      onClick={() => navigate(`/workshops/${workshop.id}`)}
-      className={`${cardBg} rounded-3xl border ${cardBord} overflow-hidden cursor-pointer`}
-    >
-      <div className={`h-0.5 w-full ${isVol ? 'bg-gradient-to-r from-red-300 to-red-400' : 'bg-gradient-to-r from-[#1a3d2b] via-[#4a8c60] to-[#d4e84a]'}`} />
-
-      <div className="p-5">
-        <div className="flex items-start gap-4">
-          <div className={`p-3 rounded-2xl shrink-0 ${iconBg}`}>
-            <BookOpen className={`w-5 h-5 ${iconClr}`} />
-          </div>
-
-          <div className="flex-1 min-w-0">
-            <div className="flex items-start justify-between gap-2 mb-1.5">
-              <h2 className={`text-sm font-bold leading-snug ${titleClr}`}>{workshop.title}</h2>
-              <span className={`shrink-0 text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-wide ${badgeBg}`}>
-                {isVol ? 'vol' : 'open'}
-              </span>
-            </div>
-
-            <p className={`text-xs mb-3 leading-relaxed line-clamp-2 ${subClr}`}>{workshop.description}</p>
-
-            <div className="flex flex-wrap gap-2 mb-3">
-              <span className={`flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-lg ${metaBg} ${metaClr}`}>
-                <Calendar className={`w-3 h-3 ${metaIcon}`} />
-                <span className="capitalize">{formatDatum(workshop.start_date.split(' ')[0])}</span>
-              </span>
-              <span className={`flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-lg ${metaBg} ${metaClr}`}>
-                <Clock className={`w-3 h-3 ${metaIcon}`} />
-                {workshop.start_date.split(' ')[1]} – {workshop.end_date.split(' ')[1]}
-              </span>
-              <span className={`flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-lg ${metaBg} ${metaClr}`}>
-                <MapPin className={`w-3 h-3 ${metaIcon}`} />
-                {workshop.location}
-              </span>
-            </div>
-
-            <div className="flex items-center gap-2.5">
-              <div className={`flex-1 ${barBg} rounded-full h-1.5 overflow-hidden`}>
-                <motion.div
-                  initial={{ width: 0 }}
-                  animate={{ width: `${procentVol}%` }}
-                  transition={{ duration: 0.9, delay: 0.15 + index * 0.05, ease: [0.4, 0, 0.2, 1] }}
-                  className={`h-full rounded-full ${isVol ? 'bg-gradient-to-r from-red-300 to-red-400' : 'bg-gradient-to-r from-[#1a3d2b] to-[#4a8c60]'}`}
-                />
-              </div>
-              <div className="flex items-center gap-1 shrink-0">
-                <Users className={`w-3 h-3 ${d ? 'text-white/20' : 'text-gray-300'}`} />
-                <span className={`text-xs font-bold ${countClr}`}>
-                  {workshop.registered}/{workshop.capacity}
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </motion.div>
-  )
-}
-
+// Workshopoverzicht (route /workshops): maandkalender die dagen met workshops
+// markeert, plus de lijst met workshopkaarten (gefilterd op de gekozen dag).
 function WorkshopOverzicht() {
   const navigate = useNavigate()
   const vandaag = new Date()
 
   const [workshops, setWorkshops] = useState([])
   const [loading, setLoading] = useState(true)
+  const [showSkeleton, setShowSkeleton] = useState(false)
+
+  useEffect(() => {
+    if (!loading) { setShowSkeleton(false); return }
+    const timer = setTimeout(() => setShowSkeleton(true), 150)
+    return () => clearTimeout(timer)
+  }, [loading])
   const [jaar, setJaar] = useState(vandaag.getFullYear())
   const [maand, setMaand] = useState(vandaag.getMonth())
   const [geselecteerdeDag, setGeselecteerdeDag] = useState(null)
   const [maandRichting, setMaandRichting] = useState(1)
   const [dark, setDark] = useState(() => localStorage.getItem('theme') === 'dark')
+  const shouldReduce = useReducedMotion()
 
   function toggleDark() {
     setDark(d => {
@@ -150,22 +82,10 @@ function WorkshopOverzicht() {
     fetchWorkshops()
   }, [])
 
+  // Haalt alle workshops op voor de kalender en de lijst.
   async function fetchWorkshops() {
     try {
-      const token = localStorage.getItem('token')
-      const response = await fetch(`${API_URL}/api/workshops`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          Accept: 'application/json',
-        },
-      })
-
-      const data = await response.json()
-
-      if (!response.ok) {
-        throw new Error(data.message)
-      }
-
+      const data = await api('/workshops')
       setWorkshops(data.data)
     } catch (error) {
       toast.error('Workshops ophalen mislukt')
@@ -177,14 +97,19 @@ function WorkshopOverzicht() {
 
   const kalenderDagen = getKalenderDagen(jaar, maand)
 
-  const workshopDatums = new Set(workshops.map((w) => w.start_date.split(' ')[0]))
+  // Datum (zonder tijd) uit start_date; session-mode workshops kunnen start_date
+  // null hebben, dus defensief uitlezen i.p.v. .split op null.
+  const workshopDatum = (w) => (typeof w.start_date === 'string' ? w.start_date.split(' ')[0] : '')
+
+  const workshopDatums = new Set(workshops.map(workshopDatum).filter(Boolean))
 
   const geselecteerdeDatum = geselecteerdeDag
     ? `${jaar}-${String(maand + 1).padStart(2, '0')}-${String(geselecteerdeDag).padStart(2, '0')}`
     : null
 
+  // Zonder gekozen dag alle workshops; met een gekozen dag alleen die van die datum.
   const zichtbareWorkshops = geselecteerdeDatum
-    ? workshops.filter((w) => w.start_date.split(' ')[0] === geselecteerdeDatum)
+    ? workshops.filter((w) => workshopDatum(w) === geselecteerdeDatum)
     : workshops
 
   function vorigemMaand() {
@@ -205,13 +130,18 @@ function WorkshopOverzicht() {
     return new Date(datum).toLocaleDateString('nl-NL', { weekday: 'short', day: 'numeric', month: 'short' })
   }
 
+  const richting = shouldReduce ? 0 : maandRichting
+
   const d = dark
-  const contentBg  = d ? 'bg-[#111111]'       : 'bg-[#e4e8e2]'
-  const cardBg     = d ? 'bg-[#1c1c1e]'       : 'bg-white'
-  const cardBorder = d ? 'border-white/[0.07]' : 'border-gray-100'
-  const skelBg     = d ? 'bg-white/[0.07]'    : 'bg-gray-100'
-  const labelClr   = d ? 'text-white/30'       : 'text-gray-400'
-  const calTitleClr = d ? 'text-white'         : 'text-[#1a3d2b]'
+  const contentBg   = d ? 'bg-[#111111]'        : 'bg-[#e4e8e2]'
+  const cardBg      = d ? 'bg-[#1c1c1e]'        : 'bg-white'
+  const cardBorder  = d ? 'border-white/[0.08]' : 'border-black/[0.06]'
+  const hairline    = d ? 'border-white/[0.07]' : 'border-[#1a3d2b]/[0.07]'
+  const skelBg      = d ? 'bg-white/[0.07]'     : 'bg-black/[0.05]'
+  const labelClr    = d ? 'text-white/60'       : 'text-[#1a3d2b]/60'
+  const calTitleClr = d ? 'text-white'          : 'text-[#1a3d2b]'
+  const cardShadow  = d ? 'shadow-[0_2px_24px_rgba(0,0,0,0.30)]' : 'shadow-[0_1px_2px_rgba(26,61,43,0.04),0_18px_40px_-24px_rgba(26,61,43,0.22)]'
+  const navBtn      = d ? 'text-white/60 hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4e84a]' : 'text-[#1a3d2b]/60 hover:bg-[#1a3d2b]/[0.06] hover:text-[#1a3d2b] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1a3d2b]'
 
   return (
     <div className="min-h-[100dvh] bg-[#1a3d2b] flex flex-col">
@@ -221,58 +151,57 @@ function WorkshopOverzicht() {
       <motion.header
         initial={{ opacity: 0, y: -16 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ type: 'spring', stiffness: 400, damping: 36 }}
-        className="px-6 py-5 flex items-center justify-between"
+        transition={{ duration: 0.6, ease: EASE }}
+        className="flex items-center justify-between px-6 py-5"
       >
         <div className="flex items-center gap-3">
           <motion.button
-            whileHover={{ scale: 1.1, x: -2 }}
-            whileTap={{ scale: 0.85 }}
+            whileHover={{ x: -2 }}
+            whileTap={{ scale: 0.88 }}
             onClick={() => navigate('/home')}
-            className="text-white/40 hover:text-white transition-colors p-1.5 rounded-xl hover:bg-white/10"
+            className="rounded-xl p-1.5 text-white/60 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4e84a]"
+            aria-label="Terug naar home"
           >
-            <ChevronLeft className="w-5 h-5" />
+            <ChevronLeft className="h-5 w-5" />
           </motion.button>
-          <motion.div
-            whileHover={{ rotate: 8, scale: 1.1 }}
-            transition={{ type: 'spring', stiffness: 400, damping: 20 }}
-            className="w-7 h-7 bg-[#d4e84a] rounded-lg flex items-center justify-center cursor-default"
-          >
-            <span className="text-[#1a3d2b] font-black text-xs">T</span>
-          </motion.div>
+          <img
+            src="/img/techniek-college-rotterdam2.jpg"
+            alt="Techniek College Rotterdam"
+            className="h-8 w-auto rounded object-contain"
+          />
           <div className="flex flex-col leading-none">
-            <span className="text-white font-bold text-xs tracking-tight">Techniek College</span>
-            <span className="text-white/40 text-xs">Rotterdam</span>
+            <span className="text-xs font-bold tracking-tight text-white">Techniek College</span>
+            <span className="text-xs font-medium tracking-tight text-white/50">Rotterdam</span>
           </div>
         </div>
 
         <motion.button
-          whileHover={{ scale: 1.08 }}
-          whileTap={{ scale: 0.88 }}
+          whileHover={{ scale: 1.06 }}
+          whileTap={{ scale: 0.9 }}
           onClick={toggleDark}
-          className="w-8 h-8 flex items-center justify-center rounded-xl hover:bg-white/10 transition-colors text-white/40 hover:text-white/70"
+          className="flex h-8 w-8 items-center justify-center rounded-xl text-white/60 transition-colors hover:bg-white/10 hover:text-white/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4e84a]"
           aria-label="Wissel kleurmodus"
         >
           <AnimatePresence mode="wait">
             {dark ? (
               <motion.div
                 key="sun"
-                initial={{ opacity: 0, rotate: -40, scale: 0.6 }}
+                initial={shouldReduce ? false : { opacity: 0, rotate: -40, scale: 0.6 }}
                 animate={{ opacity: 1, rotate: 0, scale: 1 }}
-                exit={{ opacity: 0, rotate: 40, scale: 0.6 }}
+                exit={shouldReduce ? {} : { opacity: 0, rotate: 40, scale: 0.6 }}
                 transition={{ duration: 0.18 }}
               >
-                <Sun className="w-4 h-4" />
+                <Sun className="h-4 w-4" />
               </motion.div>
             ) : (
               <motion.div
                 key="moon"
-                initial={{ opacity: 0, rotate: 40, scale: 0.6 }}
+                initial={shouldReduce ? false : { opacity: 0, rotate: 40, scale: 0.6 }}
                 animate={{ opacity: 1, rotate: 0, scale: 1 }}
-                exit={{ opacity: 0, rotate: -40, scale: 0.6 }}
+                exit={shouldReduce ? {} : { opacity: 0, rotate: -40, scale: 0.6 }}
                 transition={{ duration: 0.18 }}
               >
-                <Moon className="w-4 h-4" />
+                <Moon className="h-4 w-4" />
               </motion.div>
             )}
           </AnimatePresence>
@@ -280,98 +209,84 @@ function WorkshopOverzicht() {
       </motion.header>
 
       {/* Hero */}
-      <div className="px-6 pt-2 pb-10 relative overflow-hidden">
-        <motion.div
-          animate={{ scale: [1, 1.12, 1], opacity: [0.06, 0.1, 0.06] }}
-          transition={{ duration: 7, repeat: Infinity, ease: 'easeInOut' }}
-          className="absolute -right-16 -top-8 w-64 h-64 bg-[#d4e84a] rounded-full pointer-events-none"
-        />
-        <motion.div
-          animate={{ scale: [1, 1.18, 1], opacity: [0.03, 0.06, 0.03] }}
-          transition={{ duration: 9, repeat: Infinity, ease: 'easeInOut', delay: 3 }}
-          className="absolute -left-20 bottom-0 w-48 h-48 bg-[#d4e84a] rounded-full pointer-events-none"
-        />
+      <div className="relative overflow-hidden px-6 pb-12 pt-3">
+        {/* Statische, composieve gloed i.p.v. perpetuele blobs */}
+        <div className="pointer-events-none absolute -right-20 -top-20 h-72 w-72 rounded-full bg-[#d4e84a]/[0.08] blur-2xl" />
+        <div className="pointer-events-none absolute -left-24 bottom-0 h-48 w-48 rounded-full bg-[#d4e84a]/[0.04] blur-2xl" />
 
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={shouldReduce ? { opacity: 0 } : { opacity: 0, y: 18 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ type: 'spring', stiffness: 300, damping: 30, delay: 0.1 }}
+          transition={{ duration: 0.6, ease: EASE, delay: 0.05 }}
+          className="relative max-w-5xl"
         >
-          <motion.p
-            initial={{ opacity: 0, x: -12 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.2 }}
-            className="text-[#d4e84a] text-xs font-bold uppercase tracking-widest mb-2"
-          >
+          <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.22em] text-[#d4e84a]">
             Aanbod
-          </motion.p>
-          <h1 className="text-4xl font-black text-white tracking-tight leading-none mb-3">Workshops</h1>
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.35 }}
-          >
-            {loading ? (
-              <div className="h-6 w-36 bg-white/10 rounded-full animate-pulse" />
-            ) : (
-              <span className="inline-flex items-center gap-1.5 bg-white/10 text-white/70 text-xs font-medium px-3 py-1.5 rounded-full">
-                <BookOpen className="w-3 h-3" />
-                {workshops.length} workshops beschikbaar
-              </span>
-            )}
-          </motion.div>
+          </p>
+          <h1 className="mb-4 text-[2.75rem] font-black leading-[0.95] tracking-[-0.04em] text-white md:text-6xl">
+            Workshops
+          </h1>
+          {loading ? (
+            <div className="h-7 w-44 animate-pulse rounded-full bg-white/10" />
+          ) : (
+            <span className="inline-flex items-center gap-2 text-sm font-medium text-white/55">
+              <BookOpen className="h-4 w-4 text-[#d4e84a]" />
+              <span className="font-bold tabular-nums text-white/85">{workshops.length}</span>
+              workshops beschikbaar
+            </span>
+          )}
         </motion.div>
       </div>
 
       {/* Content sectie */}
-      <div className={`flex-1 ${contentBg} rounded-t-[2.5rem] px-5 pt-7 pb-10`}>
-        <div className="max-w-5xl mx-auto flex gap-6 items-start">
+      <div className={`flex-1 ${contentBg} rounded-t-[2.5rem] px-5 pb-10 pt-8 transition-colors duration-300`}>
+        <div className="mx-auto flex max-w-5xl flex-col gap-5 md:flex-row md:items-start md:gap-7">
 
           {/* Kalender */}
           <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ type: 'spring', stiffness: 300, damping: 30, delay: 0.25 }}
-            className={`${cardBg} rounded-3xl border ${cardBorder} shadow-sm p-6 w-80 shrink-0 sticky top-6`}
+            initial={shouldReduce ? { opacity: 0 } : { opacity: 0, y: 14 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.55, ease: EASE, delay: 0.15 }}
+            className={`${cardBg} ${cardShadow} w-full rounded-[26px] border ${cardBorder} p-6 md:sticky md:top-6 md:w-80 md:shrink-0`}
           >
             {/* Maand navigatie */}
-            <div className="flex items-center justify-between mb-5">
+            <div className="mb-5 flex items-center justify-between">
               <motion.button
-                whileHover={{ scale: 1.15, x: -1 }}
+                whileHover={{ x: -1 }}
                 whileTap={{ scale: 0.85 }}
                 onClick={vorigemMaand}
-                className={`p-2 rounded-xl transition-colors ${d ? 'text-white/30 hover:text-white hover:bg-white/10' : 'text-gray-300 hover:text-[#1a3d2b] hover:bg-gray-50'}`}
+                className={`rounded-xl p-2 transition-colors ${navBtn}`}
               >
-                <ChevronLeft className="w-4 h-4" />
+                <ChevronLeft className="h-4 w-4" />
               </motion.button>
 
               <AnimatePresence mode="wait">
                 <motion.span
                   key={`${maand}-${jaar}`}
-                  initial={{ opacity: 0, y: maandRichting * 8 }}
+                  initial={{ opacity: 0, y: richting * 6 }}
                   animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: maandRichting * -8 }}
+                  exit={{ opacity: 0, y: richting * -6 }}
                   transition={{ duration: 0.18 }}
-                  className={`text-sm font-bold ${calTitleClr}`}
+                  className={`text-[15px] font-bold tracking-tight tabular-nums ${calTitleClr}`}
                 >
                   {MAANDEN[maand]} {jaar}
                 </motion.span>
               </AnimatePresence>
 
               <motion.button
-                whileHover={{ scale: 1.15, x: 1 }}
+                whileHover={{ x: 1 }}
                 whileTap={{ scale: 0.85 }}
                 onClick={volgendeMaand}
-                className={`p-2 rounded-xl transition-colors ${d ? 'text-white/30 hover:text-white hover:bg-white/10' : 'text-gray-300 hover:text-[#1a3d2b] hover:bg-gray-50'}`}
+                className={`rounded-xl p-2 transition-colors ${navBtn}`}
               >
-                <ChevronRight className="w-4 h-4" />
+                <ChevronRight className="h-4 w-4" />
               </motion.button>
             </div>
 
             {/* Dag headers */}
-            <div className="grid grid-cols-7 mb-2">
+            <div className="mb-2 grid grid-cols-7">
               {DAGEN_KORT.map((dag) => (
-                <div key={dag} className={`text-center text-[11px] font-bold py-1 ${d ? 'text-white/20' : 'text-gray-300'}`}>{dag}</div>
+                <div key={dag} className={`py-1 text-center text-[10px] font-bold uppercase tracking-wider ${d ? 'text-white/25' : 'text-[#1a3d2b]/30'}`}>{dag}</div>
               ))}
             </div>
 
@@ -379,10 +294,10 @@ function WorkshopOverzicht() {
             <AnimatePresence mode="wait">
               <motion.div
                 key={`${maand}-${jaar}`}
-                initial={{ opacity: 0, x: maandRichting * 20 }}
+                initial={{ opacity: 0, x: richting * 16 }}
                 animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: maandRichting * -20 }}
-                transition={{ duration: 0.2 }}
+                exit={{ opacity: 0, x: richting * -16 }}
+                transition={{ duration: 0.2, ease: EASE }}
                 className="grid grid-cols-7 gap-y-1"
               >
                 {kalenderDagen.map((dag, index) => {
@@ -395,26 +310,27 @@ function WorkshopOverzicht() {
                   return (
                     <motion.button
                       key={dag}
-                      whileHover={{ scale: heeftWorkshop || isVandaag || isGeselecteerd ? 1.2 : 1.05 }}
-                      whileTap={{ scale: 0.82 }}
+                      whileHover={{ scale: 1.08 }}
+                      whileTap={{ scale: 0.86 }}
+                      transition={{ type: 'spring', stiffness: 500, damping: 28 }}
                       onClick={() => setGeselecteerdeDag(isGeselecteerd ? null : dag)}
-                      className={`relative flex flex-col items-center justify-center rounded-xl text-xs font-medium transition-colors duration-150 mx-auto w-9 h-9
+                      className={`relative mx-auto flex aspect-square w-full max-w-9 flex-col items-center justify-center rounded-xl text-[13px] tabular-nums transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4e84a]
                         ${isGeselecteerd
-                          ? 'bg-[#1a3d2b] text-[#d4e84a] font-bold shadow-md shadow-[#1a3d2b]/25'
+                          ? 'bg-[#1a3d2b] font-bold text-[#d4e84a] shadow-sm shadow-[#1a3d2b]/25'
                           : isVandaag
-                          ? 'bg-[#d4e84a] text-[#1a3d2b] font-bold shadow-sm'
+                          ? 'bg-[#d4e84a] font-bold text-[#1a3d2b]'
                           : heeftWorkshop
                           ? d
-                            ? 'text-white font-semibold hover:bg-white/10'
-                            : 'text-[#1a3d2b] font-semibold hover:bg-[#eaf3de]'
+                            ? 'font-semibold text-white hover:bg-white/10'
+                            : 'font-semibold text-[#1a3d2b] hover:bg-[#eaf3de]'
                           : d
-                          ? 'text-white/15 hover:bg-white/5'
-                          : 'text-gray-300 hover:bg-gray-50'
+                          ? 'text-white/20 hover:bg-white/5'
+                          : 'text-[#1a3d2b]/25 hover:bg-[#1a3d2b]/[0.04]'
                         }`}
                     >
                       {dag}
                       {heeftWorkshop && !isGeselecteerd && !isVandaag && (
-                        <span className={`absolute bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full ${d ? 'bg-[#d4e84a]' : 'bg-[#1a3d2b]'}`} />
+                        <span className={`absolute bottom-1 left-1/2 h-1 w-1 -translate-x-1/2 rounded-full ${d ? 'bg-[#d4e84a]' : 'bg-[#1a3d2b]'}`} />
                       )}
                     </motion.button>
                   )
@@ -423,17 +339,17 @@ function WorkshopOverzicht() {
             </AnimatePresence>
 
             {/* Legenda */}
-            <div className={`mt-5 pt-4 border-t ${d ? 'border-white/[0.07]' : 'border-gray-100'} flex flex-col gap-2`}>
-              <div className={`flex items-center gap-2 text-xs ${labelClr}`}>
-                <span className={`w-2 h-2 rounded-full ${d ? 'bg-[#d4e84a]' : 'bg-[#1a3d2b]'} shrink-0`} />
+            <div className={`mt-5 flex flex-col gap-2 border-t ${hairline} pt-4`}>
+              <div className={`flex items-center gap-2.5 text-xs ${labelClr}`}>
+                <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${d ? 'bg-[#d4e84a]' : 'bg-[#1a3d2b]'}`} />
                 Workshop gepland
               </div>
-              <div className={`flex items-center gap-2 text-xs ${labelClr}`}>
-                <span className="w-6 h-5 rounded-lg bg-[#d4e84a] shrink-0" />
+              <div className={`flex items-center gap-2.5 text-xs ${labelClr}`}>
+                <span className="h-4 w-5 shrink-0 rounded-lg bg-[#d4e84a]" />
                 Vandaag
               </div>
-              <div className={`flex items-center gap-2 text-xs ${labelClr}`}>
-                <span className="w-6 h-5 rounded-lg bg-[#1a3d2b] shrink-0" />
+              <div className={`flex items-center gap-2.5 text-xs ${labelClr}`}>
+                <span className="h-4 w-5 shrink-0 rounded-lg bg-[#1a3d2b]" />
                 Geselecteerd
               </div>
               <AnimatePresence>
@@ -442,10 +358,9 @@ function WorkshopOverzicht() {
                     initial={{ opacity: 0, y: -4 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -4 }}
-                    whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.97 }}
                     onClick={() => setGeselecteerdeDag(null)}
-                    className={`mt-1 text-xs font-bold hover:underline underline-offset-2 text-left ${d ? 'text-[#d4e84a]' : 'text-[#1a3d2b]'}`}
+                    className={`mt-1 rounded text-left text-xs font-bold underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4e84a] ${d ? 'text-[#d4e84a]' : 'text-[#1a3d2b]'}`}
                   >
                     ✕ Filter wissen
                   </motion.button>
@@ -455,7 +370,7 @@ function WorkshopOverzicht() {
           </motion.div>
 
           {/* Workshop lijst */}
-          <div className="flex-1 flex flex-col gap-3">
+          <div className="flex flex-1 flex-col gap-4">
             {/* Label */}
             <AnimatePresence mode="wait">
               <motion.p
@@ -464,8 +379,9 @@ function WorkshopOverzicht() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: 6 }}
                 transition={{ duration: 0.18 }}
-                className={`text-xs font-bold uppercase tracking-widest ${labelClr}`}
+                className={`flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.16em] ${labelClr}`}
               >
+                <span className="h-3 w-1 rounded-full bg-[#d4e84a]" />
                 {geselecteerdeDag
                   ? `Workshops op ${formatDatum(`${jaar}-${String(maand + 1).padStart(2, '0')}-${String(geselecteerdeDag).padStart(2, '0')}`)}`
                   : `Alle workshops (${loading ? '...' : workshops.length})`
@@ -474,30 +390,26 @@ function WorkshopOverzicht() {
             </AnimatePresence>
 
             {/* Skeleton loading */}
-            {loading && (
-              <div className="flex flex-col gap-3">
+            {showSkeleton && (
+              <div className="flex flex-col gap-4">
                 {[1, 2, 3].map((i) => (
-                  <div key={i} className={`${cardBg} rounded-3xl border ${cardBorder} overflow-hidden`}>
-                    <div className={`h-0.5 ${skelBg} animate-pulse`} />
-                    <div className="p-5">
-                      <div className="flex items-start gap-4">
-                        <div className={`w-11 h-11 rounded-2xl ${skelBg} animate-pulse shrink-0`} />
-                        <div className="flex-1 space-y-2.5">
-                          <div className="flex items-center justify-between gap-2">
-                            <div className={`h-3.5 ${skelBg} rounded-full w-40 animate-pulse`} />
-                            <div className={`h-5 ${skelBg} rounded-full w-12 animate-pulse`} />
-                          </div>
-                          <div className={`h-2.5 ${skelBg} rounded-full w-full animate-pulse`} />
-                          <div className={`h-2.5 ${skelBg} rounded-full w-3/4 animate-pulse`} />
-                          <div className="flex gap-2 pt-1">
-                            <div className={`h-6 ${skelBg} rounded-lg w-24 animate-pulse`} />
-                            <div className={`h-6 ${skelBg} rounded-lg w-20 animate-pulse`} />
-                            <div className={`h-6 ${skelBg} rounded-lg w-16 animate-pulse`} />
-                          </div>
-                          <div className="flex items-center gap-2 pt-1">
-                            <div className={`flex-1 h-1.5 ${skelBg} rounded-full animate-pulse`} />
-                            <div className={`h-2.5 ${skelBg} rounded-full w-8 animate-pulse`} />
-                          </div>
+                  <div key={i} className={`${cardBg} rounded-[26px] border ${cardBorder} p-5`}>
+                    <div className="flex items-start gap-3.5">
+                      <div className={`h-10 w-10 shrink-0 animate-pulse rounded-2xl ${skelBg}`} />
+                      <div className="flex-1 space-y-2.5">
+                        <div className="flex items-center justify-between gap-2">
+                          <div className={`h-3.5 w-40 animate-pulse rounded-full ${skelBg}`} />
+                          <div className={`h-5 w-12 animate-pulse rounded-full ${skelBg}`} />
+                        </div>
+                        <div className={`h-2.5 w-full animate-pulse rounded-full ${skelBg}`} />
+                        <div className={`h-2.5 w-3/4 animate-pulse rounded-full ${skelBg}`} />
+                        <div className="flex gap-3 pt-1">
+                          <div className={`h-3 w-24 animate-pulse rounded-full ${skelBg}`} />
+                          <div className={`h-3 w-20 animate-pulse rounded-full ${skelBg}`} />
+                        </div>
+                        <div className={`mt-1 flex items-center gap-2 border-t ${hairline} pt-3.5`}>
+                          <div className={`h-1 flex-1 animate-pulse rounded-full ${skelBg}`} />
+                          <div className={`h-2.5 w-12 animate-pulse rounded-full ${skelBg}`} />
                         </div>
                       </div>
                     </div>
@@ -514,40 +426,35 @@ function WorkshopOverzicht() {
                   initial="hidden"
                   animate="visible"
                   exit={{ opacity: 0, transition: { duration: 0.15 } }}
-                  className="flex flex-col gap-3"
+                  className="flex flex-col gap-4"
                 >
                   {zichtbareWorkshops.length === 0 ? (
                     <motion.div
                       variants={cardVariants}
-                      className={`${cardBg} rounded-3xl border ${cardBorder} p-10 text-center`}
+                      className={`${cardBg} rounded-[26px] border ${cardBorder} p-10 text-center`}
                     >
-                      <motion.div
-                        animate={{ rotate: [0, -12, 12, -8, 8, 0] }}
-                        transition={{ duration: 0.7, delay: 0.3 }}
-                        className={`w-12 h-12 ${d ? 'bg-white/[0.05]' : 'bg-gray-50'} rounded-2xl flex items-center justify-center mx-auto mb-3`}
-                      >
-                        <BookOpen className={`w-5 h-5 ${d ? 'text-white/20' : 'text-gray-300'}`} />
-                      </motion.div>
-                      <p className={`text-sm font-semibold mb-3 ${d ? 'text-white/40' : 'text-gray-400'}`}>Geen workshops op deze dag</p>
+                      <div className={`mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl ${d ? 'bg-white/[0.05]' : 'bg-[#1a3d2b]/[0.04]'}`}>
+                        <BookOpen className={`h-5 w-5 ${d ? 'text-white/20' : 'text-[#1a3d2b]/25'}`} />
+                      </div>
+                      <p className={`mb-4 text-sm font-semibold ${d ? 'text-white/70' : 'text-[#1a3d2b]/70'}`}>Geen workshops op deze dag</p>
                       <motion.button
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
+                        whileHover={{ scale: 1.04 }}
+                        whileTap={{ scale: 0.96 }}
                         onClick={() => setGeselecteerdeDag(null)}
-                        className={`text-xs font-bold px-3 py-1.5 rounded-lg transition-colors ${
+                        className={`rounded-xl px-3.5 py-2 text-xs font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4e84a] ${
                           d
-                            ? 'text-[#d4e84a] bg-[#d4e84a]/10 hover:bg-[#d4e84a]/20'
-                            : 'text-[#1a3d2b] bg-[#eaf3de] hover:bg-[#d4e84a]'
+                            ? 'bg-[#d4e84a]/10 text-[#d4e84a] hover:bg-[#d4e84a]/20'
+                            : 'bg-[#1a3d2b] text-[#d4e84a] hover:bg-[#16331f]'
                         }`}
                       >
                         Alle workshops tonen
                       </motion.button>
                     </motion.div>
                   ) : (
-                    zichtbareWorkshops.map((workshop, index) => (
+                    zichtbareWorkshops.map((workshop) => (
                       <WorkshopCard
                         key={workshop.id}
                         workshop={workshop}
-                        index={index}
                         navigate={navigate}
                         formatDatum={formatDatum}
                         dark={dark}
@@ -560,6 +467,7 @@ function WorkshopOverzicht() {
           </div>
         </div>
       </div>
+      <Footer />
     </div>
   )
 }
