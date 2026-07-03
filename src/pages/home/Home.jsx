@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence, useReducedMotion } from 'motion/react'
-import { CalendarDays, BookOpen, User, LogOut, ArrowRight, MapPin, Moon, Sun, Clock, UserPlus, Copy, Bell } from 'lucide-react'
+import { CalendarDays, BookOpen, User, LogOut, ArrowRight, MapPin, Moon, Sun, Clock, UserPlus, Copy, Bell, ScanLine } from 'lucide-react'
 import { toast, Toaster } from 'sonner'
 import Footer from '../../components/Footer'
 import Card from '../../components/Card'
@@ -16,6 +16,8 @@ function Home() {
   const shouldReduce = useReducedMotion()
   const user = getStoredUser()
   const voornaam = user?.name?.split(' ')[0]
+  const rol = user?.roles?.[0] || user?.role || 'deelnemer'
+  const magScannen = ['admin', 'workshopgever'].includes(rol.toLowerCase())
 
   const [workshops, setWorkshops] = useState([])
   const [aankomendEvent, setAankomendEvent] = useState(null)
@@ -435,6 +437,38 @@ function Home() {
             </motion.div>
           ))}
         </motion.div>
+
+        {/* Aanwezigheid scannen — alleen voor admins en workshopgevers */}
+        {magScannen && (
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ type: 'spring', stiffness: 200, damping: 38, delay: 0.56 }}
+          >
+            <Card dark={d}>
+              <div className="p-5">
+                <div className="flex items-center gap-2.5 mb-4">
+                  <div className="bg-[#d4e84a] p-2 rounded-xl" style={{ boxShadow: '0 2px 8px rgba(212,232,74,0.45)' }}>
+                    <ScanLine className="w-4 h-4 text-[#1a3d2b]" />
+                  </div>
+                  <div>
+                    <h2 className={`text-sm font-bold ${titleClr}`}>Aanwezigheid scannen</h2>
+                    <p className={`text-[11px] ${subClr} mt-0.5`}>Scan de QR-code van deelnemers</p>
+                  </div>
+                </div>
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.97 }}
+                  onClick={() => navigate('/scan')}
+                  className="w-full bg-[#1a3d2b] text-[#d4e84a] rounded-2xl py-3.5 text-sm font-bold flex items-center justify-center gap-2 transition-colors hover:bg-[#16331f] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4e84a] focus-visible:ring-offset-2"
+                >
+                  <ScanLine className="w-4 h-4" />
+                  Open scanner
+                </motion.button>
+              </div>
+            </Card>
+          </motion.div>
+        )}
 
         {/* Nodig iemand uit — stuurlink */}
         <motion.div
