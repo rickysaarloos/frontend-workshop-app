@@ -56,7 +56,7 @@ function ScanAanwezigheid() {
 
   const rol = (() => {
     const u = getStoredUser()
-    return u?.roles?.[0] || u?.role || 'student'
+    return u?.roles?.[0] || u?.role || 'deelnemer'
   })()
   const toegestaan = magScannen(rol)
 

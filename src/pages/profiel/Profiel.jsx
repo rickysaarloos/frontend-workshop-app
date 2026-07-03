@@ -24,7 +24,7 @@ function Profiel() {
   const [email, setEmail] = useState(() => getStoredUser()?.email || '')
   const [rol, setRol] = useState(() => {
     const u = getStoredUser()
-    return u?.roles?.[0] || u?.role || 'student'
+    return u?.roles?.[0] || u?.role || 'deelnemer'
   })
   const [huidigWachtwoord, setHuidigWachtwoord] = useState('')
   const [nieuwWachtwoord, setNieuwWachtwoord] = useState('')
