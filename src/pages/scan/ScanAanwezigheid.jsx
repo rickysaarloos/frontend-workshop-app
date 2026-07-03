@@ -12,42 +12,40 @@ import { getStoredUser } from '@/lib/auth'
 
 const EASE = [0.22, 1, 0.36, 1]
 
-// Rollen die mogen scannen. Alleen 'student' is met zekerheid bekend (de default
-// in Profiel), dus we staan al het overige (organisator/spreker/docent/beheerder)
-// toe. Pas dit aan zodra de exacte rol-strings van de backend bekend zijn.
+// Alleen de admin-rol mag scannen. Pas 'admin' aan als de backend een andere
+// naam gebruikt (bv. 'administrator' of 'beheerder').
 function magScannen(rol) {
-  return typeof rol === 'string' && rol.toLowerCase() !== 'student'
+  return typeof rol === 'string' && rol.toLowerCase() === 'admin'
 }
 
 // AANNAME — bevestig met de backend. Een organisator markeert een ándere gebruiker
-// aanwezig via het attendance-endpoint met de gescande gebruikers-id in de body.
-// Wijkt de echte route/payload af, pas dan alléén deze functie aan.
-async function markeerAanwezig(workshopId, gebruikerId) {
-  return api(`/workshops/${workshopId}/attendance`, {
-    method: 'POST',
-    body: { user_id: gebruikerId },
-  })
+// aanwezig via het attendance-endpoint met de gescande gebruikers-id in de body,
+// plus optioneel de gekozen sessie. Wijkt de echte route/payload af, pas dan
+// alléén deze functie aan.
+async function markeerAanwezig(workshopId, gebruikerId, sessieId) {
+  const body = { user_id: gebruikerId }
+  if (sessieId) body.session_id = sessieId
+  return api(`/workshops/${workshopId}/attendance`, { method: 'POST', body })
 }
 
-// Leest workshop + gebruiker uit de gescande QR. De QR op de workshopdetailpagina
-// codeert JSON: { workshop_id, user_id }. Als fallback wordt een URL met
-// ?workshop_id=…&user_id=… ondersteund. Geeft null als het niet herkend wordt.
-function parseQr(tekst) {
+// Haalt uit de gescande QR-tekst de gebruikers-identificatie. De persoonlijke QR
+// (van /user/qr) kan een kale id/token zijn óf een URL met ?user=… — beide worden
+// ondersteund.
+function parseQrWaarde(tekst) {
   if (!tekst) return null
   const t = tekst.trim()
   try {
-    const obj = JSON.parse(t)
-    const workshopId = obj.workshop_id ?? obj.w ?? null
-    const userId = obj.user_id ?? obj.u ?? null
-    if (workshopId && userId) return { workshopId, userId }
-  } catch { /* geen JSON */ }
-  try {
     const url = new URL(t)
-    const workshopId = url.searchParams.get('workshop_id') || url.searchParams.get('workshop')
-    const userId = url.searchParams.get('user_id') || url.searchParams.get('user')
-    if (workshopId && userId) return { workshopId, userId }
-  } catch { /* geen URL */ }
-  return null
+    return (
+      url.searchParams.get('user_id') ||
+      url.searchParams.get('user') ||
+      url.searchParams.get('id') ||
+      url.pathname.split('/').filter(Boolean).pop() ||
+      t
+    )
+  } catch {
+    return t // Geen URL: gebruik de kale waarde.
+  }
 }
 
 function ScanAanwezigheid() {
@@ -61,15 +59,25 @@ function ScanAanwezigheid() {
   })()
   const toegestaan = magScannen(rol)
 
+  const [workshops, setWorkshops] = useState([])
+  const [workshopId, setWorkshopId] = useState('')
+  const [sessies, setSessies] = useState([])
+  const [isSessionMode, setIsSessionMode] = useState(false)
+  const [sessieId, setSessieId] = useState('')
+  const [detailLoading, setDetailLoading] = useState(false)
   const [scannen, setScannen] = useState(false)
   const [bezig, setBezig] = useState(false)
-  const [resultaat, setResultaat] = useState(null) // { ok, titel, sub, workshop }
+  const [resultaat, setResultaat] = useState(null) // { ok, titel, sub, workshop, sessie }
   const [cameraFout, setCameraFout] = useState(null)
 
   const videoRef = useRef(null)
   const controlsRef = useRef(null)
-  const workshopsRef = useRef([])          // alleen om de workshoptitel te tonen
+  const workshopIdRef = useRef('')          // laatste keuzes, voor de scan-callback
+  const sessieIdRef = useRef('')
   const laatsteScanRef = useRef({ waarde: null, tijd: 0 }) // dedupe
+
+  useEffect(() => { workshopIdRef.current = workshopId }, [workshopId])
+  useEffect(() => { sessieIdRef.current = sessieId }, [sessieId])
 
   function toggleDark() {
     setDark(d => {
@@ -79,43 +87,66 @@ function ScanAanwezigheid() {
     })
   }
 
-  // Workshops ophalen, enkel om na een scan de titel te kunnen tonen.
+  // Workshops ophalen om vóór welke workshop je aftekent te kiezen.
   useEffect(() => {
     const token = localStorage.getItem('token')
     if (!token) { navigate('/login'); return }
-    api('/workshops').then(d => { workshopsRef.current = d.data || [] }).catch(() => {})
+    api('/workshops')
+      .then(d => setWorkshops(d.data || []))
+      .catch(() => toast.error('Workshops ophalen mislukt'))
   }, [])
 
-  // Eén gedecodeerde QR verwerken: uitlezen, dedupliceren en aanwezig zetten.
+  // Bij een gekozen workshop de details ophalen om te weten of er sessies zijn.
+  useEffect(() => {
+    setSessieId('')
+    setSessies([])
+    setIsSessionMode(false)
+    if (!workshopId) return
+    let annuleren = false
+    setDetailLoading(true)
+    api(`/workshops/${workshopId}`)
+      .then(d => {
+        if (annuleren) return
+        const w = d.data
+        const sessionMode = w?.registration_mode === 'session'
+        setIsSessionMode(sessionMode)
+        setSessies(sessionMode ? (w.sessions || []) : [])
+      })
+      .catch(() => {})
+      .finally(() => { if (!annuleren) setDetailLoading(false) })
+    return () => { annuleren = true }
+  }, [workshopId])
+
+  // Eén gedecodeerde QR verwerken: dedupliceren, id eruit halen en aanwezig zetten
+  // voor de gekozen workshop (en sessie).
   async function verwerkScan(tekst) {
     const nu = Date.now()
     // Dezelfde code binnen 3s negeren — de camera levert vele frames per seconde.
     if (laatsteScanRef.current.waarde === tekst && nu - laatsteScanRef.current.tijd < 3000) return
     laatsteScanRef.current = { waarde: tekst, tijd: nu }
 
-    const geparsed = parseQr(tekst)
-    if (!geparsed) {
-      setResultaat({ ok: false, titel: 'QR niet herkend', sub: 'Dit is geen geldige aanwezigheidscode.' })
-      return
-    }
-    if (bezig) return
+    const gebruikerId = parseQrWaarde(tekst)
+    const wid = workshopIdRef.current
+    const sid = sessieIdRef.current
+    if (!gebruikerId || !wid || bezig) return
 
-    const { workshopId, userId } = geparsed
-    const workshop = workshopsRef.current.find(w => String(w.id) === String(workshopId))
+    const w = workshops.find(x => String(x.id) === String(wid))
+    const s = sessies.find(x => String(x.id) === String(sid))
 
     setBezig(true)
     try {
-      const data = await markeerAanwezig(workshopId, userId)
+      const data = await markeerAanwezig(wid, gebruikerId, sid || null)
       const naam = data?.data?.user?.name || data?.user?.name || data?.data?.name || null
       setResultaat({
         ok: true,
         titel: naam ? `${naam} op aanwezig gezet` : 'Aanwezigheid geregistreerd',
         sub: data?.message || '',
-        workshop: workshop?.title || null,
+        workshop: w?.title || null,
+        sessie: s ? `${s.date} · ${s.start_time}-${s.end_time}` : null,
       })
       toast.success(naam ? `${naam} is aanwezig` : 'Aanwezigheid geregistreerd')
     } catch (error) {
-      setResultaat({ ok: false, titel: 'Niet gelukt', sub: error.message || 'Deze scan kon niet verwerkt worden', workshop: workshop?.title || null })
+      setResultaat({ ok: false, titel: 'Niet gelukt', sub: error.message || 'Deze scan kon niet verwerkt worden', workshop: w?.title || null, sessie: null })
       toast.error(error.message || 'Aanwezig zetten mislukt')
     } finally {
       setBezig(false)
@@ -148,10 +179,16 @@ function ScanAanwezigheid() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [scannen])
 
+  // Klaar om te scannen: workshop gekozen, en bij sessie-workshops ook een sessie.
+  const kanScannen = Boolean(workshopId) && (!isSessionMode || Boolean(sessieId))
+
   const d = dark
-  const contentBg = d ? 'bg-[#111111]'  : 'bg-[#e4e8e2]'
-  const titleClr  = d ? 'text-white'    : 'text-[#1a3d2b]'
-  const subClr    = d ? 'text-white/60' : 'text-[#1a3d2b]/70'
+  const contentBg = d ? 'bg-[#111111]'    : 'bg-[#e4e8e2]'
+  const titleClr  = d ? 'text-white'      : 'text-[#1a3d2b]'
+  const subClr    = d ? 'text-white/60'   : 'text-[#1a3d2b]/70'
+  const labelClr  = d ? 'text-white/55'   : 'text-[#4a6e52]'
+  const inputBg   = d ? 'bg-white/[0.06]' : 'bg-[#f6faf2]'
+  const inputClr  = d ? 'text-white'      : 'text-[#1a3d2b]'
 
   return (
     <div className="min-h-[100dvh] bg-[#1a3d2b] flex flex-col">
@@ -219,7 +256,7 @@ function ScanAanwezigheid() {
           <h1 className="mb-4 text-[2.75rem] font-black leading-[0.95] tracking-[-0.04em] text-white md:text-6xl">Scan aanwezigheid</h1>
           <span className="inline-flex items-center gap-2 text-sm font-medium text-white/55">
             <ScanLine className="h-4 w-4 text-[#d4e84a]" />
-            Scan de workshop-QR die de deelnemer toont om deze aanwezig te zetten
+            Scan de QR-code van een deelnemer om deze aanwezig te zetten
           </span>
         </motion.div>
       </div>
@@ -229,7 +266,7 @@ function ScanAanwezigheid() {
         <div className="mx-auto flex max-w-2xl flex-col gap-5">
 
           {!toegestaan ? (
-            /* Geen organisator-rol: geen toegang tot de scanner. */
+            /* Geen admin-rol: geen toegang tot de scanner. */
             <Card dark={d}>
               <div className="p-10 text-center">
                 <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-red-50">
@@ -237,7 +274,7 @@ function ScanAanwezigheid() {
                 </div>
                 <p className={`mb-1 text-sm font-bold ${titleClr}`}>Geen toegang</p>
                 <p className={`mb-4 text-xs ${subClr}`}>
-                  Alleen organisatoren en sprekers kunnen aanwezigheid scannen. Je bent ingelogd als <span className="font-semibold capitalize">{rol}</span>.
+                  Alleen beheerders (admin) kunnen aanwezigheid scannen. Je bent ingelogd als <span className="font-semibold capitalize">{rol}</span>.
                 </p>
                 <motion.button
                   whileHover={{ scale: 1.04 }}
@@ -251,7 +288,52 @@ function ScanAanwezigheid() {
             </Card>
           ) : (
             <>
-              {/* Camera / scanner */}
+              {/* 1. Workshop (en evt. sessie) kiezen */}
+              <Card dark={d}>
+                <div className="p-5">
+                  <label className={`mb-2 block text-[10px] font-bold uppercase tracking-[0.14em] ${labelClr}`}>
+                    Voor welke workshop teken je af?
+                  </label>
+                  <select
+                    value={workshopId}
+                    onChange={(e) => setWorkshopId(e.target.value)}
+                    disabled={scannen}
+                    className={`w-full rounded-2xl px-4 py-3.5 text-sm font-medium outline-none transition-colors focus-visible:ring-2 focus-visible:ring-[#d4e84a] disabled:opacity-50 ${inputBg} ${inputClr}`}
+                  >
+                    <option value="">— Kies een workshop —</option>
+                    {workshops.map(w => (
+                      <option key={w.id} value={w.id}>{w.title}</option>
+                    ))}
+                  </select>
+
+                  {/* Sessiekeuze, alleen bij een workshop met sessies */}
+                  {isSessionMode && sessies.length > 0 && (
+                    <div className="mt-4">
+                      <label className={`mb-2 block text-[10px] font-bold uppercase tracking-[0.14em] ${labelClr}`}>
+                        Welke sessie?
+                      </label>
+                      <select
+                        value={sessieId}
+                        onChange={(e) => setSessieId(e.target.value)}
+                        disabled={scannen}
+                        className={`w-full rounded-2xl px-4 py-3.5 text-sm font-medium outline-none transition-colors focus-visible:ring-2 focus-visible:ring-[#d4e84a] disabled:opacity-50 ${inputBg} ${inputClr}`}
+                      >
+                        <option value="">— Kies een sessie —</option>
+                        {sessies.map(s => (
+                          <option key={s.id} value={s.id}>
+                            {s.date} · {s.start_time}-{s.end_time}{s.location ? ` · ${s.location}` : ''}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+
+                  {detailLoading && <p className={`mt-2 text-xs ${subClr}`}>Sessies laden…</p>}
+                  {scannen && <p className={`mt-2 text-xs ${subClr}`}>Stop het scannen om een andere keuze te maken.</p>}
+                </div>
+              </Card>
+
+              {/* 2. Camera / scanner */}
               <Card dark={d}>
                 <div className="p-5">
                   <div className="mb-4 flex items-center gap-2.5">
@@ -283,20 +365,26 @@ function ScanAanwezigheid() {
 
                   {/* Start/stop */}
                   <motion.button
-                    whileHover={{ scale: 1.015 }}
-                    whileTap={{ scale: 0.98 }}
+                    whileHover={{ scale: (!kanScannen && !scannen) ? 1 : 1.015 }}
+                    whileTap={{ scale: (!kanScannen && !scannen) ? 1 : 0.98 }}
                     onClick={() => { setCameraFout(null); setScannen(s => !s) }}
-                    className={`mt-4 flex w-full items-center justify-center gap-2 rounded-2xl py-3.5 text-sm font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2
+                    disabled={!kanScannen && !scannen}
+                    className={`mt-4 flex w-full items-center justify-center gap-2 rounded-2xl py-3.5 text-sm font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:opacity-50
                       ${scannen
                         ? 'bg-red-500 text-white hover:bg-red-600 focus-visible:ring-red-400'
                         : 'bg-[#d4e84a] text-[#1a3d2b] hover:bg-[#c8dc3e] focus-visible:ring-[#1a3d2b]'}`}
                   >
                     {scannen ? 'Stop scannen' : <><ScanLine className="h-4 w-4" />Start scannen</>}
                   </motion.button>
+                  {!kanScannen && !scannen && (
+                    <p className={`mt-2 text-center text-xs ${subClr}`}>
+                      {workshopId ? 'Kies eerst een sessie hierboven.' : 'Kies eerst een workshop hierboven.'}
+                    </p>
+                  )}
                 </div>
               </Card>
 
-              {/* Laatste resultaat */}
+              {/* 3. Laatste resultaat */}
               <AnimatePresence mode="wait">
                 {resultaat && (
                   <motion.div
@@ -315,6 +403,7 @@ function ScanAanwezigheid() {
                       <p>{resultaat.titel}</p>
                       {resultaat.sub && <p className="mt-0.5 text-xs font-normal opacity-80">{resultaat.sub}</p>}
                       {resultaat.workshop && <p className="mt-0.5 text-xs font-normal opacity-60">Workshop: {resultaat.workshop}</p>}
+                      {resultaat.sessie && <p className="mt-0.5 text-xs font-normal opacity-60">Sessie: {resultaat.sessie}</p>}
                     </div>
                   </motion.div>
                 )}

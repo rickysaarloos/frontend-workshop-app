@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence, useReducedMotion } from 'motion/react'
-import { User, Mail, Lock, Utensils, LogOut, ChevronLeft, Save, Check, BookOpen, CalendarDays, ArrowRight, Eye, EyeOff, Moon, Sun, UserPlus, Copy, Clock, Network, Hash, UserCheck, ScanLine } from 'lucide-react'
+import { User, Mail, Lock, Utensils, LogOut, ChevronLeft, Save, Check, BookOpen, CalendarDays, ArrowRight, Eye, EyeOff, Moon, Sun, UserPlus, Copy, Clock, Network, Hash, UserCheck, QrCode, ScanLine } from 'lucide-react'
 import { toast, Toaster } from 'sonner'
 import Footer from '../../components/Footer'
 import Card from '../../components/Card'
 
+import { API_URL } from '@/lib/config'
 import { api } from '@/lib/api'
 import { getStoredUser, logout } from '@/lib/auth'
 
@@ -47,6 +48,8 @@ function Profiel() {
   const [invulCode, setInvulCode] = useState('')
   const [codeToevoegenLoading, setCodeToevoegenLoading] = useState(false)
   const [netwerkGeladen, setNetwerkGeladen] = useState(false)
+  const [qrUrl, setQrUrl] = useState(null)
+  const [qrLoading, setQrLoading] = useState(false)
 
   function toggleDark() {
     setDark(d => {
@@ -60,7 +63,30 @@ function Profiel() {
     const token = localStorage.getItem('token')
     if (!token) { navigate('/login'); return }
     fetchAlles()
+    fetchQr(token)
   }, [])
+
+  async function fetchQr(token) {
+    setQrLoading(true)
+    try {
+      const res = await fetch(`${API_URL}/api/user/qr`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      if (!res.ok) return
+      const contentType = res.headers.get('content-type') || ''
+      if (contentType.includes('application/json')) {
+        const data = await res.json()
+        setQrUrl(data.data?.qr_code_url || data.qr_code_url || data.data?.qr_url || data.data?.url || data.qr_url || data.url || null)
+      } else {
+        const blob = await res.blob()
+        setQrUrl(URL.createObjectURL(blob))
+      }
+    } catch {
+      // Silent fail — QR is non-critical
+    } finally {
+      setQrLoading(false)
+    }
+  }
 
   useEffect(() => {
     if (actieveTab !== 'netwerk' || netwerkGeladen) return
@@ -480,8 +506,8 @@ function Profiel() {
               transition={{ type: 'spring', stiffness: 260, damping: 32 }}
               className="flex flex-col gap-3"
             >
-              {/* Aanwezigheid scannen — alleen voor organisatoren/sprekers (niet student) */}
-              {rol.toLowerCase() !== 'student' && (
+              {/* Aanwezigheid scannen — alleen voor de admin-rol */}
+              {rol.toLowerCase() === 'admin' && (
                 <Card dark={d}>
                   <div className={gradientTop} />
                   <div className="p-5">
@@ -506,6 +532,34 @@ function Profiel() {
                   </div>
                 </Card>
               )}
+
+              {/* QR-code */}
+              <Card dark={d}>
+                <div className={gradientTop} />
+                <div className="p-5">
+                  <div className="flex items-center gap-2.5 mb-4">
+                    <div className={`p-2 rounded-xl ${d ? 'bg-white/[0.06]' : 'bg-[#eef3e8]'}`}>
+                      <QrCode className={`w-4 h-4 ${d ? 'text-white/55' : 'text-[#1a3d2b]'}`} />
+                    </div>
+                    <div>
+                      <h2 className={`text-sm font-bold ${titleClr}`}>Mijn QR-code</h2>
+                      <p className={`text-[11px] ${subClr} mt-0.5`}>Toon bij aankomst op de workshop</p>
+                    </div>
+                  </div>
+                  {qrLoading ? (
+                    <div className={`h-48 ${skelBg} rounded-2xl animate-pulse`} />
+                  ) : qrUrl ? (
+                    <div className={`flex justify-center p-4 rounded-2xl ${d ? 'bg-white/[0.05]' : 'bg-white'}`}>
+                      <img src={qrUrl} alt="Jouw QR-code" className="w-48 h-48 object-contain" />
+                    </div>
+                  ) : (
+                    <div className={`flex flex-col items-center justify-center py-8 rounded-2xl ${d ? 'bg-white/[0.04]' : 'bg-[#f6faf2]'}`}>
+                      <QrCode className={`w-10 h-10 mb-2 ${d ? 'text-white/15' : 'text-[#1a3d2b]/20'}`} />
+                      <p className={`text-xs ${subClr}`}>QR-code niet beschikbaar</p>
+                    </div>
+                  )}
+                </div>
+              </Card>
 
               {/* Workshops */}
               <Card dark={d}>
