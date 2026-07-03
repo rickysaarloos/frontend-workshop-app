@@ -8,6 +8,7 @@ import Profiel from '@/pages/profiel/Profiel'
 import Home from '@/pages/home/Home'
 import EventDetail from '@/pages/events/EventDetail'
 import Meldingen from '@/pages/meldingen/Meldingen'
+import ScanAanwezigheid from '@/pages/scan/ScanAanwezigheid'
 
 
 function App() {
@@ -24,6 +25,7 @@ function App() {
         <Route path="/home" element={<Home />} />
         <Route path="/events/:id" element={<EventDetail />} />
         <Route path="/meldingen" element={<Meldingen />} />
+        <Route path="/scan" element={<ScanAanwezigheid />} />
       </Routes>
     </BrowserRouter>
   )

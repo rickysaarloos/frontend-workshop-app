@@ -1,12 +1,14 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { motion, AnimatePresence, useReducedMotion } from 'motion/react'
 import { ChevronLeft, CalendarDays, Clock, Users, CheckCircle, MapPin, BookOpen, User, Tag, Moon, Sun, AlertTriangle, ClipboardList, Leaf, HelpCircle, ChevronDown, Download, ScanLine, MessageSquare, Send, ArrowLeftRight } from 'lucide-react'
 import { toast, Toaster } from 'sonner'
+import { BrowserQRCodeSvgWriter } from '@zxing/browser'
 import Footer from '../../components/Footer'
 import Card from '../../components/Card'
 
 import { api } from '@/lib/api'
+import { getStoredUser } from '@/lib/auth'
 
 const EASE = [0.22, 1, 0.36, 1]
 
@@ -63,7 +65,6 @@ function WorkshopDetail() {
   const [faqLoading, setFaqLoading] = useState(false)
   const [openFaqId, setOpenFaqId] = useState(null)
   const [aanwezigheidGeregistreerd, setAanwezigheidGeregistreerd] = useState(false)
-  const [aanwezigheidLoading, setAanwezigheidLoading] = useState(false)
   const [presentatie, setPresentatie] = useState(null)
   const [vragenlijst, setVragenlijst] = useState([])
   const [vragenlijstLoading, setVragenlijstLoading] = useState(false)
@@ -73,6 +74,24 @@ function WorkshopDetail() {
   const [enqueteOpen, setEnqueteOpen] = useState(false)
   const [dark, setDark] = useState(() => localStorage.getItem('theme') === 'dark')
   const shouldReduce = useReducedMotion()
+
+  // Aanwezigheids-QR: codeert wélke workshop én welke gebruiker, zodat de organisator
+  // na het scannen geen workshop hoeft te kiezen. Client-side gegenereerd.
+  const qrRef = useRef(null)
+  const qrGebruikerId = getStoredUser()?.id
+  const qrPayload = JSON.stringify({ workshop_id: id, user_id: qrGebruikerId })
+
+  // Teken de QR in het vlak zodra de gebruiker ingeschreven is en nog niet afgetekend.
+  useEffect(() => {
+    if (!ingeschreven || aanwezigheidGeregistreerd || !qrGebruikerId || !qrRef.current) return
+    try {
+      const svg = new BrowserQRCodeSvgWriter().write(qrPayload, 200, 200)
+      qrRef.current.innerHTML = ''
+      qrRef.current.appendChild(svg)
+    } catch {
+      // QR genereren mislukt — laat het vlak leeg.
+    }
+  }, [ingeschreven, aanwezigheidGeregistreerd, qrGebruikerId, qrPayload])
 
   function toggleDark() {
     setDark(d => {
@@ -218,19 +237,6 @@ function WorkshopDetail() {
     }
   }
 
-  async function handleAanwezigheidRegistreren() {
-    setAanwezigheidLoading(true)
-    try {
-      const data = await api(`/workshops/${id}/attendance`, { method: 'POST' })
-      toast.success(data?.message || 'Aanwezigheid geregistreerd!')
-      setAanwezigheidGeregistreerd(true)
-      await fetchWorkshop()
-    } catch (error) {
-      toast.error(error.message || 'Registratie mislukt')
-    } finally {
-      setAanwezigheidLoading(false)
-    }
-  }
 
   function setAntwoord(vraagId, waarde) {
     setAntwoorden(prev => ({ ...prev, [vraagId]: waarde }))
@@ -628,15 +634,22 @@ function WorkshopDetail() {
                             Aanwezigheid geregistreerd
                           </div>
                         ) : (
-                          <motion.button
-                            whileHover={{ scale: aanwezigheidLoading ? 1 : 1.015 }}
-                            whileTap={{ scale: aanwezigheidLoading ? 1 : 0.98 }}
-                            onClick={handleAanwezigheidRegistreren}
-                            disabled={aanwezigheidLoading}
-                            className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#d4e84a] py-3.5 text-sm font-bold text-[#1a3d2b] transition-colors hover:bg-[#c8dc3e] disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1a3d2b] focus-visible:ring-offset-2"
-                          >
-                            {aanwezigheidLoading ? <><SpinnerIcon />Registreren...</> : <><ScanLine className="h-4 w-4" />Aanwezigheid registreren</>}
-                          </motion.button>
+                          <>
+                            {/* Toon aan de organisator; die scant en zet je aanwezig.
+                                De QR codeert deze workshop + jouw gebruiker. */}
+                            {qrGebruikerId ? (
+                              <div className={`flex flex-col items-center gap-3 rounded-2xl p-4 ${tileBg}`}>
+                                <p className={`text-center text-xs ${subClr}`}>
+                                  Toon deze QR-code aan de organisator om afgetekend te worden
+                                </p>
+                                <div ref={qrRef} className="rounded-xl bg-white p-3" aria-label="QR-code voor aanwezigheid" />
+                              </div>
+                            ) : (
+                              <p className={`text-center text-xs ${subClr}`}>
+                                QR-code niet beschikbaar — log opnieuw in als dit blijft.
+                              </p>
+                            )}
+                          </>
                         )}
 
                         {aanwezigheidGeregistreerd && presentatie?.url && (
