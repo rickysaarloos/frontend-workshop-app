@@ -11,6 +11,9 @@ import Meldingen from '@/pages/meldingen/Meldingen'
 import ScanAanwezigheid from '@/pages/scan/ScanAanwezigheid'
 
 
+// Alle routes van de app op één plek. Elke <Route> koppelt een pad rechtstreeks
+// aan een pagina-component uit src/pages — er is geen geneste routing of layout-
+// wrapper, elke pagina regelt zijn eigen header/footer.
 function App() {
   return (
     <BrowserRouter>

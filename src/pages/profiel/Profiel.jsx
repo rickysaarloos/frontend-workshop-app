@@ -16,6 +16,9 @@ const dieetOpties = [
   'Halal', 'Kosher', 'Notenallergie', 'Geen restricties',
 ]
 
+// Profielpagina (route /profiel): eigen gegevens, wachtwoord, dieetwensen,
+// stuurlinks (invite), netwerk/contacten (met QR) en — voor admin/workshopgever —
+// de snelkoppeling naar de aanwezigheidsscanner. Alles zit in tabs (`actieveTab`).
 function Profiel() {
   const navigate = useNavigate()
   const shouldReduce = useReducedMotion()
@@ -71,6 +74,8 @@ function Profiel() {
     fetchQr(token)
   }, [])
 
+  // Haalt de persoonlijke QR-code op (los van de centrale `api()`-helper omdat
+  // de respons ofwel JSON met een URL ofwel een rauwe afbeelding kan zijn).
   async function fetchQr(token) {
     setQrLoading(true)
     try {
@@ -141,6 +146,8 @@ function Profiel() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [netwerkScannen])
 
+  // Laadt gebruiker, workshops en events parallel; filtert de laatste twee op
+  // is_registered voor de "Mijn workshops/events"-secties op het info-tabblad.
   async function fetchAlles() {
     try {
       const [userJson, workshopsJson, eventsJson] = await Promise.all([

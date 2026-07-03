@@ -49,6 +49,9 @@ function parseQrWaarde(tekst) {
   }
 }
 
+// Aanwezigheidsscanner (route /scan): alleen voor admin/workshopgever. De
+// organisator kiest een workshop (en evt. sessie) en scant daarna de persoonlijke
+// QR-code van elke deelnemer om die direct aanwezig te zetten.
 function ScanAanwezigheid() {
   const navigate = useNavigate()
   const shouldReduce = useReducedMotion()
