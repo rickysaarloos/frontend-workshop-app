@@ -188,11 +188,7 @@ function WorkshopDetail() {
     }
   }
 
-  // Wisselen: schrijf eerst uit bij de huidige workshop, schrijf dan in bij deze.
-  // Uitschrijven eerst zodat een backend die "één workshop per gebruiker"
-  // afdwingt de nieuwe inschrijving niet weigert. De inschrijfknop is al
-  // uitgeschakeld bij een volle workshop, dus de kans dat stap 2 faalt is klein;
-  // faalt hij toch, dan melden we dat de oude inschrijving is komen te vervallen.
+ 
   async function handleWisselNaarDeze() {
     const isSessionMode = workshop.registration_mode === 'session'
     if (isSessionMode && !geselecteerdeSessie) {
