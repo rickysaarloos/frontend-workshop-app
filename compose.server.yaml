@@ -1,0 +1,15 @@
+name: studiedag-frontend
+
+services:
+
+  frontend:
+    container_name: studiedag-frontend
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+      args:
+        VITE_API_URL: ${VITE_API_URL}
+    image: studiedag-frontend:latest
+    restart: unless-stopped
+    ports:
+      - "9001:80"
